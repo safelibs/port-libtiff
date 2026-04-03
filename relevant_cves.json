@@ -11,15 +11,15 @@
   ],
   "summary": {
     "reviewed_cves": 273,
-    "selected_cves": 63,
+    "selected_cves": 67,
     "category_counts": {
-      "divide_by_zero": 8,
+      "divide_by_zero": 9,
       "assertion_or_panic": 6,
       "infinite_loop": 2,
       "resource_exhaustion": 9,
-      "memory_leak": 7,
-      "null_state_handling": 17,
-      "input_validation_and_arithmetic": 14
+      "memory_leak": 8,
+      "null_state_handling": 18,
+      "input_validation_and_arithmetic": 15
     }
   },
   "relevant_cves": [
@@ -62,6 +62,16 @@
       "published": "2006-08-03T01:04:00.000",
       "issue": "A 16-bit loop counter iterated over a 32-bit strip count and could wrap forever.",
       "why_it_matters_for_rust": "Memory safety does not prevent non-terminating loops from malformed counters or directory structures."
+    },
+    {
+      "id": "CVE-2006-3464",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "TIFF directory handling",
+      "weaknesses": ["CWE-189"],
+      "published": "2006-08-03T01:04:00.000",
+      "issue": "Large directory offsets could bypass range checks through unchecked arithmetic and trigger assert-like failures in directory handling.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
     },
     {
       "id": "CVE-2010-2233",
@@ -172,6 +182,16 @@
       "published": "2017-03-17T14:59:00.843",
       "issue": "Crafted TIFF input could trigger uncontrolled memory consumption before crashing.",
       "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
+    },
+    {
+      "id": "CVE-2016-3622",
+      "category": "divide_by_zero",
+      "rust_relevance": "high",
+      "component_hint": "fpAcc in tif_predict.c",
+      "weaknesses": ["CWE-369"],
+      "published": "2016-10-03T16:09:04.133",
+      "issue": "Predictor accumulation in shared predictor code could divide by zero on crafted image data.",
+      "why_it_matters_for_rust": "Safe Rust still panics on division by zero unless the port validates dimensions and derived byte counts before arithmetic."
     },
     {
       "id": "CVE-2016-5323",
@@ -354,6 +374,16 @@
       "why_it_matters_for_rust": "Assertions on attacker-controlled input would still panic in Rust unless converted into recoverable validation errors."
     },
     {
+      "id": "CVE-2017-16232",
+      "category": "memory_leak",
+      "rust_relevance": "medium",
+      "component_hint": "tif_open.c, tif_lzw.c, tif_aux.c",
+      "weaknesses": ["CWE-772"],
+      "published": "2019-03-21T15:59:56.530",
+      "issue": "Reported shared-library leak paths in opening, LZW, and allocation-helper code could cause memory consumption; the report notes third-party reproduction issues.",
+      "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
       "id": "CVE-2018-5784",
       "category": "resource_exhaustion",
       "rust_relevance": "high",
@@ -422,6 +452,16 @@
       "published": "2019-01-11T05:29:01.577",
       "issue": "Opening TIFF handles from file descriptors could leak state on malformed or failing setup paths.",
       "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
+      "id": "CVE-2019-7663",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFWriteDirectoryTagTransferfunction in tif_dirwrite.c",
+      "weaknesses": ["NVD-CWE-noinfo"],
+      "published": "2019-02-09T16:29:00.313",
+      "issue": "Directory transfer-function writing still had an invalid-address dereference path in shared libtiff code, distinct from earlier fixes.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     },
     {
       "id": "CVE-2019-14973",
