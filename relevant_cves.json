@@ -5,20 +5,20 @@
   "source_file": "all_cves.json",
   "selection_notes": [
     "Included only CVEs whose primary failure mode is not memory corruption and whose root cause is not removed by Rust memory safety alone.",
-    "Prioritized core library code and shared libtiff parsing or directory-writing logic. Purely CLI-tool-specific issues were excluded unless the vulnerable code path lives in shared libtiff code.",
+    "Prioritized core library code and shared libtiff parsing or directory-writing logic. Utility-triggered CVEs were kept whenever the vulnerable function lives in shared libtiff code; only wrapper-only CLI issues were excluded.",
     "Included divide-by-zero, reachable assertion or panic, infinite-loop, resource-exhaustion, memory-leak, null-state handling, and checked-arithmetic or input-validation bugs.",
     "Excluded CVEs whose primary impact is out-of-bounds access, buffer overflow or underflow, use-after-free, double-free, or other memory-corruption classes even when triggered by arithmetic mistakes."
   ],
   "summary": {
     "reviewed_cves": 273,
-    "selected_cves": 37,
+    "selected_cves": 54,
     "category_counts": {
       "divide_by_zero": 8,
       "assertion_or_panic": 6,
       "infinite_loop": 2,
-      "resource_exhaustion": 4,
-      "memory_leak": 2,
-      "null_state_handling": 8,
+      "resource_exhaustion": 9,
+      "memory_leak": 7,
+      "null_state_handling": 15,
       "input_validation_and_arithmetic": 7
     }
   },
@@ -44,6 +44,16 @@
       "why_it_matters_for_rust": "Safe Rust still panics on division by zero unless the port validates dimensions and derived byte counts before arithmetic."
     },
     {
+      "id": "CVE-2006-0405",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFFetchShortPair in tif_dirread.c",
+      "weaknesses": ["NVD-CWE-Other"],
+      "published": "2006-01-25T02:03:00.000",
+      "issue": "Directory-entry pair fetching could follow an absent-data path and crash during field setup.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
       "id": "CVE-2006-3463",
       "category": "infinite_loop",
       "rust_relevance": "high",
@@ -62,6 +72,26 @@
       "published": "2010-07-02T12:43:52.937",
       "issue": "The downsampled OJPEG vertical-flip path mishandled 64-bit image state during image extraction.",
       "why_it_matters_for_rust": "This is a parser and state-management bug, not purely a memory-safety bug; the Rust port needs explicit validation and checked image-math logic."
+    },
+    {
+      "id": "CVE-2010-2443",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "OJPEGReadBufferFill in tif_ojpeg.c",
+      "weaknesses": ["NVD-CWE-Other"],
+      "published": "2010-06-24T17:30:01.233",
+      "issue": "Undefined OJPEG strip offsets could leave OJPEGReadBufferFill on an absent-data path.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
+      "id": "CVE-2010-2482",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "td_stripbytecount handling in shared read paths",
+      "weaknesses": ["NVD-CWE-Other"],
+      "published": "2010-07-06T17:17:13.437",
+      "issue": "An invalid td_stripbytecount value could leave shared read logic operating on absent strip metadata.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     },
     {
       "id": "CVE-2010-2595",
@@ -134,6 +164,16 @@
       "why_it_matters_for_rust": "Safe Rust still panics on division by zero unless the port validates dimensions and derived byte counts before arithmetic."
     },
     {
+      "id": "CVE-2015-7313",
+      "category": "resource_exhaustion",
+      "rust_relevance": "high",
+      "component_hint": "shared libtiff allocation paths",
+      "weaknesses": ["CWE-399"],
+      "published": "2017-03-17T14:59:00.843",
+      "issue": "Crafted TIFF input could trigger uncontrolled memory consumption before crashing.",
+      "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
+    },
+    {
       "id": "CVE-2016-5323",
       "category": "divide_by_zero",
       "rust_relevance": "high",
@@ -184,6 +224,16 @@
       "why_it_matters_for_rust": "Assertions on attacker-controlled input would still panic in Rust unless converted into recoverable validation errors."
     },
     {
+      "id": "CVE-2017-7594",
+      "category": "memory_leak",
+      "rust_relevance": "medium",
+      "component_hint": "OJPEGReadHeaderInfoSecTablesDcTable in tif_ojpeg.c",
+      "weaknesses": ["CWE-772"],
+      "published": "2017-04-09T14:59:00.230",
+      "issue": "Crafted OJPEG header data could leak allocations while reading DC tables.",
+      "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
       "id": "CVE-2017-7595",
       "category": "divide_by_zero",
       "rust_relevance": "high",
@@ -214,6 +264,16 @@
       "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
     },
     {
+      "id": "CVE-2017-9404",
+      "category": "memory_leak",
+      "rust_relevance": "medium",
+      "component_hint": "OJPEGReadHeaderInfoSecTablesQTable in tif_ojpeg.c",
+      "weaknesses": ["CWE-772"],
+      "published": "2017-06-02T19:29:00.213",
+      "issue": "Crafted OJPEG header data could leak allocations while reading quantization tables.",
+      "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
       "id": "CVE-2017-9815",
       "category": "memory_leak",
       "rust_relevance": "medium",
@@ -222,6 +282,26 @@
       "published": "2017-06-22T15:29:00.173",
       "issue": "Malloc-failure handling in long-array directory entry parsing leaked memory.",
       "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
+      "id": "CVE-2017-9936",
+      "category": "memory_leak",
+      "rust_relevance": "medium",
+      "component_hint": "tif_jbig.c",
+      "weaknesses": ["CWE-772"],
+      "published": "2017-06-26T12:29:00.220",
+      "issue": "Crafted JBIG-compressed TIFF input could leak allocations in the JBIG decoder.",
+      "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
+      "id": "CVE-2017-9937",
+      "category": "resource_exhaustion",
+      "rust_relevance": "high",
+      "component_hint": "tif_jbig.c",
+      "weaknesses": ["CWE-119"],
+      "published": "2017-06-26T12:29:00.250",
+      "issue": "JBIG decoding treated crafted allocation failure as an aborting fatal path instead of a clean parse error.",
+      "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
     },
     {
       "id": "CVE-2017-10688",
@@ -241,6 +321,16 @@
       "weaknesses": ["CWE-20"],
       "published": "2017-07-26T08:29:00.197",
       "issue": "Open-time strip chopping trusted attacker-controlled image length and could request enormous allocations or hang.",
+      "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
+    },
+    {
+      "id": "CVE-2017-12944",
+      "category": "resource_exhaustion",
+      "rust_relevance": "high",
+      "component_hint": "TIFFReadDirEntryArray, TIFFFetchStripThing",
+      "weaknesses": ["CWE-770"],
+      "published": "2017-08-18T15:29:00.247",
+      "issue": "Short-file allocation handling in directory parsing could fall into allocation-failure crash paths.",
       "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
     },
     {
@@ -274,6 +364,16 @@
       "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
     },
     {
+      "id": "CVE-2018-10801",
+      "category": "memory_leak",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFClientOpen in tif_unix.c",
+      "weaknesses": ["CWE-772"],
+      "published": "2018-05-08T06:29:00.203",
+      "issue": "Opening client-backed TIFF handles could leak allocations on malformed or failing setup paths.",
+      "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
       "id": "CVE-2018-10963",
       "category": "assertion_or_panic",
       "rust_relevance": "high",
@@ -282,6 +382,16 @@
       "published": "2018-05-10T02:29:00.607",
       "issue": "A distinct crafted-file path still reached an assertion in TIFFWriteDirectorySec.",
       "why_it_matters_for_rust": "Assertions on attacker-controlled input would still panic in Rust unless converted into recoverable validation errors."
+    },
+    {
+      "id": "CVE-2018-17000",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "_TIFFmemcmp, TIFFWriteDirectoryTagTransferfunction",
+      "weaknesses": ["CWE-476"],
+      "published": "2018-09-13T16:29:01.263",
+      "issue": "Directory-transfer-function writing could reach an absent-data comparison path in shared libtiff code.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     },
     {
       "id": "CVE-2018-18661",
@@ -294,6 +404,26 @@
       "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     },
     {
+      "id": "CVE-2018-19210",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFWriteDirectorySec",
+      "weaknesses": ["CWE-476"],
+      "published": "2018-11-12T19:29:00.300",
+      "issue": "TIFFWriteDirectorySec had a separate absent-data crash path beyond the assertion-only cases.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
+      "id": "CVE-2019-6128",
+      "category": "memory_leak",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFFdOpen in tif_unix.c",
+      "weaknesses": ["CWE-401"],
+      "published": "2019-01-11T05:29:01.577",
+      "issue": "Opening TIFF handles from file descriptors could leak state on malformed or failing setup paths.",
+      "why_it_matters_for_rust": "Ownership helps, but repeated parse failures or partially built structures can still leak or retain unbounded allocations if error paths are wrong."
+    },
+    {
       "id": "CVE-2019-14973",
       "category": "input_validation_and_arithmetic",
       "rust_relevance": "high",
@@ -302,6 +432,26 @@
       "published": "2019-08-14T06:15:10.303",
       "issue": "Allocation overflow checks relied on undefined C signed-overflow behavior.",
       "why_it_matters_for_rust": "This is a checked-arithmetic design issue; the Rust port must use explicit checked math and size validation instead of relying on implicit overflow behavior."
+    },
+    {
+      "id": "CVE-2020-35521",
+      "category": "resource_exhaustion",
+      "rust_relevance": "high",
+      "component_hint": "tif_read.c",
+      "weaknesses": ["CWE-119"],
+      "published": "2021-03-09T20:15:12.773",
+      "issue": "Allocation failure in shared read logic could abort the process instead of returning a clean error.",
+      "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
+    },
+    {
+      "id": "CVE-2020-35522",
+      "category": "resource_exhaustion",
+      "rust_relevance": "high",
+      "component_hint": "tif_pixarlog.c",
+      "weaknesses": ["CWE-119"],
+      "published": "2021-03-09T20:15:12.867",
+      "issue": "PixarLog decoding treated crafted allocation failure as an aborting fatal path.",
+      "why_it_matters_for_rust": "Rust still needs explicit caps on image dimensions, directory counts, and computed buffer sizes to avoid OOMs, hangs, and pathological allocations."
     },
     {
       "id": "CVE-2022-0561",
@@ -334,6 +484,16 @@
       "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     },
     {
+      "id": "CVE-2022-34266",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFFetchStripThing in tif_dirread.c",
+      "weaknesses": ["CWE-908"],
+      "published": "2022-07-19T20:15:11.367",
+      "issue": "TIFFFetchStripThing could proceed with invalid range or uninitialized state and crash in shared strip-fetch logic.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
       "id": "CVE-2022-40090",
       "category": "infinite_loop",
       "rust_relevance": "high",
@@ -351,6 +511,16 @@
       "weaknesses": ["CWE-476"],
       "published": "2023-05-17T22:15:11.047",
       "issue": "Another LZWDecode path assumed internal pointers or state were present.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
+      "id": "CVE-2023-2908",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "tif_dir.c",
+      "weaknesses": ["CWE-476"],
+      "published": "2023-06-30T22:15:10.017",
+      "issue": "Directory-field handling in tif_dir.c still had a crafted-input path to absent-state dereference.",
       "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     },
     {
