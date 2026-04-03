@@ -6,20 +6,20 @@
   "selection_notes": [
     "Included only CVEs whose primary failure mode is not memory corruption and whose root cause is not removed by Rust memory safety alone.",
     "Prioritized core library code and shared libtiff parsing or directory-writing logic. Utility-triggered CVEs were kept whenever the vulnerable function lives in shared libtiff code; only wrapper-only CLI issues were excluded.",
-    "Included divide-by-zero, reachable assertion or panic, infinite-loop, resource-exhaustion, memory-leak, null-state handling, and checked-arithmetic or input-validation bugs.",
+    "Included divide-by-zero, reachable assertion or panic, infinite-loop, resource-exhaustion, memory-leak, null-state handling, and checked-arithmetic, undefined-behavior, or input-validation bugs.",
     "Excluded CVEs whose primary impact is out-of-bounds access, buffer overflow or underflow, use-after-free, double-free, or other memory-corruption classes even when triggered by arithmetic mistakes."
   ],
   "summary": {
     "reviewed_cves": 273,
-    "selected_cves": 54,
+    "selected_cves": 63,
     "category_counts": {
       "divide_by_zero": 8,
       "assertion_or_panic": 6,
       "infinite_loop": 2,
       "resource_exhaustion": 9,
       "memory_leak": 7,
-      "null_state_handling": 15,
-      "input_validation_and_arithmetic": 7
+      "null_state_handling": 17,
+      "input_validation_and_arithmetic": 14
     }
   },
   "relevant_cves": [
@@ -561,6 +561,96 @@
       "weaknesses": ["CWE-476"],
       "published": "2026-02-23T19:22:56.517",
       "issue": "tif_open.c still had an absent-data dereference path during file-open or setup.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
+      "id": "CVE-2017-7592",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "putagreytile in tif_getimage.c",
+      "weaknesses": ["CWE-20"],
+      "published": "2017-04-09T14:59:00.153",
+      "issue": "Image conversion logic allowed a crafted image to drive left-shift undefined behavior in grayscale tile handling.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-7596",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "shared floating-point conversion paths",
+      "weaknesses": ["CWE-20"],
+      "published": "2017-04-09T14:59:00.293",
+      "issue": "Crafted image data could push shared floating-point conversions outside representable float ranges.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-7597",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "tif_dirread.c",
+      "weaknesses": ["CWE-20"],
+      "published": "2017-04-09T14:59:00.323",
+      "issue": "Directory-reading logic could coerce crafted values outside the representable range of float.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-7599",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "shared scalar conversion paths",
+      "weaknesses": ["CWE-20"],
+      "published": "2017-04-09T14:59:00.387",
+      "issue": "Crafted image data could force shared conversions outside the representable range of short.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-7600",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "shared scalar conversion paths",
+      "weaknesses": ["CWE-20"],
+      "published": "2017-04-09T14:59:00.417",
+      "issue": "Crafted image data could force shared conversions outside the representable range of unsigned char.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-7601",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "shared bit-shift logic",
+      "weaknesses": ["CWE-20"],
+      "published": "2017-04-09T14:59:00.433",
+      "issue": "Crafted values could drive a shift exponent beyond the width of a 64-bit long in shared bit-manipulation logic.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-7602",
+      "category": "input_validation_and_arithmetic",
+      "rust_relevance": "high",
+      "component_hint": "shared arithmetic paths",
+      "weaknesses": ["CWE-190"],
+      "published": "2017-04-09T14:59:00.467",
+      "issue": "Crafted input could trigger signed integer overflow in shared libtiff arithmetic.",
+      "why_it_matters_for_rust": "This is a checked-arithmetic and representability issue; the Rust port must make range and shift invariants explicit instead of relying on implicit integer behavior."
+    },
+    {
+      "id": "CVE-2017-18013",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFPrintDirectory in tif_print.c",
+      "weaknesses": ["CWE-476"],
+      "published": "2018-01-01T08:29:00.470",
+      "issue": "TIFFPrintDirectory had a crafted-input path to absent-state dereference during metadata printing.",
+      "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
+    },
+    {
+      "id": "CVE-2018-7456",
+      "category": "null_state_handling",
+      "rust_relevance": "medium",
+      "component_hint": "TIFFPrintDirectory in tif_print.c",
+      "weaknesses": ["CWE-476"],
+      "published": "2018-02-24T06:29:00.630",
+      "issue": "An earlier TIFFPrintDirectory code path also dereferenced absent metadata state on crafted input.",
       "why_it_matters_for_rust": "Rust removes raw null dereferences, but the same malformed-state assumption can still reappear as unwrap, panic, or incorrect error propagation."
     }
   ]
