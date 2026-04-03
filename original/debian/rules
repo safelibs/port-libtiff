@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Enable all hardening options.
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic -D_REENTRANT
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+# Variables used by cdbs
+DEB_COMPRESS_EXCLUDE = html
+
+override_dh_auto_configure:
+	cp $(CURDIR)/debian/custom_dir_EXIF_GPS.tiff \
+		$(CURDIR)/test/images/
+	dh_auto_configure -- \
+	  --with-docdir="\$${prefix}/share/doc/libtiff-doc" \
+	  --libdir="\$${prefix}/lib/$(DEB_HOST_MULTIARCH)" \
+	  --includedir="\$${prefix}/include/$(DEB_HOST_MULTIARCH)" \
+	  --enable-ld-version-script \
+	  --enable-docs
+
+override_dh_install:
+	dh_install -X.la
+	# tiffgt is in libtiff-opengl so libtiff-tools doesn't have to have
+	# all the X and opengl dependencies.
+	$(RM) debian/libtiff-tools/usr/bin/tiffgt
+	$(RM) debian/libtiff-tools/usr/share/man/man1/tiffgt.1*
+
+override_dh_missing:
+	dh_missing --list-missing
+
+%:
+	dh $@ --with autoreconf
+
+.PHONY: override_dh_auto_configure override_dh_install override_dh_missing
