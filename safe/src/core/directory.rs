@@ -2895,7 +2895,12 @@ unsafe fn safe_tiff_set_field_marshaled_impl(
         return 0;
     }
 
-    if safe_tiff_codec_set_field_marshaled(tif, normalized_tag, storage_type, count, data) != 0 {
+    let codec_result =
+        safe_tiff_codec_set_field_marshaled(tif, normalized_tag, storage_type, count, data);
+    if codec_result < 0 {
+        return 0;
+    }
+    if codec_result != 0 {
         return 1;
     }
 

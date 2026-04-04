@@ -26,7 +26,7 @@ macro_rules! field {
     };
 }
 
-pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 170] = [
+pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 179] = [
     field!(254, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 5, 1, 0, "SubfileType", std::ptr::null_mut()),
     field!(255, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 0, 1, 0, "OldSubfileType", std::ptr::null_mut()),
     field!(256, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 1, 0, 0, "ImageWidth", std::ptr::null_mut()),
@@ -172,10 +172,19 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 170] = [
     field!(50832, -1, -1, TIFF_SRATIONAL, 0, TIFF_SETGET_C16_FLOAT, TIFF_SETGET_UNDEFINED, 65, 1, 1, "AsShotPreProfileMatrix", std::ptr::null_mut()),
     field!(50833, -1, -1, TIFF_UNDEFINED, 0, TIFF_SETGET_C16_UINT8, TIFF_SETGET_UNDEFINED, 65, 1, 1, "CurrentICCProfile", std::ptr::null_mut()),
     field!(50834, -1, -1, TIFF_SRATIONAL, 0, TIFF_SETGET_C16_FLOAT, TIFF_SETGET_UNDEFINED, 65, 1, 1, "CurrentPreProfileMatrix", std::ptr::null_mut()),
+    field!(50674, -3, -3, TIFF_LONG, 0, TIFF_SETGET_C32_UINT32, TIFF_SETGET_UNDEFINED, 65, 0, 1, "LercParameters", std::ptr::null_mut()),
     field!(65563, 0, 0, TIFF_SHORT, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 0, 1, 0, "PerSample", std::ptr::null_mut()),
     field!(65536, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 69, 1, 0, "FaxMode", std::ptr::null_mut()),
     field!(65557, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 70, 1, 0, "ZipQuality", std::ptr::null_mut()),
+    field!(65562, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 77, 1, 0, "LZMA2 Compression Preset", std::ptr::null_mut()),
+    field!(65564, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 78, 1, 0, "ZSTD compression_level", std::ptr::null_mut()),
+    field!(65565, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 79, 0, 0, "LercVersion", std::ptr::null_mut()),
+    field!(65566, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 80, 0, 0, "LercAdditionalCompression", std::ptr::null_mut()),
+    field!(65567, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_DOUBLE, TIFF_SETGET_UNDEFINED, 81, 1, 0, "LercMaximumError", std::ptr::null_mut()),
+    field!(65568, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 82, 1, 0, "WEBP quality", std::ptr::null_mut()),
+    field!(65569, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 83, 1, 0, "WEBP lossless/lossy", std::ptr::null_mut()),
     field!(65570, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 71, 1, 0, "DeflateSubCodec", std::ptr::null_mut()),
+    field!(65571, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 84, 1, 0, "WEBP exact lossless", std::ptr::null_mut()),
     field!(346, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 0, "Indexed", std::ptr::null_mut()),
     field!(400, 1, 1, TIFF_IFD8, 0, TIFF_SETGET_IFD8, TIFF_SETGET_UNDEFINED, 65, 1, 0, "GlobalParametersIFD", std::ptr::null_mut()),
     field!(401, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 65, 1, 0, "ProfileType", std::ptr::null_mut()),

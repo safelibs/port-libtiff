@@ -33,10 +33,23 @@ set(HAVE_GETOPT TRUE CACHE BOOL "Use the host getopt implementation" FORCE)
 set(JPEG_SUPPORT ON)
 set(OJPEG_SUPPORT ON)
 set(OPENGL_SUPPORT OFF)
-set(WEBP_SUPPORT OFF)
+set(WEBP_SUPPORT ON)
 set(EMSCRIPTEN OFF)
 
+find_package(PkgConfig REQUIRED)
 find_package(JPEG REQUIRED)
+pkg_check_modules(LERC REQUIRED IMPORTED_TARGET Lerc)
+pkg_check_modules(LIBLZMA REQUIRED IMPORTED_TARGET liblzma)
+pkg_check_modules(WEBP REQUIRED IMPORTED_TARGET libwebp)
+pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
+find_path(JBIG_INCLUDE_DIR NAMES jbig.h REQUIRED)
+find_library(JBIG_LIBRARY NAMES jbig REQUIRED)
+add_library(JBIG::JBIG UNKNOWN IMPORTED)
+set_target_properties(
+  JBIG::JBIG
+  PROPERTIES
+    IMPORTED_LOCATION "${JBIG_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${JBIG_INCLUDE_DIR}")
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
 
@@ -126,14 +139,28 @@ function(safe_mirror_shared_library_for_verifier target)
   endif()
 endfunction()
 
-add_library(tiff SHARED capi/tiff_placeholder.c capi/jpeg_helper.c)
+add_library(
+  tiff SHARED
+  capi/tiff_placeholder.c
+  capi/jpeg_helper.c
+  capi/external_codec_helper.c)
 target_include_directories(
   tiff
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libtiff>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_link_libraries(tiff PRIVATE tiff_safe_core JPEG::JPEG CMath::CMath)
+target_link_libraries(
+  tiff
+  PRIVATE
+    tiff_safe_core
+    JPEG::JPEG
+    JBIG::JBIG
+    PkgConfig::LERC
+    PkgConfig::LIBLZMA
+    PkgConfig::WEBP
+    PkgConfig::ZSTD
+    CMath::CMath)
 set_target_properties(
   tiff
   PROPERTIES

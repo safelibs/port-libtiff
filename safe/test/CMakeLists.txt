@@ -210,6 +210,11 @@ target_sources(api_field_registry_smoke PRIVATE api_field_registry_smoke.c)
 target_link_libraries(api_field_registry_smoke PRIVATE tiff tiff_port)
 list(APPEND simple_tests api_field_registry_smoke)
 
+add_executable(api_codec_smoke ../placeholder.h)
+target_sources(api_codec_smoke PRIVATE api_codec_smoke.c)
+target_link_libraries(api_codec_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_codec_smoke)
+
 add_executable(api_strile_smoke ../placeholder.h)
 target_sources(api_strile_smoke PRIVATE api_strile_smoke.c)
 target_link_libraries(api_strile_smoke PRIVATE tiff tiff_port)
@@ -221,13 +226,24 @@ target_sources(
   PRIVATE
     public_abi_layout_smoke.c
     abi_layout_probe_bridge.c
-    ../capi/jpeg_helper.c)
+    ../capi/jpeg_helper.c
+    ../capi/external_codec_helper.c)
 target_include_directories(
   public_abi_layout_smoke
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../libtiff)
-target_link_libraries(public_abi_layout_smoke PRIVATE tiff_safe_core JPEG::JPEG CMath::CMath)
+target_link_libraries(
+  public_abi_layout_smoke
+  PRIVATE
+    tiff_safe_core
+    JPEG::JPEG
+    JBIG::JBIG
+    PkgConfig::LERC
+    PkgConfig::LIBLZMA
+    PkgConfig::WEBP
+    PkgConfig::ZSTD
+    CMath::CMath)
 list(APPEND simple_tests public_abi_layout_smoke)
 
 add_executable(test_open_options ../placeholder.h)
