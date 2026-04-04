@@ -253,6 +253,7 @@ int main(void)
     uint32_t anon_count = 0;
     const uint32_t *anon_values = NULL;
     float xres = 123.0f;
+    uint16_t compression = 0;
     uint16_t fillorder = 0;
     uint16_t extrasamples = 99;
     const uint16_t *sampleinfo = (const uint16_t *)1;
@@ -352,6 +353,13 @@ int main(void)
            "zero-count ASCII tag should still be readable");
     expect(page_name != NULL && page_name[0] == '\0',
            "zero-count ASCII tag should become an empty string");
+    expect(TIFFGetField(tif, TIFFTAG_COMPRESSION, &compression) == 1,
+           "default Compression should be readable");
+    expect(compression == COMPRESSION_NONE,
+           "unexpected default Compression value");
+    capture_print_directory(tif, 0, print_buffer, sizeof(print_buffer));
+    expect(strstr(print_buffer, "Compression:") != NULL,
+           "missing default Compression print output");
     TIFFClose(tif);
     unlink(path_zero_ascii);
 

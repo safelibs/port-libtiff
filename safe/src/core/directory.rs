@@ -15,11 +15,14 @@ const ORIENTATION_TOPLEFT: u16 = 1;
 const PLANARCONFIG_CONTIG: u16 = 1;
 const THRESHHOLD_BILEVEL: u16 = 1;
 const SAMPLEFORMAT_UINT: u16 = 1;
+const COMPRESSION_NONE: u16 = 1;
+const EXTRASAMPLE_ASSOCALPHA: u16 = 1;
 const INKSET_CMYK: u16 = 1;
 const YCBCRPOSITION_CENTERED: u16 = 1;
 
 const TAG_SUBFILETYPE: u32 = 254;
 const TAG_BITSPERSAMPLE: u32 = 258;
+const TAG_COMPRESSION: u32 = 259;
 const TAG_THRESHHOLDING: u32 = 263;
 const TAG_FILLORDER: u32 = 266;
 const TAG_ORIENTATION: u32 = 274;
@@ -33,10 +36,14 @@ const TAG_WHITEPOINT: u32 = 318;
 const TAG_TILEWIDTH: u32 = 322;
 const TAG_TILELENGTH: u32 = 323;
 const TAG_SUBIFD: u32 = 330;
+const TAG_INKSET: u32 = 332;
 const TAG_INKNAMES: u32 = 333;
 const TAG_NUMBEROFINKS: u32 = 334;
+const TAG_DOTRANGE: u32 = 336;
 const TAG_EXTRASAMPLES: u32 = 338;
 const TAG_SAMPLEFORMAT: u32 = 339;
+const TAG_MATTEING: u32 = 32995;
+const TAG_DATATYPE: u32 = 32996;
 const TAG_IMAGEDEPTH: u32 = 32997;
 const TAG_TILEDEPTH: u32 = 32998;
 const TAG_YCBCRSUBSAMPLING: u32 = 530;
@@ -941,6 +948,15 @@ unsafe fn load_directory(
         tags.push(parsed_tag);
     }
 
+    if !tags.iter().any(|entry| entry.tag == TAG_COMPRESSION) {
+        tags.push(ParsedTag {
+            tag: TAG_COMPRESSION,
+            canonical_type: TIFFDataType::TIFF_SHORT,
+            count: 1,
+            values: StoredValues::U16(Box::<[u16]>::from([COMPRESSION_NONE])),
+        });
+    }
+
     tags.sort_by_key(|entry| entry.tag);
     Some(CurrentDirectory {
         kind,
@@ -1373,6 +1389,25 @@ unsafe fn default_tag_value(
             _ => None,
         })
         .unwrap_or(1);
+    let sample_format = current
+        .and_then(|dir| dir.find_tag(TAG_SAMPLEFORMAT))
+        .and_then(|entry| match &entry.values {
+            StoredValues::U16(values) => values.first().copied(),
+            _ => None,
+        })
+        .unwrap_or(SAMPLEFORMAT_UINT);
+    let extrasample_values = current.and_then(|dir| dir.find_tag(TAG_EXTRASAMPLES)).and_then(
+        |entry| match &entry.values {
+            StoredValues::U16(values) => Some(values),
+            _ => None,
+        },
+    );
+    let extrasamples = extrasample_values.map(|values| values.len()).unwrap_or(0);
+    let matteing = (extrasamples == 1)
+        && extrasample_values
+            .and_then(|values| values.first().copied())
+            .map(|value| value == EXTRASAMPLE_ASSOCALPHA)
+            .unwrap_or(false);
 
     let (type_, count, data) = match tag {
         TAG_SUBFILETYPE => {
@@ -1381,6 +1416,10 @@ unsafe fn default_tag_value(
         }
         TAG_BITSPERSAMPLE => {
             let (data, count) = cache_u16_values(tif, vec![1]);
+            (TIFFDataType::TIFF_SHORT, count, data)
+        }
+        TAG_COMPRESSION => {
+            let (data, count) = cache_u16_values(tif, vec![COMPRESSION_NONE]);
             (TIFFDataType::TIFF_SHORT, count, data)
         }
         TAG_THRESHHOLDING => {
@@ -1430,8 +1469,27 @@ unsafe fn default_tag_value(
             let (data, count) = cache_u16_values(tif, vec![4]);
             (TIFFDataType::TIFF_SHORT, count, data)
         }
+        TAG_DOTRANGE => {
+            let max = if bits_per_sample == 0 {
+                0
+            } else if bits_per_sample <= 16 {
+                (1u32 << bits_per_sample) as u16 - 1
+            } else {
+                u16::MAX
+            };
+            let (data, count) = cache_u16_values(tif, vec![0, max]);
+            (TIFFDataType::TIFF_SHORT, count, data)
+        }
         TAG_EXTRASAMPLES => {
             (TIFFDataType::TIFF_SHORT, 0, ptr::null())
+        }
+        TAG_MATTEING => {
+            let (data, count) = cache_u16_values(tif, vec![matteing as u16]);
+            (TIFFDataType::TIFF_SHORT, count, data)
+        }
+        TAG_DATATYPE => {
+            let (data, count) = cache_u16_values(tif, vec![sample_format.saturating_sub(1)]);
+            (TIFFDataType::TIFF_SHORT, count, data)
         }
         TAG_TILEDEPTH => {
             let (data, count) = cache_u32_values(tif, vec![1]);
@@ -1469,7 +1527,7 @@ unsafe fn default_tag_value(
             let (data, count) = cache_u8_values(tif, vec![0]);
             (TIFFDataType::TIFF_ASCII, count, data)
         }
-        332 => {
+        TAG_INKSET => {
             let (data, count) = cache_u16_values(tif, vec![INKSET_CMYK]);
             (TIFFDataType::TIFF_SHORT, count, data)
         }

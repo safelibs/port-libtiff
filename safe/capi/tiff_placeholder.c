@@ -254,9 +254,11 @@ static int safe_vget_field_impl(TIFF *tif, uint32_t tag, va_list ap,
         case TIFFTAG_SAMPLESPERPIXEL:
         case TIFFTAG_MINSAMPLEVALUE:
         case TIFFTAG_MAXSAMPLEVALUE:
+        case TIFFTAG_MATTEING:
         case TIFFTAG_PLANARCONFIG:
         case TIFFTAG_RESOLUTIONUNIT:
         case TIFFTAG_NUMBEROFINKS:
+        case TIFFTAG_DATATYPE:
         case TIFFTAG_SAMPLEFORMAT:
         case TIFFTAG_YCBCRPOSITIONING:
             return safe_copy_u16(ap, data);
@@ -276,6 +278,7 @@ static int safe_vget_field_impl(TIFF *tif, uint32_t tag, va_list ap,
 
         case TIFFTAG_PAGENUMBER:
         case TIFFTAG_HALFTONEHINTS:
+        case TIFFTAG_DOTRANGE:
         case TIFFTAG_YCBCRSUBSAMPLING:
         {
             uint16_t *first = va_arg(ap, uint16_t *);
@@ -348,17 +351,37 @@ static int safe_vget_field_impl(TIFF *tif, uint32_t tag, va_list ap,
         case TIFFTAG_TRANSFERFUNCTION:
         {
             const uint16_t **red = va_arg(ap, const uint16_t **);
-            const uint16_t **green = va_arg(ap, const uint16_t **);
-            const uint16_t **blue = va_arg(ap, const uint16_t **);
+            const uint16_t **green = NULL;
+            const uint16_t **blue = NULL;
             const uint16_t *values = (const uint16_t *)data;
-            if (type != TIFF_SHORT || count == 0)
+            uint16_t samplesperpixel = 1;
+            uint16_t extrasamples = 0;
+            const uint16_t *sampleinfo = NULL;
+            uint16_t color_planes;
+            uint64_t plane_count;
+            if (type != TIFF_SHORT || count == 0 || red == NULL)
                 return 0;
-            if (red != NULL)
-                *red = values;
-            if (green != NULL)
-                *green = (count % 3 == 0) ? values + (count / 3) : NULL;
-            if (blue != NULL)
-                *blue = (count % 3 == 0) ? values + ((count / 3) * 2) : NULL;
+            TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel);
+            TIFFGetFieldDefaulted(tif, TIFFTAG_EXTRASAMPLES, &extrasamples,
+                                  &sampleinfo);
+            color_planes = (samplesperpixel > extrasamples)
+                               ? (uint16_t)(samplesperpixel - extrasamples)
+                               : samplesperpixel;
+            if (color_planes == 0)
+                color_planes = 1;
+            plane_count = (color_planes > 1) ? 3 : 1;
+            if (count % plane_count != 0)
+                return 0;
+            *red = values;
+            if (color_planes > 1)
+            {
+                green = va_arg(ap, const uint16_t **);
+                blue = va_arg(ap, const uint16_t **);
+                if (green != NULL)
+                    *green = values + (count / 3);
+                if (blue != NULL)
+                    *blue = values + ((count / 3) * 2);
+            }
             return 1;
         }
 
