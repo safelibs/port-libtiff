@@ -184,6 +184,16 @@ target_sources(testtypes PRIVATE testtypes.c)
 target_link_libraries(testtypes PRIVATE tiff tiff_port)
 list(APPEND simple_tests testtypes)
 
+add_executable(api_handle_smoke ../placeholder.h)
+target_sources(api_handle_smoke PRIVATE api_handle_smoke.c)
+target_link_libraries(api_handle_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_handle_smoke)
+
+add_executable(api_open_mode_smoke ../placeholder.h)
+target_sources(api_open_mode_smoke PRIVATE api_open_mode_smoke.c)
+target_link_libraries(api_open_mode_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_open_mode_smoke)
+
 add_executable(test_open_options ../placeholder.h)
 target_sources(test_open_options PRIVATE test_open_options.c)
 target_link_libraries(test_open_options PRIVATE tiff tiff_port)

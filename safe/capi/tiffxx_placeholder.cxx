@@ -1,4 +1,3 @@
-extern "C" int tiff_safe_core_placeholder(void);
+extern "C" const char *TIFFGetVersion(void);
 
-int tiff_safe_cxx_placeholder() { return tiff_safe_core_placeholder(); }
-
+int tiff_safe_cxx_placeholder() { return TIFFGetVersion() != nullptr; }
