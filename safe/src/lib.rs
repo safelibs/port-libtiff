@@ -1,3 +1,12 @@
+mod abi;
+mod core;
+
+pub use abi::{
+    TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldArrayType, TIFFFieldInfo,
+    TIFFSetGetFieldType, TIFFTagMethods,
+};
+
+use crate::core::FieldRegistryState;
 use libc::{c_char, c_int, c_void, off_t, size_t, ssize_t};
 use std::ffi::{CStr, CString};
 use std::io;
@@ -95,6 +104,7 @@ struct TiffHandleInner {
     current_diroff: Toff,
     next_diroff: Toff,
     owned_name: *mut c_char,
+    field_registry: FieldRegistryState,
 }
 
 #[repr(C)]
@@ -107,6 +117,7 @@ pub struct TIFFOpenOptions {
     max_single_mem_alloc: Tmsize,
 }
 
+#[allow(improper_ctypes)]
 unsafe extern "C" {
     fn safe_tiff_emit_error_message(tif: *mut TIFF, module: *const c_char, message: *const c_char);
     fn safe_tiff_emit_warning_message(
@@ -331,8 +342,10 @@ unsafe fn destroy_handle_allocation(tif: *mut TIFF) {
     }
     let inner = tif_inner(tif);
     if !inner.is_null() {
-        if !(*inner).owned_name.is_null() {
-            _TIFFfree((*inner).owned_name.cast::<c_void>());
+        let owned_name = (*inner).owned_name;
+        ptr::drop_in_place(inner);
+        if !owned_name.is_null() {
+            _TIFFfree(owned_name.cast::<c_void>());
         }
         _TIFFfree(inner.cast::<c_void>());
     }
@@ -402,8 +415,8 @@ unsafe fn map_contents(tif: *mut TIFF) {
     }
 }
 
-unsafe fn default_directory(_: *mut TIFF) -> bool {
-    true
+unsafe fn default_directory(tif: *mut TIFF) -> bool {
+    crate::core::reset_default_directory(tif)
 }
 
 unsafe fn parse_open_mode(
@@ -980,6 +993,7 @@ unsafe fn make_handle(
         current_diroff: 0,
         next_diroff: 0,
         owned_name: name_owner,
+        field_registry: FieldRegistryState::default(),
     });
 
     ptr::write(tif, TIFF {
@@ -1051,6 +1065,10 @@ unsafe fn make_handle(
     }
 
     apply_mode_modifiers(tif, &mode, &name, open_flags);
+    if !crate::core::initialize_field_registry(tif) {
+        destroy_handle_allocation(tif);
+        return ptr::null_mut();
+    }
 
     if finalize_open(tif, &mode, open_flags) {
         tif

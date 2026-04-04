@@ -61,6 +61,13 @@ endif()
 set(SAFE_RUST_STATICLIB
     "${SAFE_CARGO_TARGET_DIR}/${SAFE_CARGO_PROFILE}/libtiff_safe_core.a")
 
+set(SAFE_RUST_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/abi/mod.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/mod.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_registry.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_tables.rs)
+
 add_custom_command(
   OUTPUT "${SAFE_RUST_STATICLIB}"
   COMMAND
@@ -70,7 +77,7 @@ add_custom_command(
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib.rs
+    ${SAFE_RUST_SOURCES}
   COMMENT "Building the safe Rust staticlib"
   VERBATIM)
 

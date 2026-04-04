@@ -194,6 +194,21 @@ target_sources(api_open_mode_smoke PRIVATE api_open_mode_smoke.c)
 target_link_libraries(api_open_mode_smoke PRIVATE tiff tiff_port)
 list(APPEND simple_tests api_open_mode_smoke)
 
+add_executable(api_field_registry_smoke ../placeholder.h)
+target_sources(api_field_registry_smoke PRIVATE api_field_registry_smoke.c)
+target_link_libraries(api_field_registry_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_field_registry_smoke)
+
+add_executable(public_abi_layout_smoke ../placeholder.h)
+target_sources(public_abi_layout_smoke PRIVATE public_abi_layout_smoke.c abi_layout_probe_bridge.c)
+target_include_directories(
+  public_abi_layout_smoke
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libtiff)
+target_link_libraries(public_abi_layout_smoke PRIVATE tiff_safe_core)
+list(APPEND simple_tests public_abi_layout_smoke)
+
 add_executable(test_open_options ../placeholder.h)
 target_sources(test_open_options PRIVATE test_open_options.c)
 target_link_libraries(test_open_options PRIVATE tiff tiff_port)
