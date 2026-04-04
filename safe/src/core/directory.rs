@@ -12,8 +12,8 @@ use crate::{
 use libc::{c_int, c_void, ssize_t};
 use std::collections::HashSet;
 use std::mem::size_of;
-use std::slice;
 use std::ptr;
+use std::slice;
 
 const FILLORDER_MSB2LSB_U16: u16 = 1;
 const FILLORDER_LSB2MSB_U16: u16 = 2;
@@ -67,6 +67,10 @@ const TAG_TILEDEPTH: u32 = 32998;
 const TAG_YCBCRSUBSAMPLING: u32 = 530;
 const TAG_YCBCRPOSITIONING: u32 = 531;
 
+const TIFF_DIRTYDIRECT: u32 = 0x00008;
+const TIFF_BEENWRITING: u32 = 0x00040;
+const TIFF_DIRTYSTRIP: u32 = 0x200000;
+
 static DEFAULT_WHITEPOINT: [f32; 2] = [0.34570292, 0.3585386];
 static DEFAULT_YCBCR_COEFFICIENTS: [f32; 3] = [0.299, 0.587, 0.114];
 static DEFAULT_REFERENCE_BLACK_WHITE: [f32; 6] = [0.0, 255.0, 128.0, 255.0, 128.0, 255.0];
@@ -85,6 +89,7 @@ pub(crate) struct DirectoryState {
     main_next_offsets: Vec<u64>,
     main_complete: bool,
     subifd_seed_offsets: Vec<u64>,
+    pending_subifd: Option<PendingSubifdWrite>,
     current: Option<CurrentDirectory>,
     active_chain: ActiveChain,
     default_cache: DefaultCache,
@@ -110,6 +115,13 @@ struct CurrentDirectory {
     offset: u64,
     next_offset: u64,
     tags: Vec<ParsedTag>,
+}
+
+struct PendingSubifdWrite {
+    parent_offset: u64,
+    offsets: Vec<u64>,
+    next_index: usize,
+    last_offset: u64,
 }
 
 #[derive(Clone)]
@@ -790,7 +802,7 @@ unsafe fn parse_tag_value(
             count,
             big_endian,
         )?),
-        x if x == TIFFDataType::TIFF_RATIONAL.0 || x == TIFFDataType::TIFF_FLOAT.0 => {
+        x if x == TIFFDataType::TIFF_RATIONAL.0 || x == TIFFDataType::TIFF_SRATIONAL.0 => {
             let rational_type = canonical_rational_type(tif, tag, canonical_type);
             if rational_type.0 == TIFFDataType::TIFF_DOUBLE.0 {
                 StoredValues::F64(convert_to_f64_array(
@@ -814,7 +826,16 @@ unsafe fn parse_tag_value(
                 )?)
             }
         }
-        x if x == TIFFDataType::TIFF_SRATIONAL.0 || x == TIFFDataType::TIFF_DOUBLE.0 => {
+        x if x == TIFFDataType::TIFF_FLOAT.0 => StoredValues::F32(convert_to_f32_array(
+            tif,
+            module_name,
+            tag,
+            actual_type,
+            payload,
+            count,
+            big_endian,
+        )?),
+        x if x == TIFFDataType::TIFF_DOUBLE.0 => {
             StoredValues::F64(convert_to_f64_array(
                 tif,
                 module_name,
@@ -833,7 +854,9 @@ unsafe fn parse_tag_value(
 
     Some(ParsedTag {
         tag,
-        canonical_type: if canonical_type.0 == TIFFDataType::TIFF_RATIONAL.0 {
+        canonical_type: if canonical_type.0 == TIFFDataType::TIFF_RATIONAL.0
+            || canonical_type.0 == TIFFDataType::TIFF_SRATIONAL.0
+        {
             canonical_rational_type(tif, tag, canonical_type)
         } else {
             canonical_type
@@ -1739,8 +1762,19 @@ unsafe fn initialize_writable_directory(tif: *mut TIFF, kind: DirectoryKind) -> 
     if matches!(kind, DirectoryKind::Main) {
         directory_state_mut(tif).first_ifd_offset = 0;
     }
+    if !matches!(kind, DirectoryKind::SubIfd) {
+        directory_state_mut(tif).pending_subifd = None;
+    }
+    (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
     sync_fillorder_flags(tif);
     true
+}
+
+unsafe fn subifd_count_from_directory(current: &CurrentDirectory) -> usize {
+    current
+        .find_tag(TAG_SUBIFD)
+        .map(|entry| entry.count as usize)
+        .unwrap_or(0)
 }
 
 unsafe fn ensure_writable_directory(tif: *mut TIFF) -> bool {
@@ -1792,6 +1826,7 @@ unsafe fn upsert_current_tag(tif: *mut TIFF, parsed: ParsedTag, record_custom: b
     if record_custom {
         safe_tiff_record_custom_tag(tif, tag);
     }
+    (*tif).tif_flags |= TIFF_DIRTYDIRECT;
     configure_current_directory_flags(tif, current);
     sync_fillorder_flags(tif);
     1
@@ -1805,6 +1840,7 @@ unsafe fn remove_current_tag(tif: *mut TIFF, tag: u32, remove_custom: bool) -> c
     if remove_custom {
         safe_tiff_remove_custom_tag(tif, tag);
     }
+    (*tif).tif_flags |= TIFF_DIRTYDIRECT;
     configure_current_directory_flags(tif, current);
     sync_fillorder_flags(tif);
     1
@@ -3490,6 +3526,51 @@ unsafe fn refresh_main_chain_head(tif: *mut TIFF, module_name: &str) -> bool {
     true
 }
 
+unsafe fn directory_next_link_location(
+    tif: *mut TIFF,
+    dir_offset: u64,
+    module_name: &str,
+) -> Option<u64> {
+    let fmt = directory_encoding(tif, module_name)?;
+    let mut count_bytes = [0u8; 8];
+    if !read_exact_at(tif, dir_offset, &mut count_bytes[..fmt.count_size]) {
+        emit_error_message(tif, module_name, "Error fetching directory count");
+        return None;
+    }
+    let entry_count = if fmt.classic {
+        parse_u16(&count_bytes[..2], fmt.big_endian) as u64
+    } else {
+        parse_u64(&count_bytes[..8], fmt.big_endian)
+    };
+    let entries_size = entry_count.checked_mul(fmt.entry_size as u64)?;
+    dir_offset
+        .checked_add(fmt.count_size as u64)?
+        .checked_add(entries_size)
+}
+
+unsafe fn rewrite_directory_next_offset(
+    tif: *mut TIFF,
+    module_name: &str,
+    dir_offset: u64,
+    next_offset: u64,
+) -> bool {
+    let Some(fmt) = directory_encoding(tif, module_name) else {
+        return false;
+    };
+    let Some(link_location) = directory_next_link_location(tif, dir_offset, module_name) else {
+        emit_error_message(tif, module_name, "Directory next-link location overflowed");
+        return false;
+    };
+    write_offset_value_at(
+        tif,
+        link_location,
+        fmt.next_size,
+        next_offset,
+        module_name,
+        "directory next-link",
+    )
+}
+
 unsafe fn encode_marshaled_values_for_type(
     tif: *mut TIFF,
     module_name: &str,
@@ -3580,6 +3661,7 @@ pub unsafe extern "C" fn TIFFWriteCustomDirectory(
     if !pdiroff.is_null() {
         *pdiroff = dir_offset;
     }
+    (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
     1
 }
 
@@ -3599,6 +3681,58 @@ pub unsafe extern "C" fn TIFFWriteDirectory(tif: *mut TIFF) -> c_int {
         emit_error_message(tif, module_name, "No directory is loaded for writing");
         return 0;
     };
+    if matches!(current.kind, DirectoryKind::SubIfd) {
+        let Some(dir_offset) = write_standalone_directory(tif, module_name, &current, 0) else {
+            return 0;
+        };
+        let (parent_offset, previous_offset, done, offsets) = {
+            let state = directory_state_mut(tif);
+            let Some(pending) = state.pending_subifd.as_mut() else {
+                emit_error_message(tif, module_name, "No pending SubIFD write sequence is active");
+                return 0;
+            };
+            if pending.next_index >= pending.offsets.len() {
+                emit_error_message(tif, module_name, "SubIFD write sequence is already complete");
+                return 0;
+            }
+            let previous_offset = pending.last_offset;
+            pending.offsets[pending.next_index] = dir_offset;
+            pending.next_index += 1;
+            pending.last_offset = dir_offset;
+            (
+                pending.parent_offset,
+                previous_offset,
+                pending.next_index == pending.offsets.len(),
+                pending.offsets.clone(),
+            )
+        };
+        if previous_offset != 0
+            && !rewrite_directory_next_offset(tif, module_name, previous_offset, dir_offset)
+        {
+            return 0;
+        }
+        (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
+        if done {
+            if rewrite_field_in_directory_at_offset(
+                tif,
+                module_name,
+                parent_offset,
+                TAG_SUBIFD as u16,
+                TIFFDataType::TIFF_IFD8,
+                offsets.len() as u64,
+                offsets.as_ptr().cast(),
+            ) == 0
+            {
+                return 0;
+            }
+            directory_state_mut(tif).pending_subifd = None;
+            if !initialize_writable_directory(tif, DirectoryKind::Main) {
+                return 0;
+            }
+            return refresh_main_chain_head(tif, module_name) as c_int;
+        }
+        return initialize_writable_directory(tif, DirectoryKind::SubIfd) as c_int;
+    }
     if !matches!(current.kind, DirectoryKind::Main) {
         emit_error_message(
             tif,
@@ -3630,10 +3764,34 @@ pub unsafe extern "C" fn TIFFWriteDirectory(tif: *mut TIFF) -> c_int {
     if !refresh_main_chain_head(tif, module_name) {
         return 0;
     }
-    if !initialize_writable_directory(tif, DirectoryKind::Main) {
+    (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
+    let subifd_count = subifd_count_from_directory(&current);
+    {
+        let state = directory_state_mut(tif);
+        state.pending_subifd = if subifd_count == 0 {
+            None
+        } else {
+            Some(PendingSubifdWrite {
+                parent_offset: dir_offset,
+                offsets: vec![0; subifd_count],
+                next_index: 0,
+                last_offset: 0,
+            })
+        };
+    }
+    let next_kind = if subifd_count == 0 {
+        DirectoryKind::Main
+    } else {
+        DirectoryKind::SubIfd
+    };
+    if !initialize_writable_directory(tif, next_kind) {
         return 0;
     }
-    refresh_main_chain_head(tif, module_name) as c_int
+    if matches!(next_kind, DirectoryKind::Main) {
+        refresh_main_chain_head(tif, module_name) as c_int
+    } else {
+        1
+    }
 }
 
 #[no_mangle]
@@ -3685,6 +3843,7 @@ pub unsafe extern "C" fn TIFFCheckpointDirectory(tif: *mut TIFF) -> c_int {
         return 0;
     }
     update_current_directory_location(tif, dir_offset, 0);
+    (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
     refresh_main_chain_head(tif, module_name) as c_int
 }
 
@@ -3738,6 +3897,7 @@ pub unsafe extern "C" fn TIFFRewriteDirectory(tif: *mut TIFF) -> c_int {
         return 0;
     }
     update_current_directory_location(tif, dir_offset, current.next_offset);
+    (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
     refresh_main_chain_head(tif, module_name) as c_int
 }
 
@@ -3785,32 +3945,15 @@ pub unsafe extern "C" fn TIFFUnlinkDirectory(tif: *mut TIFF, dirnum: u32) -> c_i
     refresh_main_chain_head(tif, module_name) as c_int
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn _TIFFRewriteField(
+unsafe fn rewrite_field_in_directory_at_offset(
     tif: *mut TIFF,
+    module_name: &str,
+    dir_offset: u64,
     tag: u16,
     in_datatype: TIFFDataType,
-    count: ssize_t,
-    data: *mut c_void,
+    count: u64,
+    data: *const c_void,
 ) -> c_int {
-    let module_name = "_TIFFRewriteField";
-    if tif.is_null() {
-        return 0;
-    }
-    if count < 0 {
-        emit_error_message(tif, module_name, "Negative element count is invalid");
-        return 0;
-    }
-    let dir_offset = (*tif_inner(tif)).current_diroff;
-    if dir_offset == 0 {
-        emit_error_message(
-            tif,
-            module_name,
-            "Attempt to rewrite a field on a directory not already on disk",
-        );
-        return 0;
-    }
-
     let Some(fmt) = directory_encoding(tif, module_name) else {
         return 0;
     };
@@ -3867,8 +4010,8 @@ pub unsafe extern "C" fn _TIFFRewriteField(
         tag as u32,
         target_type,
         in_datatype,
-        count as u64,
-        data.cast_const(),
+        count,
+        data,
     ) else {
         return 0;
     };
@@ -3907,7 +4050,10 @@ pub unsafe extern "C" fn _TIFFRewriteField(
                 emit_error_message(
                     tif,
                     module_name,
-                    format!("Tag {} payload offset {} exceeds Classic TIFF range", tag, payload_offset),
+                    format!(
+                        "Tag {} payload offset {} exceeds Classic TIFF range",
+                        tag, payload_offset
+                    ),
                 );
                 return 0;
             };
@@ -3927,4 +4073,40 @@ pub unsafe extern "C" fn _TIFFRewriteField(
         return 0;
     }
     1
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn _TIFFRewriteField(
+    tif: *mut TIFF,
+    tag: u16,
+    in_datatype: TIFFDataType,
+    count: ssize_t,
+    data: *mut c_void,
+) -> c_int {
+    let module_name = "_TIFFRewriteField";
+    if tif.is_null() {
+        return 0;
+    }
+    if count < 0 {
+        emit_error_message(tif, module_name, "Negative element count is invalid");
+        return 0;
+    }
+    let dir_offset = (*tif_inner(tif)).current_diroff;
+    if dir_offset == 0 {
+        emit_error_message(
+            tif,
+            module_name,
+            "Attempt to rewrite a field on a directory not already on disk",
+        );
+        return 0;
+    }
+    rewrite_field_in_directory_at_offset(
+        tif,
+        module_name,
+        dir_offset,
+        tag,
+        in_datatype,
+        count as u64,
+        data.cast_const(),
+    )
 }

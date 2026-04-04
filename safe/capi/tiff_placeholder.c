@@ -233,6 +233,14 @@ static int safe_vget_field_impl(TIFF *tif, uint32_t tag, va_list ap,
     if (fip == NULL)
         return 0;
 
+    if (tag == TIFFTAG_INKNAMES)
+    {
+        char **value = va_arg(ap, char **);
+        if (value != NULL)
+            *value = (char *)data;
+        return 1;
+    }
+
     if (fip->field_bit == FIELD_CUSTOM)
         return safe_marshal_custom_field(fip, type, count, data, ap);
 
@@ -1198,171 +1206,59 @@ int TIFFReadCustomDirectory(TIFF *tif, toff_t diroff,
     return safe_tiff_read_custom_directory(tif, diroff, infoarray);
 }
 
-uint64_t TIFFScanlineSize64(TIFF *tif) { return safe_stub_scanline_size64(tif); }
-
-tmsize_t TIFFScanlineSize(TIFF *tif)
-{
-    return (tmsize_t)TIFFScanlineSize64(tif);
-}
-
-uint64_t TIFFRasterScanlineSize64(TIFF *tif)
-{
-    return TIFFScanlineSize64(tif);
-}
-
-tmsize_t TIFFRasterScanlineSize(TIFF *tif)
-{
-    return TIFFScanlineSize(tif);
-}
-
-uint64_t TIFFStripSize64(TIFF *tif) { return safe_stub_strip_size64(tif); }
-
-tmsize_t TIFFStripSize(TIFF *tif)
-{
-    return (tmsize_t)TIFFStripSize64(tif);
-}
-
-uint64_t TIFFRawStripSize64(TIFF *tif, uint32_t strip)
-{
-    (void)strip;
-    return TIFFStripSize64(tif);
-}
-
-tmsize_t TIFFRawStripSize(TIFF *tif, uint32_t strip)
-{
-    return (tmsize_t)TIFFRawStripSize64(tif, strip);
-}
-
-uint64_t TIFFVStripSize64(TIFF *tif, uint32_t nrows)
-{
-    (void)nrows;
-    return TIFFStripSize64(tif);
-}
-
-tmsize_t TIFFVStripSize(TIFF *tif, uint32_t nrows)
-{
-    return (tmsize_t)TIFFVStripSize64(tif, nrows);
-}
-
-uint64_t TIFFTileRowSize64(TIFF *tif)
-{
-    return safe_stub_tile_row_size64(tif);
-}
-
-tmsize_t TIFFTileRowSize(TIFF *tif)
-{
-    return (tmsize_t)TIFFTileRowSize64(tif);
-}
-
-uint64_t TIFFTileSize64(TIFF *tif) { return safe_stub_tile_size64(tif); }
-
-tmsize_t TIFFTileSize(TIFF *tif)
-{
-    return (tmsize_t)TIFFTileSize64(tif);
-}
-
-uint64_t TIFFVTileSize64(TIFF *tif, uint32_t nrows)
-{
-    (void)nrows;
-    return TIFFTileSize64(tif);
-}
-
-tmsize_t TIFFVTileSize(TIFF *tif, uint32_t nrows)
-{
-    return (tmsize_t)TIFFVTileSize64(tif, nrows);
-}
-
-uint32_t TIFFDefaultStripSize(TIFF *tif, uint32_t request)
+int TIFFReadRGBAImage(TIFF *tif, uint32_t width, uint32_t height,
+                      uint32_t *raster, int stop_on_error)
 {
     (void)tif;
-    return request != 0 ? request : (uint32_t)-1;
-}
-
-void TIFFDefaultTileSize(TIFF *tif, uint32_t *tw, uint32_t *th)
-{
-    (void)tif;
-    if (tw && *tw == 0)
-        *tw = 1;
-    if (th && *th == 0)
-        *th = 1;
-}
-
-uint32_t TIFFComputeTile(TIFF *tif, uint32_t x, uint32_t y, uint32_t z,
-                         uint16_t sample)
-{
-    (void)tif;
-    (void)x;
-    (void)y;
-    (void)z;
-    (void)sample;
+    (void)width;
+    (void)height;
+    (void)raster;
+    (void)stop_on_error;
     return 0;
 }
 
-int TIFFCheckTile(TIFF *tif, uint32_t x, uint32_t y, uint32_t z,
-                  uint16_t sample)
+int TIFFReadRGBAImageOriented(TIFF *tif, uint32_t width, uint32_t height,
+                              uint32_t *raster, int orientation,
+                              int stop_on_error)
 {
     (void)tif;
-    (void)x;
-    (void)y;
-    (void)z;
-    (void)sample;
-    return 1;
+    (void)width;
+    (void)height;
+    (void)raster;
+    (void)orientation;
+    (void)stop_on_error;
+    return 0;
 }
 
-uint32_t TIFFNumberOfTiles(TIFF *tif)
-{
-    return TIFFIsTiled(tif) ? 1U : 0U;
-}
-
-tmsize_t TIFFReadTile(TIFF *tif, void *buf, uint32_t x, uint32_t y, uint32_t z,
-                      uint16_t sample)
-{
-    tmsize_t size = TIFFTileSize(tif);
-    (void)x;
-    (void)y;
-    (void)z;
-    (void)sample;
-    safe_stub_zero_fill(buf, size);
-    return size;
-}
-
-uint32_t TIFFComputeStrip(TIFF *tif, uint32_t row, uint16_t sample)
+int TIFFReadRGBAStrip(TIFF *tif, uint32_t row, uint32_t *raster)
 {
     (void)tif;
     (void)row;
-    return sample;
+    (void)raster;
+    return 0;
 }
 
-uint32_t TIFFNumberOfStrips(TIFF *tif)
-{
-    return TIFFIsTiled(tif) ? 0U : 1U;
-}
-
-tmsize_t TIFFReadEncodedStrip(TIFF *tif, uint32_t strip, void *buf,
-                              tmsize_t size)
+int TIFFReadRGBATile(TIFF *tif, uint32_t x, uint32_t y, uint32_t *raster)
 {
     (void)tif;
-    (void)strip;
-    if (size < 0)
-        size = TIFFStripSize(tif);
-    safe_stub_zero_fill(buf, size);
-    return size < 0 ? 0 : size;
+    (void)x;
+    (void)y;
+    (void)raster;
+    return 0;
 }
 
-tmsize_t TIFFReadRawStrip(TIFF *tif, uint32_t strip, void *buf, tmsize_t size)
+int TIFFReadRGBAStripExt(TIFF *tif, uint32_t row, uint32_t *raster,
+                         int stop_on_error)
 {
-    (void)tif;
-    (void)strip;
-    safe_stub_zero_fill(buf, size);
-    return size < 0 ? 0 : size;
+    (void)stop_on_error;
+    return TIFFReadRGBAStrip(tif, row, raster);
 }
 
-tmsize_t TIFFReadRawTile(TIFF *tif, uint32_t tile, void *buf, tmsize_t size)
+int TIFFReadRGBATileExt(TIFF *tif, uint32_t x, uint32_t y, uint32_t *raster,
+                        int stop_on_error)
 {
-    (void)tif;
-    (void)tile;
-    safe_stub_zero_fill(buf, size);
-    return size < 0 ? 0 : size;
+    (void)stop_on_error;
+    return TIFFReadRGBATile(tif, x, y, raster);
 }
 
 static int safe_is_printed_in_summary(uint32_t tag)
@@ -1579,15 +1475,6 @@ tdir_t TIFFNumberOfDirectories(TIFF *tif)
 int TIFFLastDirectory(TIFF *tif)
 {
     return safe_tiff_last_directory(tif);
-}
-
-void TIFFReverseBits(uint8_t *cp, tmsize_t n)
-{
-    tmsize_t i;
-    if (cp == NULL || n <= 0)
-        return;
-    for (i = 0; i < n; ++i)
-        cp[i] = safe_reverse_byte(cp[i]);
 }
 
 int tiff_safe_capi_placeholder(void) { return tiff_safe_core_placeholder(); }

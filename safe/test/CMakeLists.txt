@@ -210,6 +210,11 @@ target_sources(api_field_registry_smoke PRIVATE api_field_registry_smoke.c)
 target_link_libraries(api_field_registry_smoke PRIVATE tiff tiff_port)
 list(APPEND simple_tests api_field_registry_smoke)
 
+add_executable(api_strile_smoke ../placeholder.h)
+target_sources(api_strile_smoke PRIVATE api_strile_smoke.c)
+target_link_libraries(api_strile_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_strile_smoke)
+
 add_executable(public_abi_layout_smoke ../placeholder.h)
 target_sources(public_abi_layout_smoke PRIVATE public_abi_layout_smoke.c abi_layout_probe_bridge.c)
 target_include_directories(

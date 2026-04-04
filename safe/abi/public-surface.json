@@ -121,7 +121,7 @@
       },
       "name": "libtiff",
       "observed_exports": {
-        "path": "safe/build/libtiff/libtiff.so.6",
+        "path": "original/build/libtiff/libtiff.so.6.0.1",
         "version_nodes": [
           "LIBTIFF_4.0",
           "LIBTIFF_4.1",
@@ -431,7 +431,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -459,9 +459,7 @@
           "demangled_name": "TIFFCIELabToRGBInit",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCIELabToRGBInit",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -469,7 +467,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -484,7 +484,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -496,9 +496,7 @@
           "demangled_name": "TIFFCIELabToXYZ",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCIELabToXYZ",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -506,7 +504,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -521,7 +521,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -542,7 +542,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -570,9 +570,7 @@
           "demangled_name": "TIFFCheckpointDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCheckpointDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -580,7 +578,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -595,7 +595,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -616,7 +616,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -653,7 +653,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -690,7 +690,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -727,7 +727,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -764,7 +764,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -801,7 +801,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -838,7 +838,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -866,9 +866,7 @@
           "demangled_name": "TIFFCreateCustomDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCreateCustomDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -876,7 +874,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -891,7 +891,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -903,9 +903,7 @@
           "demangled_name": "TIFFCreateDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCreateDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -913,7 +911,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -928,7 +928,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -940,9 +940,7 @@
           "demangled_name": "TIFFCreateEXIFDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCreateEXIFDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -950,7 +948,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -965,7 +965,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -977,9 +977,7 @@
           "demangled_name": "TIFFCreateGPSDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFCreateGPSDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -987,7 +985,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -1002,7 +1002,7 @@
           "required_version_node": "LIBTIFF_4.2",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -1023,7 +1023,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1060,7 +1060,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1097,7 +1097,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1134,7 +1134,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1171,7 +1171,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1208,7 +1208,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1245,7 +1245,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1282,7 +1282,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1310,9 +1310,7 @@
           "demangled_name": "TIFFDeferStrileArrayWriting",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFDeferStrileArrayWriting",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -1320,7 +1318,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -1335,7 +1335,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -1356,7 +1356,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1393,7 +1393,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1430,7 +1430,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1467,7 +1467,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1504,7 +1504,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1541,7 +1541,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1578,7 +1578,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1615,7 +1615,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1652,7 +1652,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1689,7 +1689,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1726,7 +1726,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1763,7 +1763,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1800,7 +1800,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1837,7 +1837,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1874,7 +1874,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1911,7 +1911,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1948,7 +1948,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -1985,7 +1985,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2013,9 +2013,7 @@
           "demangled_name": "TIFFFindCODEC",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFFindCODEC",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2023,7 +2021,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2038,7 +2038,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2059,7 +2059,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2096,7 +2096,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2133,7 +2133,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2161,9 +2161,7 @@
           "demangled_name": "TIFFForceStrileArrayWriting",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFForceStrileArrayWriting",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2171,7 +2169,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2186,7 +2186,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2207,7 +2207,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2235,9 +2235,7 @@
           "demangled_name": "TIFFGetBitRevTable",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFGetBitRevTable",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2245,7 +2243,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2260,7 +2260,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2281,7 +2281,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2318,7 +2318,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2346,9 +2346,7 @@
           "demangled_name": "TIFFGetConfiguredCODECs",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFGetConfiguredCODECs",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2356,7 +2354,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2371,7 +2371,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2392,7 +2392,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2429,7 +2429,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2466,7 +2466,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2503,7 +2503,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2540,7 +2540,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2577,7 +2577,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2614,7 +2614,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2642,9 +2642,7 @@
           "demangled_name": "TIFFGetStrileByteCount",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFGetStrileByteCount",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2652,7 +2650,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2667,7 +2667,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2679,9 +2679,7 @@
           "demangled_name": "TIFFGetStrileByteCountWithErr",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFGetStrileByteCountWithErr",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2689,7 +2687,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2704,7 +2704,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2716,9 +2716,7 @@
           "demangled_name": "TIFFGetStrileOffset",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFGetStrileOffset",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2726,7 +2724,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2741,7 +2741,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2753,9 +2753,7 @@
           "demangled_name": "TIFFGetStrileOffsetWithErr",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFGetStrileOffsetWithErr",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2763,7 +2761,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2778,7 +2778,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -2799,7 +2799,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2836,7 +2836,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2873,7 +2873,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2910,7 +2910,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2947,7 +2947,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -2984,7 +2984,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3021,7 +3021,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3058,7 +3058,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3086,9 +3086,7 @@
           "demangled_name": "TIFFIsCODECConfigured",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFIsCODECConfigured",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -3096,7 +3094,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -3111,7 +3111,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -3132,7 +3132,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3169,7 +3169,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3206,7 +3206,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3243,7 +3243,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3280,7 +3280,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3317,7 +3317,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3354,7 +3354,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3391,7 +3391,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3428,7 +3428,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3465,7 +3465,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3502,7 +3502,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3539,7 +3539,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3576,7 +3576,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3613,7 +3613,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3650,7 +3650,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3751,7 +3751,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3779,9 +3779,7 @@
           "demangled_name": "TIFFRGBAImageBegin",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFRGBAImageBegin",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -3789,7 +3787,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -3804,7 +3804,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -3816,9 +3816,7 @@
           "demangled_name": "TIFFRGBAImageEnd",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFRGBAImageEnd",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -3826,7 +3824,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -3841,7 +3841,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -3853,9 +3853,7 @@
           "demangled_name": "TIFFRGBAImageGet",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFRGBAImageGet",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -3863,7 +3861,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -3878,7 +3878,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -3890,9 +3890,7 @@
           "demangled_name": "TIFFRGBAImageOK",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFRGBAImageOK",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -3900,7 +3898,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -3915,7 +3915,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -3936,7 +3936,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -3973,7 +3973,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4010,7 +4010,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4047,7 +4047,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4075,9 +4075,7 @@
           "demangled_name": "TIFFReadBufferSetup",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadBufferSetup",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4085,7 +4083,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4100,7 +4100,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4121,7 +4121,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4158,7 +4158,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4195,7 +4195,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4232,7 +4232,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4260,9 +4260,7 @@
           "demangled_name": "TIFFReadEncodedTile",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadEncodedTile",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4270,7 +4268,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4285,7 +4285,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4297,9 +4297,7 @@
           "demangled_name": "TIFFReadFromUserBuffer",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadFromUserBuffer",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4307,7 +4305,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4322,7 +4322,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4343,7 +4343,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4371,9 +4371,7 @@
           "demangled_name": "TIFFReadRGBAImage",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadRGBAImage",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4381,7 +4379,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4396,7 +4396,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4408,9 +4408,7 @@
           "demangled_name": "TIFFReadRGBAImageOriented",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadRGBAImageOriented",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4418,7 +4416,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4433,7 +4433,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4445,9 +4445,7 @@
           "demangled_name": "TIFFReadRGBAStrip",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadRGBAStrip",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4455,7 +4453,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4470,7 +4470,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4482,9 +4482,7 @@
           "demangled_name": "TIFFReadRGBAStripExt",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadRGBAStripExt",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4492,7 +4490,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4507,7 +4507,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4519,9 +4519,7 @@
           "demangled_name": "TIFFReadRGBATile",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadRGBATile",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4529,7 +4527,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4544,7 +4544,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4556,9 +4556,7 @@
           "demangled_name": "TIFFReadRGBATileExt",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadRGBATileExt",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4566,7 +4564,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4581,7 +4581,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4602,7 +4602,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4639,7 +4639,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4667,9 +4667,7 @@
           "demangled_name": "TIFFReadScanline",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadScanline",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4677,7 +4675,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4692,7 +4692,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4713,7 +4713,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4741,9 +4741,7 @@
           "demangled_name": "TIFFRegisterCODEC",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFRegisterCODEC",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4751,7 +4749,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4766,7 +4766,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4787,7 +4787,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4815,9 +4815,7 @@
           "demangled_name": "TIFFRewriteDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFRewriteDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4825,7 +4823,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4840,7 +4840,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4861,7 +4861,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4898,7 +4898,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4935,7 +4935,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -4972,7 +4972,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5010,7 +5010,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5022,7 +5024,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": false,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5043,7 +5045,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5080,7 +5082,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5117,7 +5119,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5154,7 +5156,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5191,7 +5193,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5228,7 +5230,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5265,7 +5267,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5302,7 +5304,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5339,7 +5341,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5376,7 +5378,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5413,7 +5415,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5441,9 +5443,7 @@
           "demangled_name": "TIFFSetWriteOffset",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSetWriteOffset",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5451,7 +5451,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5466,7 +5468,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5478,9 +5480,7 @@
           "demangled_name": "TIFFSetupStrips",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSetupStrips",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5488,7 +5488,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5503,7 +5505,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5524,7 +5526,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5561,7 +5563,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -5589,9 +5591,7 @@
           "demangled_name": "TIFFSwabArrayOfDouble",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabArrayOfDouble",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5599,7 +5599,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5614,7 +5616,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5626,9 +5628,7 @@
           "demangled_name": "TIFFSwabArrayOfFloat",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabArrayOfFloat",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5636,7 +5636,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5651,7 +5653,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5663,9 +5665,7 @@
           "demangled_name": "TIFFSwabArrayOfLong",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabArrayOfLong",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5673,7 +5673,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5688,7 +5690,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5700,9 +5702,7 @@
           "demangled_name": "TIFFSwabArrayOfLong8",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabArrayOfLong8",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5710,7 +5710,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5725,7 +5727,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5737,9 +5739,7 @@
           "demangled_name": "TIFFSwabArrayOfShort",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabArrayOfShort",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5747,7 +5747,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5762,7 +5764,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5774,9 +5776,7 @@
           "demangled_name": "TIFFSwabArrayOfTriples",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabArrayOfTriples",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5784,7 +5784,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5799,7 +5801,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5811,9 +5813,7 @@
           "demangled_name": "TIFFSwabDouble",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabDouble",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5821,7 +5821,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5836,7 +5838,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5848,9 +5850,7 @@
           "demangled_name": "TIFFSwabFloat",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabFloat",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5858,7 +5858,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5873,7 +5875,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5885,9 +5887,7 @@
           "demangled_name": "TIFFSwabLong",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabLong",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5895,7 +5895,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5910,7 +5912,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5922,9 +5924,7 @@
           "demangled_name": "TIFFSwabLong8",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabLong8",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5932,7 +5932,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5947,7 +5949,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -5959,9 +5961,7 @@
           "demangled_name": "TIFFSwabShort",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFSwabShort",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -5969,7 +5969,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -5984,7 +5986,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6005,7 +6007,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6042,7 +6044,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6079,7 +6081,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6116,7 +6118,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6144,9 +6146,7 @@
           "demangled_name": "TIFFUnRegisterCODEC",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFUnRegisterCODEC",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6154,7 +6154,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6169,7 +6171,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6181,9 +6183,7 @@
           "demangled_name": "TIFFUnlinkDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFUnlinkDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6191,7 +6191,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6206,7 +6208,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6227,7 +6229,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6264,7 +6266,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6301,7 +6303,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6338,7 +6340,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6375,7 +6377,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6412,7 +6414,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6449,7 +6451,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6486,7 +6488,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6523,7 +6525,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6560,7 +6562,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6597,7 +6599,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -6625,9 +6627,7 @@
           "demangled_name": "TIFFWriteBufferSetup",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteBufferSetup",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6635,7 +6635,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6650,7 +6652,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6662,9 +6664,7 @@
           "demangled_name": "TIFFWriteCheck",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteCheck",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6672,7 +6672,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6687,7 +6689,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6699,9 +6701,7 @@
           "demangled_name": "TIFFWriteCustomDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteCustomDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6709,7 +6709,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6724,7 +6726,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6736,9 +6738,7 @@
           "demangled_name": "TIFFWriteDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6746,7 +6746,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6761,7 +6763,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6773,9 +6775,7 @@
           "demangled_name": "TIFFWriteEncodedStrip",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteEncodedStrip",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6783,7 +6783,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6798,7 +6800,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6810,9 +6812,7 @@
           "demangled_name": "TIFFWriteEncodedTile",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteEncodedTile",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6820,7 +6820,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6835,7 +6837,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6847,9 +6849,7 @@
           "demangled_name": "TIFFWriteRawStrip",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteRawStrip",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6857,7 +6857,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6872,7 +6874,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6884,9 +6886,7 @@
           "demangled_name": "TIFFWriteRawTile",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteRawTile",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6894,7 +6894,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6909,7 +6911,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6921,9 +6923,7 @@
           "demangled_name": "TIFFWriteScanline",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteScanline",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6931,7 +6931,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6946,7 +6948,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6958,9 +6960,7 @@
           "demangled_name": "TIFFWriteTile",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFWriteTile",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -6968,7 +6968,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -6983,7 +6985,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -6995,9 +6997,7 @@
           "demangled_name": "TIFFXYZToRGB",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFXYZToRGB",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -7005,7 +7005,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -7020,7 +7022,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -7032,9 +7034,7 @@
           "demangled_name": "TIFFYCbCrToRGBInit",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFYCbCrToRGBInit",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -7042,7 +7042,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -7057,7 +7059,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -7069,9 +7071,7 @@
           "demangled_name": "TIFFYCbCrtoRGB",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFYCbCrtoRGB",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -7079,7 +7079,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -7094,7 +7096,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -7151,7 +7153,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7187,7 +7189,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7223,7 +7225,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7259,7 +7261,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7295,7 +7297,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7331,7 +7333,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7367,7 +7369,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7402,7 +7404,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "original/build/libtiff/libtiff.so.6.0.1"
+            ],
             "public_header": [],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7414,7 +7418,7 @@
           "required_version_node": "LIBTIFF_4.1",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": false,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -7427,6 +7431,7 @@
           "linux_excluded": false,
           "linux_required": true,
           "mismatch_flags": [
+            "missing_from_original_linux_dso",
             "not_in_upstream_version_script"
           ],
           "name": "_TIFFcalloc",
@@ -7434,9 +7439,7 @@
           "owning_library": "libtiff.so.6",
           "provenance_files": {
             "debian_symbols": [],
-            "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
-            ],
+            "observed_export": [],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -7449,7 +7452,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": false,
-            "observed_export": true,
+            "observed_export": false,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": false
@@ -7470,7 +7473,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -7507,7 +7510,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -7544,7 +7547,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -7581,7 +7584,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -7618,7 +7621,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",
@@ -7655,7 +7658,7 @@
               "original/debian/libtiff6.symbols"
             ],
             "observed_export": [
-              "safe/build/libtiff/libtiff.so.6"
+              "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
               "original/libtiff/tiffio.h",

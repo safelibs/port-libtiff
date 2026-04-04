@@ -1,5 +1,6 @@
 mod abi;
 mod core;
+mod strile;
 
 pub use abi::{
     TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldArrayType, TIFFFieldInfo,
@@ -11,6 +12,7 @@ use crate::core::{
     number_of_directories, read_custom_directory, read_next_directory, set_directory,
     set_sub_directory, DirectoryState, FieldRegistryState,
 };
+use crate::strile::StrileState;
 use libc::{c_char, c_int, c_void, off_t, size_t, ssize_t};
 use std::ffi::{CStr, CString};
 use std::io;
@@ -110,6 +112,7 @@ struct TiffHandleInner {
     owned_name: *mut c_char,
     directory_state: DirectoryState,
     field_registry: FieldRegistryState,
+    strile_state: StrileState,
 }
 
 #[repr(C)]
@@ -924,6 +927,7 @@ unsafe fn make_handle(
         owned_name: name_owner,
         directory_state: DirectoryState::default(),
         field_registry: FieldRegistryState::default(),
+        strile_state: StrileState::default(),
     });
 
     ptr::write(tif, TIFF {
@@ -1426,7 +1430,7 @@ pub unsafe extern "C" fn TIFFCleanup(tif: *mut TIFF) {
     let inner = tif_inner(tif);
 
     if (*inner).tif_mode != libc::O_RDONLY {
-        let _ = TIFFFlush(tif);
+        let _ = crate::strile::TIFFFlush(tif);
     }
 
     if let Some(cleanup) = (*tif).tif_cleanup {
@@ -1464,16 +1468,6 @@ pub unsafe extern "C" fn TIFFClose(tif: *mut TIFF) {
     if let Some(closeproc) = closeproc {
         let _ = closeproc(clientdata);
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn TIFFFlush(_: *mut TIFF) -> c_int {
-    1
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn TIFFFlushData(_: *mut TIFF) -> c_int {
-    1
 }
 
 #[no_mangle]
