@@ -30,8 +30,14 @@ extern int safe_tiff_read_rgba_image_oriented(TIFF *tif, uint32_t width,
                                               int stop_on_error);
 extern int safe_tiff_read_rgba_strip(TIFF *tif, uint32_t row,
                                      uint32_t *raster);
+extern int safe_tiff_read_rgba_strip_ext(TIFF *tif, uint32_t row,
+                                         uint32_t *raster,
+                                         int stop_on_error);
 extern int safe_tiff_read_rgba_tile(TIFF *tif, uint32_t x, uint32_t y,
                                     uint32_t *raster);
+extern int safe_tiff_read_rgba_tile_ext(TIFF *tif, uint32_t x, uint32_t y,
+                                        uint32_t *raster,
+                                        int stop_on_error);
 extern int safe_tiff_rgba_image_ok(TIFF *tif, char emsg[1024]);
 extern int safe_tiff_rgba_image_begin(TIFFRGBAImage *img, TIFF *tif,
                                       int stoponerr, char emsg[1024]);
@@ -1274,15 +1280,13 @@ int TIFFReadRGBATile(TIFF *tif, uint32_t x, uint32_t y, uint32_t *raster)
 int TIFFReadRGBAStripExt(TIFF *tif, uint32_t row, uint32_t *raster,
                          int stop_on_error)
 {
-    (void)stop_on_error;
-    return TIFFReadRGBAStrip(tif, row, raster);
+    return safe_tiff_read_rgba_strip_ext(tif, row, raster, stop_on_error);
 }
 
 int TIFFReadRGBATileExt(TIFF *tif, uint32_t x, uint32_t y, uint32_t *raster,
                         int stop_on_error)
 {
-    (void)stop_on_error;
-    return TIFFReadRGBATile(tif, x, y, raster);
+    return safe_tiff_read_rgba_tile_ext(tif, x, y, raster, stop_on_error);
 }
 
 int TIFFRGBAImageOK(TIFF *tif, char emsg[1024])

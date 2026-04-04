@@ -251,6 +251,19 @@ static int test_write_tile_roundtrip(void)
         goto failure;
     }
 
+    if (TIFFReadRGBATileExt(tif, TILE_WIDTH + 1, TILE_HEIGHT, rgba_tile, 1))
+    {
+        fprintf(stderr,
+                "TIFFReadRGBATileExt() accepted a non-tile-aligned origin.\n");
+        goto failure;
+    }
+
+    if (TIFFReadRGBAStrip(tif, 0, rgba_tile))
+    {
+        fprintf(stderr, "TIFFReadRGBAStrip() accepted a tiled image.\n");
+        goto failure;
+    }
+
     ret = 0;
 
 failure:

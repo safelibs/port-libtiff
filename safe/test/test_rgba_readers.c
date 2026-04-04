@@ -41,7 +41,6 @@
 static const char filename[] = "test_rgba_readers.tif";
 static const uint32_t width = 2;
 static const uint32_t height = 2;
-static const uint32_t rows_per_strip = 1;
 static const unsigned char row0[] = {255, 0, 0, 0, 255, 0};
 static const unsigned char row1[] = {0, 0, 255, 255, 255, 255};
 
@@ -64,7 +63,7 @@ static int check_rgba_pixel(uint32_t pixel, unsigned char expected_r,
     return 0;
 }
 
-static int write_test_image(void)
+static int write_test_image(uint32_t rows_per_strip)
 {
     TIFF *tif = TIFFOpen(filename, "w");
 
@@ -110,7 +109,7 @@ int main(void)
 
     unlink(filename);
 
-    if (write_test_image() != 0)
+    if (write_test_image(1) != 0)
         goto failure;
 
     tif = TIFFOpen(filename, "r");
@@ -215,6 +214,34 @@ int main(void)
                          "TIFFReadRGBAStrip row 1 pixel 1"))
     {
         fprintf(stderr, "TIFFReadRGBAStrip() failed for row 1.\n");
+        goto failure;
+    }
+
+    TIFFClose(tif);
+    tif = NULL;
+
+    if (write_test_image(2) != 0)
+        goto failure;
+
+    tif = TIFFOpen(filename, "r");
+    if (!tif)
+    {
+        fprintf(stderr, "Can't reopen %s for strip alignment checks.\n",
+                filename);
+        goto failure;
+    }
+
+    if (TIFFReadRGBAStripExt(tif, 1, strip_raster, 1))
+    {
+        fprintf(stderr,
+                "TIFFReadRGBAStripExt() accepted a row that is not strip-aligned.\n");
+        goto failure;
+    }
+
+    if (TIFFReadRGBATileExt(tif, 0, 0, raster, 1))
+    {
+        fprintf(stderr,
+                "TIFFReadRGBATileExt() accepted a striped image.\n");
         goto failure;
     }
 
