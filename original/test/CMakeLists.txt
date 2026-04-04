@@ -194,6 +194,16 @@ target_sources(test_append_to_strip PRIVATE test_append_to_strip.c)
 target_link_libraries(test_append_to_strip PRIVATE tiff tiff_port)
 list(APPEND simple_tests test_append_to_strip)
 
+add_executable(test_rgba_readers ../placeholder.h)
+target_sources(test_rgba_readers PRIVATE test_rgba_readers.c)
+target_link_libraries(test_rgba_readers PRIVATE tiff tiff_port)
+list(APPEND simple_tests test_rgba_readers)
+
+add_executable(test_tile_read_write ../placeholder.h)
+target_sources(test_tile_read_write PRIVATE test_tile_read_write.c)
+target_link_libraries(test_tile_read_write PRIVATE tiff tiff_port)
+list(APPEND simple_tests test_tile_read_write)
+
 add_executable(test_ifd_loop_detection ../placeholder.h)
 target_sources(test_ifd_loop_detection PRIVATE test_ifd_loop_detection.c)
 target_link_libraries(test_ifd_loop_detection PRIVATE tiff tiff_port)
