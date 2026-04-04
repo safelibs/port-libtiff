@@ -1,0 +1,158 @@
+{
+  "library": "libtiff",
+  "ubuntu_release": "24.04 (noble)",
+  "generated_on": "2026-04-03",
+  "selection": "Curated, diverse, non-exhaustive sample of downstream Ubuntu 24.04 packages that build against libtiff-dev and/or pull in libtiff6 at runtime.",
+  "dependents": [
+    {
+      "package": "gimp",
+      "source_package": "gimp",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "gimp",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Imports and exports TIFF raster images."
+    },
+    {
+      "package": "imagemagick",
+      "source_package": "imagemagick",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "indirect",
+      "runtime_dependency_path": [
+        "imagemagick",
+        "imagemagick-6.q16",
+        "libmagickcore-6.q16-7t64",
+        "libtiff6"
+      ],
+      "runtime_functionality": "ImageMagick's TIFF coder reads and writes TIFF, including common conversion workflows through the convert and identify tools."
+    },
+    {
+      "package": "graphicsmagick",
+      "source_package": "graphicsmagick",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "indirect",
+      "runtime_dependency_path": [
+        "graphicsmagick",
+        "libgraphicsmagick-q16-3t64",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Reads and writes TIFF images during command-line conversion, inspection, and batch processing."
+    },
+    {
+      "package": "gdal-bin",
+      "source_package": "gdal",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "indirect",
+      "runtime_dependency_path": [
+        "gdal-bin",
+        "libgdal34t64",
+        "libtiff6"
+      ],
+      "runtime_functionality": "GeoTIFF raster I/O in tools such as gdalinfo and gdal_translate."
+    },
+    {
+      "package": "poppler-utils",
+      "source_package": "poppler",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "indirect",
+      "runtime_dependency_path": [
+        "poppler-utils",
+        "libpoppler134",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Poppler utilities can render PDF pages to TIFF with pdftocairo -tiff, and Poppler also encounters TIFF-backed image data while decoding some PDFs."
+    },
+    {
+      "package": "qt6-image-formats-plugins",
+      "source_package": "qt6-imageformats",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "qt6-image-formats-plugins",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Provides Qt's TIFF image plugin (libqtiff.so), enabling Qt applications to load and save TIFF images."
+    },
+    {
+      "package": "python3-pil",
+      "source_package": "pillow",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "python3-pil",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Pillow uses libtiff for Image.open() and Image.save() on TIFF files."
+    },
+    {
+      "package": "netpbm",
+      "source_package": "netpbm-free",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "netpbm",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Ships TIFF-specific tools such as tifftopnm, pnmtotiff, pnmtotiffcmyk, and pamtotiff."
+    },
+    {
+      "package": "tesseract-ocr",
+      "source_package": "tesseract",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "indirect",
+      "runtime_dependency_path": [
+        "tesseract-ocr",
+        "liblept5",
+        "libtiff6"
+      ],
+      "runtime_functionality": "OCR on TIFF images relies on Leptonica's TIFF decoding support."
+    },
+    {
+      "package": "ghostscript",
+      "source_package": "ghostscript",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "indirect",
+      "runtime_dependency_path": [
+        "ghostscript",
+        "libgs10",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Ghostscript exposes TIFF output devices such as tiff24nc, tiffgray, tiffg4, tifflzw, and tiffpack."
+    },
+    {
+      "package": "libgdk-pixbuf-2.0-0",
+      "source_package": "gdk-pixbuf",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "libgdk-pixbuf-2.0-0",
+        "libtiff6"
+      ],
+      "runtime_functionality": "Provides the TIFF pixbuf loader used by GTK applications for loading and thumbnailing TIFF images."
+    },
+    {
+      "package": "libopencv-imgcodecs406t64",
+      "source_package": "opencv",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "libopencv-imgcodecs406t64",
+        "libtiff6"
+      ],
+      "runtime_functionality": "OpenCV image codecs use libtiff for TIFF read and write paths such as imread, imwrite, and related multi-page TIFF handling."
+    },
+    {
+      "package": "sane-airscan",
+      "source_package": "sane-airscan",
+      "dependency_kind": "build-and-runtime",
+      "runtime_dependency_type": "direct",
+      "runtime_dependency_path": [
+        "sane-airscan",
+        "libtiff6"
+      ],
+      "runtime_functionality": "The eSCL and WSD scanner backend uses libtiff when network scanners deliver TIFF-encoded scan data."
+    }
+  ]
+}
