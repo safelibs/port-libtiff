@@ -183,6 +183,25 @@ unsafe fn setup_fields_impl(tif: *mut TIFF, infoarray: *const TIFFFieldArray) ->
     true
 }
 
+pub(crate) unsafe fn reset_field_registry_with_array(
+    tif: *mut TIFF,
+    infoarray: *const TIFFFieldArray,
+) -> bool {
+    if tif.is_null() || infoarray.is_null() {
+        return false;
+    }
+    {
+        let state = registry_state_mut(tif);
+        state.compat_arrays.clear();
+        state.anonymous_fields.clear();
+        state.tagmethods = TIFFTagMethods::default();
+        safe_tiff_initialize_tag_methods(&mut state.tagmethods);
+        state.foundfield = ptr::null();
+        state.tag_list.clear();
+    }
+    setup_fields_impl(tif, infoarray)
+}
+
 unsafe fn record_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
     if tif.is_null() {
         return 0;
@@ -438,15 +457,7 @@ pub(crate) unsafe fn reset_default_directory(tif: *mut TIFF) -> bool {
     if tif.is_null() {
         return false;
     }
-    {
-        let state = registry_state_mut(tif);
-        state.compat_arrays.clear();
-        state.tagmethods = TIFFTagMethods::default();
-        safe_tiff_initialize_tag_methods(&mut state.tagmethods);
-        state.foundfield = ptr::null();
-        state.tag_list.clear();
-    }
-    if !setup_fields_impl(tif, &TIFF_FIELD_ARRAY_IMAGE) {
+    if !reset_field_registry_with_array(tif, &TIFF_FIELD_ARRAY_IMAGE) {
         return false;
     }
     if let Some(extender) = *TAG_EXTENDER.lock().expect("tag extender mutex") {

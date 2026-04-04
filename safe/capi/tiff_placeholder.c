@@ -1,10 +1,24 @@
 #include "tiffiop.h"
+#include "tif_dir.h"
 
+#include <ctype.h>
 #include <stdarg.h>
 
 extern int tiff_safe_core_placeholder(void);
 extern int safe_tiff_record_custom_tag(TIFF *tif, uint32_t tag);
 extern int safe_tiff_remove_custom_tag(TIFF *tif, uint32_t tag);
+extern int safe_tiff_read_custom_directory(TIFF *tif, uint64_t diroff,
+                                           const TIFFFieldArray *infoarray);
+extern int safe_tiff_set_directory(TIFF *tif, uint32_t dirnum);
+extern int safe_tiff_set_sub_directory(TIFF *tif, uint64_t diroff);
+extern uint32_t safe_tiff_number_of_directories(TIFF *tif);
+extern int safe_tiff_last_directory(TIFF *tif);
+extern void safe_tiff_free_directory(TIFF *tif);
+extern uint32_t safe_tiff_current_tag_count(TIFF *tif);
+extern uint32_t safe_tiff_current_tag_at(TIFF *tif, uint32_t index);
+extern int safe_tiff_get_tag_value(TIFF *tif, uint32_t tag, int defaulted,
+                                   TIFFDataType *out_type, uint64_t *out_count,
+                                   const void **out_data);
 
 static void unix_error_handler(const char *module, const char *fmt, va_list ap)
 {
@@ -30,102 +44,332 @@ static TIFFErrorHandler g_warning_handler = unix_warning_handler;
 static TIFFErrorHandlerExt g_warning_handler_ext = NULL;
 static uint64_t g_zero_strile_counts[1] = {0};
 
-static uint16_t safe_stub_fillorder(const TIFF *tif)
+static int safe_query_tag(TIFF *tif, uint32_t tag, int defaulted,
+                          TIFFDataType *type, uint64_t *count,
+                          const void **data)
 {
-    if (tif != NULL && (tif->tif_flags & TIFF_FILLORDER) == FILLORDER_LSB2MSB)
-        return FILLORDER_LSB2MSB;
-    return FILLORDER_MSB2LSB;
+    if (tif == NULL || type == NULL || count == NULL || data == NULL)
+        return 0;
+    *data = NULL;
+    *count = 0;
+    *type = TIFF_NOTYPE;
+    return safe_tiff_get_tag_value(tif, tag, defaulted, type, count, data);
 }
 
-static int safe_stub_vget_field(TIFF *tif, uint32_t tag, va_list ap,
-                                int defaulted)
+static int safe_copy_u16(va_list ap, const void *data)
 {
-    (void)tif;
+    uint16_t *value = va_arg(ap, uint16_t *);
+    if (value != NULL)
+        *value = ((const uint16_t *)data)[0];
+    return 1;
+}
 
-    switch (tag)
+static int safe_copy_u32(va_list ap, const void *data)
+{
+    uint32_t *value = va_arg(ap, uint32_t *);
+    if (value != NULL)
+        *value = ((const uint32_t *)data)[0];
+    return 1;
+}
+
+static int safe_copy_u64(va_list ap, const void *data)
+{
+    uint64_t *value = va_arg(ap, uint64_t *);
+    if (value != NULL)
+        *value = ((const uint64_t *)data)[0];
+    return 1;
+}
+
+static int safe_copy_float(va_list ap, TIFFDataType type, const void *data)
+{
+    float *value = va_arg(ap, float *);
+    if (value == NULL)
+        return 1;
+    if (type == TIFF_DOUBLE)
+        *value = (float)((const double *)data)[0];
+    else
+        *value = ((const float *)data)[0];
+    return 1;
+}
+
+static int safe_copy_double(va_list ap, TIFFDataType type, const void *data)
+{
+    double *value = va_arg(ap, double *);
+    if (value == NULL)
+        return 1;
+    if (type == TIFF_FLOAT)
+        *value = ((const float *)data)[0];
+    else
+        *value = ((const double *)data)[0];
+    return 1;
+}
+
+static int safe_marshal_custom_field(const TIFFField *fip, TIFFDataType type,
+                                     uint64_t count, const void *data,
+                                     va_list ap)
+{
+    if (fip == NULL || data == NULL)
+        return 0;
+
+    if (fip->field_passcount)
     {
-        case TIFFTAG_IMAGEWIDTH:
-        case TIFFTAG_IMAGELENGTH:
-        case TIFFTAG_TILEWIDTH:
-        case TIFFTAG_TILELENGTH:
+        if (fip->field_readcount == TIFF_VARIABLE2)
         {
-            uint32_t *value = va_arg(ap, uint32_t *);
-            if (value)
-                *value = 0;
+            uint32_t *value_count = va_arg(ap, uint32_t *);
+            if (value_count != NULL)
+                *value_count = (count > UINT32_MAX) ? UINT32_MAX : (uint32_t)count;
+        }
+        else
+        {
+            uint16_t *value_count = va_arg(ap, uint16_t *);
+            if (value_count != NULL)
+                *value_count = (count > UINT16_MAX) ? UINT16_MAX : (uint16_t)count;
+        }
+        {
+            const void **value = va_arg(ap, const void **);
+            if (value != NULL)
+                *value = data;
+        }
+        return 1;
+    }
+
+    if (fip->field_tag == TIFFTAG_DOTRANGE &&
+        strcmp(fip->field_name, "DotRange") == 0)
+    {
+        if (count < 2 || type != TIFF_SHORT)
+            return 0;
+        {
+            uint16_t *first = va_arg(ap, uint16_t *);
+            uint16_t *second = va_arg(ap, uint16_t *);
+            if (first != NULL)
+                *first = ((const uint16_t *)data)[0];
+            if (second != NULL)
+                *second = ((const uint16_t *)data)[1];
+        }
+        return 1;
+    }
+
+    if (type == TIFF_ASCII || fip->field_readcount == TIFF_VARIABLE ||
+        fip->field_readcount == TIFF_VARIABLE2 || count > 1)
+    {
+        void **value = va_arg(ap, void **);
+        if (value != NULL)
+            *value = (void *)data;
+        return 1;
+    }
+
+    switch (type)
+    {
+        case TIFF_BYTE:
+        case TIFF_UNDEFINED:
+        {
+            uint8_t *value = va_arg(ap, uint8_t *);
+            if (value != NULL)
+                *value = ((const uint8_t *)data)[0];
             return 1;
         }
-        case TIFFTAG_ROWSPERSTRIP:
+        case TIFF_SBYTE:
         {
-            uint32_t *value = va_arg(ap, uint32_t *);
-            if (value)
-                *value = defaulted ? (uint32_t)-1 : 1;
+            int8_t *value = va_arg(ap, int8_t *);
+            if (value != NULL)
+                *value = ((const int8_t *)data)[0];
             return 1;
         }
-        case TIFFTAG_SAMPLESPERPIXEL:
+        case TIFF_SHORT:
+            return safe_copy_u16(ap, data);
+        case TIFF_SSHORT:
         {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = 1;
+            int16_t *value = va_arg(ap, int16_t *);
+            if (value != NULL)
+                *value = ((const int16_t *)data)[0];
             return 1;
         }
-        case TIFFTAG_PLANARCONFIG:
+        case TIFF_LONG:
+        case TIFF_IFD:
+            return safe_copy_u32(ap, data);
+        case TIFF_SLONG:
         {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = PLANARCONFIG_CONTIG;
+            int32_t *value = va_arg(ap, int32_t *);
+            if (value != NULL)
+                *value = ((const int32_t *)data)[0];
             return 1;
         }
-        case TIFFTAG_FILLORDER:
+        case TIFF_LONG8:
+        case TIFF_IFD8:
+            return safe_copy_u64(ap, data);
+        case TIFF_SLONG8:
         {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = safe_stub_fillorder(tif);
+            int64_t *value = va_arg(ap, int64_t *);
+            if (value != NULL)
+                *value = ((const int64_t *)data)[0];
             return 1;
         }
-        case TIFFTAG_BITSPERSAMPLE:
-        {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = 1;
-            return 1;
-        }
-        case TIFFTAG_COMPRESSION:
-        {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = COMPRESSION_NONE;
-            return 1;
-        }
-        case TIFFTAG_ORIENTATION:
-        {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = ORIENTATION_TOPLEFT;
-            return 1;
-        }
-        case TIFFTAG_RESOLUTIONUNIT:
-        {
-            uint16_t *value = va_arg(ap, uint16_t *);
-            if (value)
-                *value = RESUNIT_INCH;
-            return 1;
-        }
-        case TIFFTAG_STRIPBYTECOUNTS:
-        case TIFFTAG_TILEBYTECOUNTS:
-        {
-            uint64_t **value = va_arg(ap, uint64_t **);
-            if (value)
-                *value = g_zero_strile_counts;
-            return 1;
-        }
+        case TIFF_RATIONAL:
+        case TIFF_FLOAT:
+            return safe_copy_float(ap, type, data);
+        case TIFF_SRATIONAL:
+        case TIFF_DOUBLE:
+            return safe_copy_double(ap, type, data);
         default:
             return 0;
     }
 }
 
+static int safe_vget_field_impl(TIFF *tif, uint32_t tag, va_list ap,
+                                int defaulted)
+{
+    TIFFDataType type;
+    uint64_t count;
+    const void *data;
+    const TIFFField *fip;
+
+    if (!safe_query_tag(tif, tag, defaulted, &type, &count, &data))
+        return 0;
+
+    fip = TIFFFindField(tif, tag, TIFF_ANY);
+    if (fip == NULL)
+        return 0;
+
+    if (fip->field_bit == FIELD_CUSTOM)
+        return safe_marshal_custom_field(fip, type, count, data, ap);
+
+    switch (tag)
+    {
+        case TIFFTAG_SUBFILETYPE:
+        case TIFFTAG_IMAGEWIDTH:
+        case TIFFTAG_IMAGELENGTH:
+        case TIFFTAG_ROWSPERSTRIP:
+        case TIFFTAG_TILEWIDTH:
+        case TIFFTAG_TILELENGTH:
+        case TIFFTAG_TILEDEPTH:
+        case TIFFTAG_IMAGEDEPTH:
+            return safe_copy_u32(ap, data);
+
+        case TIFFTAG_BITSPERSAMPLE:
+        case TIFFTAG_COMPRESSION:
+        case TIFFTAG_PHOTOMETRIC:
+        case TIFFTAG_THRESHHOLDING:
+        case TIFFTAG_FILLORDER:
+        case TIFFTAG_ORIENTATION:
+        case TIFFTAG_SAMPLESPERPIXEL:
+        case TIFFTAG_MINSAMPLEVALUE:
+        case TIFFTAG_MAXSAMPLEVALUE:
+        case TIFFTAG_PLANARCONFIG:
+        case TIFFTAG_RESOLUTIONUNIT:
+        case TIFFTAG_NUMBEROFINKS:
+        case TIFFTAG_SAMPLEFORMAT:
+        case TIFFTAG_YCBCRPOSITIONING:
+            return safe_copy_u16(ap, data);
+
+        case TIFFTAG_EXIFIFD:
+        case TIFFTAG_GPSIFD:
+            return safe_copy_u64(ap, data);
+
+        case TIFFTAG_XRESOLUTION:
+        case TIFFTAG_YRESOLUTION:
+        case TIFFTAG_XPOSITION:
+        case TIFFTAG_YPOSITION:
+            return safe_copy_float(ap, type, data);
+
+        case TIFFTAG_STONITS:
+            return safe_copy_double(ap, type, data);
+
+        case TIFFTAG_PAGENUMBER:
+        case TIFFTAG_HALFTONEHINTS:
+        case TIFFTAG_YCBCRSUBSAMPLING:
+        {
+            uint16_t *first = va_arg(ap, uint16_t *);
+            uint16_t *second = va_arg(ap, uint16_t *);
+            if (count < 2 || type != TIFF_SHORT)
+                return 0;
+            if (first != NULL)
+                *first = ((const uint16_t *)data)[0];
+            if (second != NULL)
+                *second = ((const uint16_t *)data)[1];
+            return 1;
+        }
+
+        case TIFFTAG_COLORMAP:
+        {
+            const uint16_t **red = va_arg(ap, const uint16_t **);
+            const uint16_t **green = va_arg(ap, const uint16_t **);
+            const uint16_t **blue = va_arg(ap, const uint16_t **);
+            const uint16_t *values = (const uint16_t *)data;
+            uint64_t plane_count;
+            if (count == 0 || type != TIFF_SHORT || count % 3 != 0)
+                return 0;
+            plane_count = count / 3;
+            if (red != NULL)
+                *red = values;
+            if (green != NULL)
+                *green = values + plane_count;
+            if (blue != NULL)
+                *blue = values + plane_count * 2;
+            return 1;
+        }
+
+        case TIFFTAG_STRIPOFFSETS:
+        case TIFFTAG_TILEOFFSETS:
+        case TIFFTAG_STRIPBYTECOUNTS:
+        case TIFFTAG_TILEBYTECOUNTS:
+        {
+            const uint64_t **value = va_arg(ap, const uint64_t **);
+            if (value != NULL)
+                *value = (count == 0) ? g_zero_strile_counts : (const uint64_t *)data;
+            return 1;
+        }
+
+        case TIFFTAG_EXTRASAMPLES:
+        {
+            uint16_t *value_count = va_arg(ap, uint16_t *);
+            const uint16_t **value = va_arg(ap, const uint16_t **);
+            if (type != TIFF_SHORT)
+                return 0;
+            if (value_count != NULL)
+                *value_count = (count > UINT16_MAX) ? UINT16_MAX : (uint16_t)count;
+            if (value != NULL)
+                *value = (count == 0) ? NULL : (const uint16_t *)data;
+            return 1;
+        }
+
+        case TIFFTAG_SUBIFD:
+        {
+            uint16_t *value_count = va_arg(ap, uint16_t *);
+            const void **value = va_arg(ap, const void **);
+            if (type != TIFF_LONG8 && type != TIFF_IFD8)
+                return 0;
+            if (value_count != NULL)
+                *value_count = (count > UINT16_MAX) ? UINT16_MAX : (uint16_t)count;
+            if (value != NULL)
+                *value = data;
+            return 1;
+        }
+
+        case TIFFTAG_TRANSFERFUNCTION:
+        {
+            const uint16_t **red = va_arg(ap, const uint16_t **);
+            const uint16_t **green = va_arg(ap, const uint16_t **);
+            const uint16_t **blue = va_arg(ap, const uint16_t **);
+            const uint16_t *values = (const uint16_t *)data;
+            if (type != TIFF_SHORT || count == 0)
+                return 0;
+            if (red != NULL)
+                *red = values;
+            if (green != NULL)
+                *green = (count % 3 == 0) ? values + (count / 3) : NULL;
+            if (blue != NULL)
+                *blue = (count % 3 == 0) ? values + ((count / 3) * 2) : NULL;
+            return 1;
+        }
+
+        default:
+            return safe_marshal_custom_field(fip, type, count, data, ap);
+    }
+}
+
 static int safe_default_vget_field(TIFF *tif, uint32_t tag, va_list ap)
 {
-    return safe_stub_vget_field(tif, tag, ap, 0);
+    return safe_vget_field_impl(tif, tag, ap, 0);
 }
 
 static uint64_t safe_stub_scanline_size64(TIFF *tif)
@@ -469,7 +713,7 @@ int TIFFVGetField(TIFF *tif, uint32_t tag, va_list ap)
     if (tag_methods != NULL && tag_methods->vgetfield != NULL)
         return tag_methods->vgetfield(tif, tag, ap);
 
-    return safe_default_vget_field(tif, tag, ap);
+    return safe_vget_field_impl(tif, tag, ap, 0);
 }
 
 int TIFFGetFieldDefaulted(TIFF *tif, uint32_t tag, ...)
@@ -477,14 +721,23 @@ int TIFFGetFieldDefaulted(TIFF *tif, uint32_t tag, ...)
     va_list ap;
     int ret;
     va_start(ap, tag);
-    ret = safe_stub_vget_field(tif, tag, ap, 1);
+    ret = TIFFVGetFieldDefaulted(tif, tag, ap);
     va_end(ap);
     return ret;
 }
 
 int TIFFVGetFieldDefaulted(TIFF *tif, uint32_t tag, va_list ap)
 {
-    return safe_stub_vget_field(tif, tag, ap, 1);
+    va_list copy;
+    int ret;
+
+    va_copy(copy, ap);
+    ret = safe_vget_field_impl(tif, tag, copy, 0);
+    va_end(copy);
+    if (ret)
+        return ret;
+
+    return safe_vget_field_impl(tif, tag, ap, 1);
 }
 
 int TIFFSetField(TIFF *tif, uint32_t tag, ...)
@@ -527,12 +780,18 @@ int TIFFUnsetField(TIFF *tif, uint32_t tag)
 
 int TIFFReadEXIFDirectory(TIFF *tif, toff_t diroff)
 {
-    return TIFFSetSubDirectory(tif, diroff);
+    return safe_tiff_read_custom_directory(tif, diroff, _TIFFGetExifFields());
 }
 
 int TIFFReadGPSDirectory(TIFF *tif, toff_t diroff)
 {
-    return TIFFSetSubDirectory(tif, diroff);
+    return safe_tiff_read_custom_directory(tif, diroff, _TIFFGetGpsFields());
+}
+
+int TIFFReadCustomDirectory(TIFF *tif, toff_t diroff,
+                            const TIFFFieldArray *infoarray)
+{
+    return safe_tiff_read_custom_directory(tif, diroff, infoarray);
 }
 
 uint64_t TIFFScanlineSize64(TIFF *tif) { return safe_stub_scanline_size64(tif); }
@@ -702,48 +961,220 @@ tmsize_t TIFFReadRawTile(TIFF *tif, uint32_t tile, void *buf, tmsize_t size)
     return size < 0 ? 0 : size;
 }
 
+static int safe_is_printed_in_summary(uint32_t tag)
+{
+    switch (tag)
+    {
+        case TIFFTAG_SUBFILETYPE:
+        case TIFFTAG_IMAGEWIDTH:
+        case TIFFTAG_IMAGELENGTH:
+        case TIFFTAG_TILEWIDTH:
+        case TIFFTAG_TILELENGTH:
+        case TIFFTAG_XRESOLUTION:
+        case TIFFTAG_YRESOLUTION:
+        case TIFFTAG_BITSPERSAMPLE:
+        case TIFFTAG_COMPRESSION:
+        case TIFFTAG_PHOTOMETRIC:
+        case TIFFTAG_ORIENTATION:
+        case TIFFTAG_SAMPLESPERPIXEL:
+        case TIFFTAG_ROWSPERSTRIP:
+        case TIFFTAG_PLANARCONFIG:
+        case TIFFTAG_RESOLUTIONUNIT:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static void safe_print_ascii(FILE *fd, const uint8_t *data, uint64_t count)
+{
+    uint64_t i;
+    for (i = 0; i < count && data[i] != '\0'; ++i)
+        fputc(isprint(data[i]) ? data[i] : '?', fd);
+}
+
+static void safe_print_value_list(FILE *fd, uint32_t tag, TIFFDataType type,
+                                  uint64_t count, const void *data, long flags)
+{
+    uint64_t i;
+
+    if (data == NULL)
+    {
+        fprintf(fd, "<absent>");
+        return;
+    }
+
+    if (type == TIFF_ASCII)
+    {
+        safe_print_ascii(fd, (const uint8_t *)data, count);
+        return;
+    }
+
+    if ((tag == TIFFTAG_STRIPOFFSETS || tag == TIFFTAG_STRIPBYTECOUNTS ||
+         tag == TIFFTAG_TILEOFFSETS || tag == TIFFTAG_TILEBYTECOUNTS) &&
+        !(flags & TIFFPRINT_STRIPS) && count > 8)
+    {
+        fprintf(fd, "<%" PRIu64 " values>", count);
+        return;
+    }
+
+    if ((tag == TIFFTAG_COLORMAP || tag == TIFFTAG_TRANSFERFUNCTION) &&
+        !(flags & (TIFFPRINT_COLORMAP | TIFFPRINT_CURVES)) && count > 16)
+    {
+        fprintf(fd, "<%" PRIu64 " values>", count);
+        return;
+    }
+
+    if (count > 32)
+    {
+        fprintf(fd, "<%" PRIu64 " values>", count);
+        return;
+    }
+
+    for (i = 0; i < count; ++i)
+    {
+        if (i != 0)
+            fputs(", ", fd);
+        switch (type)
+        {
+            case TIFF_BYTE:
+                fprintf(fd, "%" PRIu8, ((const uint8_t *)data)[i]);
+                break;
+            case TIFF_UNDEFINED:
+                fprintf(fd, "0x%02" PRIx8, ((const uint8_t *)data)[i]);
+                break;
+            case TIFF_SBYTE:
+                fprintf(fd, "%" PRId8, ((const int8_t *)data)[i]);
+                break;
+            case TIFF_SHORT:
+                fprintf(fd, "%" PRIu16, ((const uint16_t *)data)[i]);
+                break;
+            case TIFF_SSHORT:
+                fprintf(fd, "%" PRId16, ((const int16_t *)data)[i]);
+                break;
+            case TIFF_LONG:
+            case TIFF_IFD:
+                fprintf(fd, "%" PRIu32, ((const uint32_t *)data)[i]);
+                break;
+            case TIFF_SLONG:
+                fprintf(fd, "%" PRId32, ((const int32_t *)data)[i]);
+                break;
+            case TIFF_LONG8:
+            case TIFF_IFD8:
+                fprintf(fd, "%" PRIu64, ((const uint64_t *)data)[i]);
+                break;
+            case TIFF_SLONG8:
+                fprintf(fd, "%" PRId64, ((const int64_t *)data)[i]);
+                break;
+            case TIFF_FLOAT:
+                fprintf(fd, "%g", ((const float *)data)[i]);
+                break;
+            case TIFF_DOUBLE:
+                fprintf(fd, "%g", ((const double *)data)[i]);
+                break;
+            default:
+                fprintf(fd, "<unsupported>");
+                return;
+        }
+    }
+}
+
 void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
 {
-    if (fd == NULL)
+    uint32_t tag_count;
+    uint32_t i;
+
+    if (tif == NULL || fd == NULL)
         return;
-    (void)flags;
-    fprintf(fd,
-            "TIFF directory information is not available in the safe "
-            "lifecycle phase for %s.\n",
-            tif != NULL && tif->tif_name != NULL ? tif->tif_name : "<unnamed>");
+
+    fprintf(fd, "TIFF Directory at offset 0x%" PRIx64 " (%" PRIu64 ")\n",
+            TIFFCurrentDirOffset(tif), TIFFCurrentDirOffset(tif));
+
+    {
+        uint32_t width = 0, length = 0, tilewidth = 0, tilelength = 0;
+        float xres = 0.0f, yres = 0.0f;
+        uint16_t bitspersample = 0, compression = 0, photometric = 0,
+                 orientation = 0, samplesperpixel = 0, planar = 0,
+                 resolutionunit = 0;
+        uint32_t rowsperstrip = 0;
+        uint32_t subfiletype = 0;
+
+        if (TIFFGetField(tif, TIFFTAG_SUBFILETYPE, &subfiletype))
+            fprintf(fd, "  Subfile Type: %" PRIu32 "\n", subfiletype);
+        if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width) &&
+            TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &length))
+            fprintf(fd, "  Image Width: %" PRIu32 " Image Length: %" PRIu32 "\n",
+                    width, length);
+        if (TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tilewidth) &&
+            TIFFGetField(tif, TIFFTAG_TILELENGTH, &tilelength))
+            fprintf(fd, "  Tile Width: %" PRIu32 " Tile Length: %" PRIu32 "\n",
+                    tilewidth, tilelength);
+        if (TIFFGetField(tif, TIFFTAG_XRESOLUTION, &xres) &&
+            TIFFGetField(tif, TIFFTAG_YRESOLUTION, &yres))
+            fprintf(fd, "  Resolution: %g, %g\n", xres, yres);
+        if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitspersample))
+            fprintf(fd, "  Bits/Sample: %" PRIu16 "\n", bitspersample);
+        if (TIFFGetField(tif, TIFFTAG_COMPRESSION, &compression))
+            fprintf(fd, "  Compression: %" PRIu16 "\n", compression);
+        if (TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photometric))
+            fprintf(fd, "  Photometric Interpretation: %" PRIu16 "\n",
+                    photometric);
+        if (TIFFGetField(tif, TIFFTAG_ORIENTATION, &orientation))
+            fprintf(fd, "  Orientation: %" PRIu16 "\n", orientation);
+        if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
+            fprintf(fd, "  Samples/Pixel: %" PRIu16 "\n", samplesperpixel);
+        if (TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP, &rowsperstrip))
+            fprintf(fd, "  Rows/Strip: %" PRIu32 "\n", rowsperstrip);
+        if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &planar))
+            fprintf(fd, "  Planar Configuration: %" PRIu16 "\n", planar);
+        if (TIFFGetField(tif, TIFFTAG_RESOLUTIONUNIT, &resolutionunit))
+            fprintf(fd, "  Resolution Unit: %" PRIu16 "\n", resolutionunit);
+    }
+
+    tag_count = safe_tiff_current_tag_count(tif);
+    for (i = 0; i < tag_count; ++i)
+    {
+        uint32_t tag = safe_tiff_current_tag_at(tif, i);
+        TIFFDataType type;
+        uint64_t count;
+        const void *data;
+        const TIFFField *field;
+
+        if (tag == UINT32_MAX || safe_is_printed_in_summary(tag))
+            continue;
+        field = TIFFFindField(tif, tag, TIFF_ANY);
+        if (field == NULL || !safe_query_tag(tif, tag, 0, &type, &count, &data))
+            continue;
+
+        fprintf(fd, "  %s: ", TIFFFieldName(field));
+        safe_print_value_list(fd, tag, type, count, data, flags);
+        fputc('\n', fd);
+    }
+}
+
+void TIFFFreeDirectory(TIFF *tif)
+{
+    safe_tiff_free_directory(tif);
 }
 
 int TIFFSetDirectory(TIFF *tif, tdir_t dirnum)
 {
-    if (tif == NULL)
-        return 0;
-    if (dirnum == tif->tif_curdir)
-        return 1;
-    if (dirnum == 0 && tif->tif_curdir == TIFF_NON_EXISTENT_DIR_NUMBER)
-        return TIFFReadDirectory(tif);
-    return 0;
+    return safe_tiff_set_directory(tif, dirnum);
 }
 
 int TIFFSetSubDirectory(TIFF *tif, uint64_t diroff)
 {
-    if (tif == NULL)
-        return 0;
-    return diroff != 0 && diroff == TIFFCurrentDirOffset(tif);
+    return safe_tiff_set_sub_directory(tif, diroff);
 }
 
 tdir_t TIFFNumberOfDirectories(TIFF *tif)
 {
-    if (tif == NULL)
-        return 0;
-    if (tif->tif_curdir == TIFF_NON_EXISTENT_DIR_NUMBER)
-        return 0;
-    return (tdir_t)(tif->tif_curdir + 1);
+    return safe_tiff_number_of_directories(tif);
 }
 
 int TIFFLastDirectory(TIFF *tif)
 {
-    (void)tif;
-    return 1;
+    return safe_tiff_last_directory(tif);
 }
 
 void TIFFReverseBits(uint8_t *cp, tmsize_t n)

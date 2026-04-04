@@ -194,6 +194,12 @@ target_sources(api_open_mode_smoke PRIVATE api_open_mode_smoke.c)
 target_link_libraries(api_open_mode_smoke PRIVATE tiff tiff_port)
 list(APPEND simple_tests api_open_mode_smoke)
 
+add_executable(api_directory_read_smoke ../placeholder.h)
+target_sources(api_directory_read_smoke PRIVATE api_directory_read_smoke.c)
+target_link_libraries(api_directory_read_smoke PRIVATE tiff tiff_port)
+target_compile_definitions(api_directory_read_smoke PRIVATE SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
+list(APPEND simple_tests api_directory_read_smoke)
+
 add_executable(api_field_registry_smoke ../placeholder.h)
 target_sources(api_field_registry_smoke PRIVATE api_field_registry_smoke.c)
 target_link_libraries(api_field_registry_smoke PRIVATE tiff tiff_port)
@@ -234,6 +240,11 @@ target_sources(test_ifd_loop_detection PRIVATE test_ifd_loop_detection.c)
 target_link_libraries(test_ifd_loop_detection PRIVATE tiff tiff_port)
 target_compile_definitions(test_ifd_loop_detection PRIVATE SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 list(APPEND simple_tests test_ifd_loop_detection)
+
+add_executable(dirread_regressions ../placeholder.h)
+target_sources(dirread_regressions PRIVATE dirread_regressions.c)
+target_link_libraries(dirread_regressions PRIVATE tiff tiff_port)
+list(APPEND simple_tests dirread_regressions)
 
 if(WEBP_SUPPORT AND EMSCRIPTEN)
   # Emscripten is pretty finnicky about linker flags.

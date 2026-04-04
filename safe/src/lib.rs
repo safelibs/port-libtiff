@@ -6,7 +6,11 @@ pub use abi::{
     TIFFSetGetFieldType, TIFFTagMethods,
 };
 
-use crate::core::FieldRegistryState;
+use crate::core::{
+    current_tag_at, current_tag_count, free_directory_state, get_tag_value, last_directory,
+    number_of_directories, read_custom_directory, read_next_directory, set_directory,
+    set_sub_directory, DirectoryState, FieldRegistryState,
+};
 use libc::{c_char, c_int, c_void, off_t, size_t, ssize_t};
 use std::ffi::{CStr, CString};
 use std::io;
@@ -104,6 +108,7 @@ struct TiffHandleInner {
     current_diroff: Toff,
     next_diroff: Toff,
     owned_name: *mut c_char,
+    directory_state: DirectoryState,
     field_registry: FieldRegistryState,
 }
 
@@ -765,83 +770,7 @@ unsafe fn read_existing_header(
 }
 
 unsafe fn read_directory_internal(tif: *mut TIFF) -> bool {
-    let inner = tif_inner(tif);
-    let module_name = c_name((*tif).tif_name);
-    let dir_offset = (*inner).next_diroff;
-    if dir_offset == 0 {
-        emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-        return false;
-    }
-    if seek_in_proc(tif, dir_offset, libc::SEEK_SET) != dir_offset {
-        emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-        return false;
-    }
-
-    let file_big_endian = (*inner).header_magic == TIFF_BIGENDIAN;
-    let next_offset = if (*inner).header_version == TIFF_VERSION_CLASSIC {
-        let mut count = [0u8; 2];
-        if !read_from_proc(tif, count.as_mut_ptr().cast::<c_void>(), 2) {
-            emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-            return false;
-        }
-        let entry_count = parse_u16(&count, file_big_endian) as u64;
-        let next_offset_pos = match entry_count
-            .checked_mul(12)
-            .and_then(|value| dir_offset.checked_add(2 + value))
-        {
-            Some(value) => value,
-            None => {
-                emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-                return false;
-            }
-        };
-        if seek_in_proc(tif, next_offset_pos, libc::SEEK_SET) != next_offset_pos {
-            emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-            return false;
-        }
-        let mut next = [0u8; 4];
-        if !read_from_proc(tif, next.as_mut_ptr().cast::<c_void>(), 4) {
-            emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-            return false;
-        }
-        parse_u32(&next, file_big_endian) as u64
-    } else {
-        let mut count = [0u8; 8];
-        if !read_from_proc(tif, count.as_mut_ptr().cast::<c_void>(), 8) {
-            emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-            return false;
-        }
-        let entry_count = parse_u64(&count, file_big_endian);
-        let next_offset_pos = match entry_count
-            .checked_mul(20)
-            .and_then(|value| dir_offset.checked_add(8 + value))
-        {
-            Some(value) => value,
-            None => {
-                emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-                return false;
-            }
-        };
-        if seek_in_proc(tif, next_offset_pos, libc::SEEK_SET) != next_offset_pos {
-            emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-            return false;
-        }
-        let mut next = [0u8; 8];
-        if !read_from_proc(tif, next.as_mut_ptr().cast::<c_void>(), 8) {
-            emit_error_message(tif, &module_name, "Cannot read TIFF directory");
-            return false;
-        }
-        parse_u64(&next, file_big_endian)
-    };
-
-    (*inner).current_diroff = dir_offset;
-    (*inner).next_diroff = next_offset;
-    (*tif).tif_curdir = if (*tif).tif_curdir == TIFF_NON_EXISTENT_DIR_NUMBER {
-        0
-    } else {
-        (*tif).tif_curdir.saturating_add(1)
-    };
-    true
+    read_next_directory(tif)
 }
 
 unsafe fn finalize_open(tif: *mut TIFF, mode_bytes: &[u8], open_flags: c_int) -> bool {
@@ -993,6 +922,7 @@ unsafe fn make_handle(
         current_diroff: 0,
         next_diroff: 0,
         owned_name: name_owner,
+        directory_state: DirectoryState::default(),
         field_registry: FieldRegistryState::default(),
     });
 
@@ -1693,6 +1623,62 @@ pub unsafe extern "C" fn TIFFIsBigEndian(tif: *mut TIFF) -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn TIFFIsBigTIFF(tif: *mut TIFF) -> c_int {
     ((*tif_inner(tif)).header_version == TIFF_VERSION_BIG) as c_int
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_read_custom_directory(
+    tif: *mut TIFF,
+    diroff: u64,
+    infoarray: *const TIFFFieldArray,
+) -> c_int {
+    read_custom_directory(tif, diroff, infoarray) as c_int
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_set_directory(tif: *mut TIFF, dirnum: u32) -> c_int {
+    set_directory(tif, dirnum) as c_int
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_set_sub_directory(tif: *mut TIFF, diroff: u64) -> c_int {
+    set_sub_directory(tif, diroff) as c_int
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_number_of_directories(tif: *mut TIFF) -> u32 {
+    number_of_directories(tif)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_last_directory(tif: *mut TIFF) -> c_int {
+    last_directory(tif) as c_int
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_free_directory(tif: *mut TIFF) {
+    free_directory_state(tif);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_current_tag_count(tif: *mut TIFF) -> u32 {
+    current_tag_count(tif)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_current_tag_at(tif: *mut TIFF, index: u32) -> u32 {
+    current_tag_at(tif, index)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_get_tag_value(
+    tif: *mut TIFF,
+    tag: u32,
+    defaulted: c_int,
+    out_type: *mut TIFFDataType,
+    out_count: *mut u64,
+    out_data: *mut *const c_void,
+) -> c_int {
+    get_tag_value(tif, tag, defaulted != 0, out_type, out_count, out_data)
 }
 
 #[no_mangle]
