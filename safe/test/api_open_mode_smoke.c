@@ -77,6 +77,38 @@ static void read_file_prefix(const char *path, void *buffer, size_t size)
     close(fd);
 }
 
+static void begin_stderr_capture(char *path_template, int *saved_fd,
+                                 int *capture_fd)
+{
+    *saved_fd = dup(STDERR_FILENO);
+    if (*saved_fd < 0)
+        fail("dup stderr failed");
+    *capture_fd = mkstemp(path_template);
+    if (*capture_fd < 0)
+        fail("mkstemp stderr capture failed");
+    if (dup2(*capture_fd, STDERR_FILENO) < 0)
+        fail("dup2 stderr failed");
+}
+
+static void end_stderr_capture(char *path_template, int saved_fd, int capture_fd,
+                               char *buffer, size_t buffer_size)
+{
+    ssize_t rc;
+
+    fflush(stderr);
+    if (dup2(saved_fd, STDERR_FILENO) < 0)
+        fail("restore stderr failed");
+    close(saved_fd);
+    if (lseek(capture_fd, 0, SEEK_SET) < 0)
+        fail("stderr capture rewind failed");
+    rc = read(capture_fd, buffer, buffer_size - 1);
+    if (rc < 0)
+        fail("stderr capture read failed");
+    buffer[rc] = '\0';
+    close(capture_fd);
+    unlink(path_template);
+}
+
 static void write_empty_classic_tiff(const char *path)
 {
     static const unsigned char classic_le[] = {
@@ -215,9 +247,13 @@ int main(void)
     char read_path[] = "api_open_mode_readXXXXXX";
     char big_read_path[] = "api_open_mode_big_readXXXXXX";
     char invalid_path[] = "api_open_mode_invalidXXXXXX";
+    char stderr_path[] = "api_open_mode_stderrXXXXXX";
+    char stderr_buffer[512];
     TIFF *tif;
     TIFFOpenOptions *opts;
+    int capture_stderr_fd;
     int fd;
+    int saved_stderr_fd;
     ClientFile client;
     TIFFErrorHandler previous_warning_handler;
 
@@ -309,8 +345,13 @@ int main(void)
     TIFFClose(tif);
     expect_prefix(path, classic_le, sizeof(classic_le), "a+");
 
+    begin_stderr_capture(stderr_path, &saved_stderr_fd, &capture_stderr_fd);
     tif = TIFFOpen(invalid_path, "r+");
+    end_stderr_capture(stderr_path, saved_stderr_fd, capture_stderr_fd,
+                       stderr_buffer, sizeof(stderr_buffer));
     expect(tif == NULL, "TIFFOpen(r+) should reject invalid existing files");
+    expect(strstr(stderr_buffer, "Not a TIFF file") != NULL,
+           "invalid r+ should use the Unix default global error handler");
     expect_prefix(invalid_path, invalid_bytes, sizeof(invalid_bytes),
                   "invalid r+");
 

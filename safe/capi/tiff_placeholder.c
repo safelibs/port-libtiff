@@ -4,9 +4,27 @@
 
 extern int tiff_safe_core_placeholder(void);
 
-static TIFFErrorHandler g_error_handler = NULL;
+static void unix_error_handler(const char *module, const char *fmt, va_list ap)
+{
+    if (module != NULL)
+        fprintf(stderr, "%s: ", module);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, ".\n");
+}
+
+static void unix_warning_handler(const char *module, const char *fmt,
+                                 va_list ap)
+{
+    if (module != NULL)
+        fprintf(stderr, "%s: ", module);
+    fprintf(stderr, "Warning, ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, ".\n");
+}
+
+static TIFFErrorHandler g_error_handler = unix_error_handler;
 static TIFFErrorHandlerExt g_error_handler_ext = NULL;
-static TIFFErrorHandler g_warning_handler = NULL;
+static TIFFErrorHandler g_warning_handler = unix_warning_handler;
 static TIFFErrorHandlerExt g_warning_handler_ext = NULL;
 static uint64_t g_zero_strile_counts[1] = {0};
 
