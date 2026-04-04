@@ -168,6 +168,31 @@ unsafe fn setup_fields_impl(tif: *mut TIFF, infoarray: *const TIFFFieldArray) ->
     true
 }
 
+unsafe fn record_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
+    if tif.is_null() {
+        return 0;
+    }
+    let _ = initialize_field_registry(tif);
+    let state = registry_state_mut(tif);
+    let field = find_field_impl(state, tag, TIFF_ANY);
+    if field.is_null() || (*field).field_bit != FIELD_CUSTOM {
+        return 1;
+    }
+    if !state.tag_list.contains(&tag) {
+        state.tag_list.push(tag);
+    }
+    1
+}
+
+unsafe fn remove_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
+    if tif.is_null() {
+        return 0;
+    }
+    let state = registry_state_mut(tif);
+    state.tag_list.retain(|entry| *entry != tag);
+    1
+}
+
 unsafe fn merge_fields_impl(tif: *mut TIFF, info: *const TIFFField, n: u32) -> c_int {
     if tif.is_null() {
         return 0;
@@ -412,6 +437,16 @@ pub(crate) unsafe fn reset_default_directory(tif: *mut TIFF) -> bool {
         extender(tif);
     }
     true
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_record_custom_tag(tif: *mut TIFF, tag: u32) -> c_int {
+    record_custom_tag_impl(tif, tag)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_tiff_remove_custom_tag(tif: *mut TIFF, tag: u32) -> c_int {
+    remove_custom_tag_impl(tif, tag)
 }
 
 #[no_mangle]

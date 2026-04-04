@@ -97,6 +97,7 @@ int main(void)
     const TIFFFieldArray *gps_fields;
     const TIFFField *field;
     const TIFFField *custom_field;
+    double custom_value = 7.25;
     int i;
     int client_marker = 42;
 
@@ -152,9 +153,9 @@ int main(void)
     expect(TIFFGetClientInfo(tif, "smoke-client") == &client_marker,
            "client info roundtrip failed");
 
-    expect(TIFFGetTagListCount(tif) == 0, "unexpected custom tag list count");
+    expect(TIFFGetTagListCount(tif) == 0, "unexpected initial custom tag list count");
     expect(TIFFGetTagListEntry(tif, 0) == (uint32_t)-1,
-           "unexpected custom tag list entry");
+           "unexpected initial custom tag list entry");
 
     expect(TIFFMergeFieldInfo(tif, custom_field_info,
                               (uint32_t)(sizeof(custom_field_info) /
@@ -169,6 +170,26 @@ int main(void)
            "unexpected custom field count size");
     expect(TIFFFieldIsAnonymous(custom_field) == 0,
            "merged custom field should not be anonymous");
+    expect(TIFFSetField(tif, TIFFTAG_SMOKE_CUSTOM, (uint32_t)1, &custom_value) == 1,
+           "TIFFSetField failed for merged custom field");
+    expect(TIFFGetTagListCount(tif) == 1,
+           "custom tag set should be recorded in the tag list");
+    expect(TIFFGetTagListEntry(tif, 0) == TIFFTAG_SMOKE_CUSTOM,
+           "unexpected recorded custom tag");
+    expect(TIFFSetField(tif, TIFFTAG_FILLORDER, FILLORDER_LSB2MSB) == 1,
+           "TIFFSetField failed for built-in field");
+    expect(TIFFGetTagListCount(tif) == 1,
+           "built-in tags must not be added to the custom tag list");
+    expect(TIFFSetField(tif, TIFFTAG_SMOKE_CUSTOM, (uint32_t)1, &custom_value) == 1,
+           "TIFFSetField failed when updating merged custom field");
+    expect(TIFFGetTagListCount(tif) == 1,
+           "setting the same custom tag twice must not duplicate it");
+    expect(TIFFUnsetField(tif, TIFFTAG_SMOKE_CUSTOM) == 1,
+           "TIFFUnsetField failed for merged custom field");
+    expect(TIFFGetTagListCount(tif) == 0,
+           "unsetting the custom tag should clear it from the tag list");
+    expect(TIFFGetTagListEntry(tif, 0) == (uint32_t)-1,
+           "unexpected tag list entry after unsetting the custom field");
 
     TIFFClose(tif);
     unlink(path);

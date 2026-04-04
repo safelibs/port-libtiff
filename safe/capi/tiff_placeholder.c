@@ -3,6 +3,8 @@
 #include <stdarg.h>
 
 extern int tiff_safe_core_placeholder(void);
+extern int safe_tiff_record_custom_tag(TIFF *tif, uint32_t tag);
+extern int safe_tiff_remove_custom_tag(TIFF *tif, uint32_t tag);
 
 static void unix_error_handler(const char *module, const char *fmt, va_list ap)
 {
@@ -466,7 +468,22 @@ int TIFFVSetField(TIFF *tif, uint32_t tag, va_list ap)
         tif->tif_flags |=
             (order == FILLORDER_LSB2MSB) ? FILLORDER_LSB2MSB : FILLORDER_MSB2LSB;
     }
+    safe_tiff_record_custom_tag(tif, tag);
     return 1;
+}
+
+int TIFFUnsetField(TIFF *tif, uint32_t tag)
+{
+    if (tif == NULL)
+        return 0;
+
+    if (tag == TIFFTAG_FILLORDER)
+    {
+        tif->tif_flags &= ~TIFF_FILLORDER;
+        tif->tif_flags |= FILLORDER_MSB2LSB;
+    }
+
+    return safe_tiff_remove_custom_tag(tif, tag);
 }
 
 int TIFFReadEXIFDirectory(TIFF *tif, toff_t diroff)
