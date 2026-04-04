@@ -1,12 +1,14 @@
 use crate::abi::{TIFFCodec, TIFFDataType, TIFFInitMethod};
-use crate::{
-    stub_bool_method, stub_decoderow_method, stub_predecode_method, stub_void_method, TIFF,
-};
 use crate::strile::{
     TIFFSwabArrayOfDouble, TIFFSwabArrayOfLong, TIFFSwabArrayOfLong8, TIFFSwabArrayOfShort,
     TIFFSwabArrayOfTriples,
 };
-use fax::{maps, BitReader as FaxBitReader, BitWriter as FaxBitWriter, Color as FaxColor, VecWriter};
+use crate::{
+    stub_bool_method, stub_decoderow_method, stub_predecode_method, stub_void_method, TIFF,
+};
+use fax::{
+    maps, BitReader as FaxBitReader, BitWriter as FaxBitWriter, Color as FaxColor, VecWriter,
+};
 use flate2::{bufread::ZlibDecoder, write::ZlibEncoder, Compression as FlateCompression};
 use libc::{c_char, c_int, c_void};
 use std::collections::BTreeMap;
@@ -16,9 +18,7 @@ use std::ptr;
 use std::slice;
 use std::sync::{Mutex, OnceLock};
 use weezl::{
-    decode::Configuration as LzwDecodeConfig,
-    encode::Encoder as LzwEncoder,
-    BitOrder, LzwStatus,
+    decode::Configuration as LzwDecodeConfig, encode::Encoder as LzwEncoder, BitOrder, LzwStatus,
 };
 
 const COMPRESSION_NONE: u16 = 1;
@@ -49,6 +49,9 @@ const TAG_PLANARCONFIG: u32 = 284;
 
 const FAXMODE_CLASSIC: i32 = 0;
 const FAXMODE_NORTC: i32 = 0x0001;
+const FAXMODE_NOEOL: i32 = 0x0002;
+const FAXMODE_BYTEALIGN: i32 = 0x0004;
+const FAXMODE_WORDALIGN: i32 = 0x0008;
 const DEFLATE_SUBCODEC_ZLIB: i32 = 0;
 const FILLORDER_MSB2LSB: u16 = 1;
 const FILLORDER_LSB2MSB: u16 = 2;
@@ -329,7 +332,8 @@ unsafe fn get_tag_raw(
     let mut type_ = TIFFDataType::TIFF_NOTYPE;
     let mut count = 0u64;
     let mut data: *const c_void = ptr::null();
-    if super::directory::get_tag_value(tif, tag, defaulted, &mut type_, &mut count, &mut data) == 0 {
+    if super::directory::get_tag_value(tif, tag, defaulted, &mut type_, &mut count, &mut data) == 0
+    {
         return None;
     }
     Some((type_, usize::try_from(count).ok()?, data))
@@ -344,8 +348,12 @@ unsafe fn tag_u16(tif: *mut TIFF, tag: u32, defaulted: bool, default: u16) -> u1
     }
     match type_.0 {
         x if x == TIFFDataType::TIFF_SHORT.0 => *data.cast::<u16>(),
-        x if x == TIFFDataType::TIFF_LONG.0 => u16::try_from(*data.cast::<u32>()).unwrap_or(default),
-        x if x == TIFFDataType::TIFF_SLONG.0 => u16::try_from(*data.cast::<i32>()).unwrap_or(default),
+        x if x == TIFFDataType::TIFF_LONG.0 => {
+            u16::try_from(*data.cast::<u32>()).unwrap_or(default)
+        }
+        x if x == TIFFDataType::TIFF_SLONG.0 => {
+            u16::try_from(*data.cast::<i32>()).unwrap_or(default)
+        }
         _ => default,
     }
 }
@@ -360,7 +368,9 @@ unsafe fn tag_u32(tif: *mut TIFF, tag: u32, defaulted: bool, default: u32) -> u3
     match type_.0 {
         x if x == TIFFDataType::TIFF_SHORT.0 => u32::from(*data.cast::<u16>()),
         x if x == TIFFDataType::TIFF_LONG.0 => *data.cast::<u32>(),
-        x if x == TIFFDataType::TIFF_SLONG.0 => u32::try_from(*data.cast::<i32>()).unwrap_or(default),
+        x if x == TIFFDataType::TIFF_SLONG.0 => {
+            u32::try_from(*data.cast::<i32>()).unwrap_or(default)
+        }
         _ => default,
     }
 }
@@ -372,6 +382,10 @@ unsafe fn active_scheme(tif: *mut TIFF) -> u16 {
     } else {
         tag_u16(tif, TAG_COMPRESSION, true, COMPRESSION_NONE)
     }
+}
+
+unsafe fn fax_mode(tif: *mut TIFF) -> i32 {
+    (*(*tif).inner).codec_state.fax_mode
 }
 
 unsafe fn predictor(tif: *mut TIFF) -> u16 {
@@ -434,14 +448,26 @@ unsafe fn apply_swab_in_place(tif: *mut TIFF, bytes: &mut [u8]) {
     }
     match bits_per_sample(tif) {
         8 => {}
-        16 => TIFFSwabArrayOfShort(bytes.as_mut_ptr().cast::<u16>(), (bytes.len() / 2) as crate::Tmsize),
+        16 => TIFFSwabArrayOfShort(
+            bytes.as_mut_ptr().cast::<u16>(),
+            (bytes.len() / 2) as crate::Tmsize,
+        ),
         24 => TIFFSwabArrayOfTriples(bytes.as_mut_ptr(), (bytes.len() / 3) as crate::Tmsize),
-        32 => TIFFSwabArrayOfLong(bytes.as_mut_ptr().cast::<u32>(), (bytes.len() / 4) as crate::Tmsize),
+        32 => TIFFSwabArrayOfLong(
+            bytes.as_mut_ptr().cast::<u32>(),
+            (bytes.len() / 4) as crate::Tmsize,
+        ),
         64 => {
             if sample_format(tif) == SAMPLEFORMAT_IEEEFP {
-                TIFFSwabArrayOfDouble(bytes.as_mut_ptr().cast::<f64>(), (bytes.len() / 8) as crate::Tmsize)
+                TIFFSwabArrayOfDouble(
+                    bytes.as_mut_ptr().cast::<f64>(),
+                    (bytes.len() / 8) as crate::Tmsize,
+                )
             } else {
-                TIFFSwabArrayOfLong8(bytes.as_mut_ptr().cast::<u64>(), (bytes.len() / 8) as crate::Tmsize)
+                TIFFSwabArrayOfLong8(
+                    bytes.as_mut_ptr().cast::<u64>(),
+                    (bytes.len() / 8) as crate::Tmsize,
+                )
             }
         }
         _ => {}
@@ -463,7 +489,9 @@ fn load_native_sample(bytes: &[u8]) -> Option<u64> {
     match bytes.len() {
         1 => Some(u64::from(bytes[0])),
         2 => Some(u64::from(u16::from_ne_bytes([bytes[0], bytes[1]]))),
-        4 => Some(u64::from(u32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))),
+        4 => Some(u64::from(u32::from_ne_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3],
+        ]))),
         8 => Some(u64::from_ne_bytes([
             bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
         ])),
@@ -482,7 +510,12 @@ fn store_native_sample(bytes: &mut [u8], value: u64) -> bool {
     true
 }
 
-fn horizontal_accumulate(bytes: &mut [u8], rowsize: usize, stride: usize, sample_bytes: usize) -> bool {
+fn horizontal_accumulate(
+    bytes: &mut [u8],
+    rowsize: usize,
+    stride: usize,
+    sample_bytes: usize,
+) -> bool {
     if rowsize == 0 || bytes.len() % rowsize != 0 || rowsize % sample_bytes != 0 || stride == 0 {
         return false;
     }
@@ -491,10 +524,12 @@ fn horizontal_accumulate(bytes: &mut [u8], rowsize: usize, stride: usize, sample
         for index in stride..samples {
             let prev_offset = (index - stride) * sample_bytes;
             let curr_offset = index * sample_bytes;
-            let Some(prev) = load_native_sample(&row[prev_offset..prev_offset + sample_bytes]) else {
+            let Some(prev) = load_native_sample(&row[prev_offset..prev_offset + sample_bytes])
+            else {
                 return false;
             };
-            let Some(curr) = load_native_sample(&row[curr_offset..curr_offset + sample_bytes]) else {
+            let Some(curr) = load_native_sample(&row[curr_offset..curr_offset + sample_bytes])
+            else {
                 return false;
             };
             if !store_native_sample(
@@ -508,7 +543,12 @@ fn horizontal_accumulate(bytes: &mut [u8], rowsize: usize, stride: usize, sample
     true
 }
 
-fn horizontal_differentiate(bytes: &mut [u8], rowsize: usize, stride: usize, sample_bytes: usize) -> bool {
+fn horizontal_differentiate(
+    bytes: &mut [u8],
+    rowsize: usize,
+    stride: usize,
+    sample_bytes: usize,
+) -> bool {
     if rowsize == 0 || bytes.len() % rowsize != 0 || rowsize % sample_bytes != 0 || stride == 0 {
         return false;
     }
@@ -517,10 +557,12 @@ fn horizontal_differentiate(bytes: &mut [u8], rowsize: usize, stride: usize, sam
         for index in (stride..samples).rev() {
             let prev_offset = (index - stride) * sample_bytes;
             let curr_offset = index * sample_bytes;
-            let Some(prev) = load_native_sample(&row[prev_offset..prev_offset + sample_bytes]) else {
+            let Some(prev) = load_native_sample(&row[prev_offset..prev_offset + sample_bytes])
+            else {
                 return false;
             };
-            let Some(curr) = load_native_sample(&row[curr_offset..curr_offset + sample_bytes]) else {
+            let Some(curr) = load_native_sample(&row[curr_offset..curr_offset + sample_bytes])
+            else {
                 return false;
             };
             if !store_native_sample(
@@ -534,7 +576,12 @@ fn horizontal_differentiate(bytes: &mut [u8], rowsize: usize, stride: usize, sam
     true
 }
 
-fn floating_accumulate(bytes: &mut [u8], rowsize: usize, stride: usize, sample_bytes: usize) -> bool {
+fn floating_accumulate(
+    bytes: &mut [u8],
+    rowsize: usize,
+    stride: usize,
+    sample_bytes: usize,
+) -> bool {
     if rowsize == 0 || bytes.len() % rowsize != 0 || rowsize % (sample_bytes * stride) != 0 {
         return false;
     }
@@ -560,7 +607,12 @@ fn floating_accumulate(bytes: &mut [u8], rowsize: usize, stride: usize, sample_b
     true
 }
 
-fn floating_differentiate(bytes: &mut [u8], rowsize: usize, stride: usize, sample_bytes: usize) -> bool {
+fn floating_differentiate(
+    bytes: &mut [u8],
+    rowsize: usize,
+    stride: usize,
+    sample_bytes: usize,
+) -> bool {
     if rowsize == 0 || bytes.len() % rowsize != 0 || rowsize % (sample_bytes * stride) != 0 {
         return false;
     }
@@ -620,7 +672,12 @@ unsafe fn decode_predictor_bytes(
                 return false;
             };
             apply_swab_in_place(tif, bytes);
-            horizontal_accumulate(bytes, geometry.row_size, predictor_stride(tif), sample_bytes)
+            horizontal_accumulate(
+                bytes,
+                geometry.row_size,
+                predictor_stride(tif),
+                sample_bytes,
+            )
         }
         PREDICTOR_FLOATINGPOINT => {
             if sample_format(tif) != SAMPLEFORMAT_IEEEFP {
@@ -629,7 +686,12 @@ unsafe fn decode_predictor_bytes(
             let Some(sample_bytes) = sample_size_bytes(bits_per_sample(tif)) else {
                 return false;
             };
-            floating_accumulate(bytes, geometry.row_size, predictor_stride(tif), sample_bytes)
+            floating_accumulate(
+                bytes,
+                geometry.row_size,
+                predictor_stride(tif),
+                sample_bytes,
+            )
         }
         _ => false,
     }
@@ -648,7 +710,12 @@ unsafe fn encode_predictor_bytes(
         }
         PREDICTOR_HORIZONTAL => {
             let sample_bytes = sample_size_bytes(bits_per_sample(tif))?;
-            if !horizontal_differentiate(&mut bytes, geometry.row_size, predictor_stride(tif), sample_bytes) {
+            if !horizontal_differentiate(
+                &mut bytes,
+                geometry.row_size,
+                predictor_stride(tif),
+                sample_bytes,
+            ) {
                 return None;
             }
             apply_swab_in_place(tif, &mut bytes);
@@ -658,7 +725,12 @@ unsafe fn encode_predictor_bytes(
                 return None;
             }
             let sample_bytes = sample_size_bytes(bits_per_sample(tif))?;
-            if !floating_differentiate(&mut bytes, geometry.row_size, predictor_stride(tif), sample_bytes) {
+            if !floating_differentiate(
+                &mut bytes,
+                geometry.row_size,
+                predictor_stride(tif),
+                sample_bytes,
+            ) {
                 return None;
             }
         }
@@ -743,6 +815,164 @@ fn encode_packbits(input: &[u8], row_size: usize) -> Vec<u8> {
         encode_packbits_row(row, &mut output);
     }
     output
+}
+
+fn set_2bit_pixel(row: &mut [u8], pixel_index: usize, value: u8) -> bool {
+    let Some(byte) = row.get_mut(pixel_index / 4) else {
+        return false;
+    };
+    let shift = 6usize.saturating_sub((pixel_index % 4) * 2);
+    *byte &= !(0x03 << shift);
+    *byte |= (value & 0x03) << shift;
+    true
+}
+
+fn decode_next(input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+    let expected_size = geometry.row_size.checked_mul(geometry.rows)?;
+    let mut output = vec![0xffu8; expected_size];
+    let mut index = 0usize;
+    for row in output.chunks_exact_mut(geometry.row_size) {
+        if index >= input.len() {
+            break;
+        }
+        let code = input[index];
+        index += 1;
+        match code {
+            0x00 => {
+                let end = index.checked_add(geometry.row_size)?;
+                if end > input.len() {
+                    return None;
+                }
+                row.copy_from_slice(&input[index..end]);
+                index = end;
+            }
+            0x40 => {
+                let header_end = index.checked_add(4)?;
+                if header_end > input.len() {
+                    return None;
+                }
+                let offset = u16::from_be_bytes([input[index], input[index + 1]]) as usize;
+                let len = u16::from_be_bytes([input[index + 2], input[index + 3]]) as usize;
+                index = header_end;
+                let end = index.checked_add(len)?;
+                if end > input.len() || offset.checked_add(len)? > geometry.row_size {
+                    return None;
+                }
+                row[offset..offset + len].copy_from_slice(&input[index..end]);
+                index = end;
+            }
+            mut run => {
+                let mut pixel_index = 0usize;
+                while pixel_index < geometry.width as usize {
+                    let grey = (run >> 6) & 0x03;
+                    let count = usize::from(run & 0x3f);
+                    for _ in 0..count {
+                        if pixel_index >= geometry.width as usize
+                            || !set_2bit_pixel(row, pixel_index, grey)
+                        {
+                            break;
+                        }
+                        pixel_index += 1;
+                    }
+                    if pixel_index >= geometry.width as usize {
+                        break;
+                    }
+                    run = *input.get(index)?;
+                    index += 1;
+                }
+            }
+        }
+    }
+    Some(output)
+}
+
+fn set_4bit_pixel(row: &mut [u8], pixel_index: usize, value: u8) -> bool {
+    let Some(byte) = row.get_mut(pixel_index / 2) else {
+        return false;
+    };
+    if (pixel_index & 1) == 0 {
+        *byte = (value & 0x0f) << 4;
+    } else {
+        *byte |= value & 0x0f;
+    }
+    true
+}
+
+fn wrapping_nibble_delta(value: u8, delta: i8) -> u8 {
+    (((value as i16) + (delta as i16)).rem_euclid(16)) as u8
+}
+
+fn decode_thunderscan(input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+    const THUNDER_CODE: u8 = 0xc0;
+    const THUNDER_RUN: u8 = 0x00;
+    const THUNDER_2BIT_DELTAS: u8 = 0x40;
+    const THUNDER_3BIT_DELTAS: u8 = 0x80;
+    const THUNDER_RAW: u8 = 0xc0;
+    const DELTA2_SKIP: u8 = 2;
+    const DELTA3_SKIP: u8 = 4;
+    const TWOBIT_DELTAS: [i8; 4] = [0, 1, 0, -1];
+    const THREEBIT_DELTAS: [i8; 8] = [0, 1, 2, 3, 0, -3, -2, -1];
+
+    let expected_size = geometry.row_size.checked_mul(geometry.rows)?;
+    let mut output = vec![0u8; expected_size];
+    let mut index = 0usize;
+    for row in output.chunks_exact_mut(geometry.row_size) {
+        let mut lastpixel = 0u8;
+        let mut npixels = 0usize;
+        while npixels < geometry.width as usize {
+            let n = *input.get(index)?;
+            index += 1;
+            match n & THUNDER_CODE {
+                THUNDER_RUN => {
+                    let count = usize::from(n & 0x3f);
+                    if npixels.checked_add(count)? > geometry.width as usize {
+                        return None;
+                    }
+                    for _ in 0..count {
+                        if !set_4bit_pixel(row, npixels, lastpixel) {
+                            return None;
+                        }
+                        npixels += 1;
+                    }
+                }
+                THUNDER_2BIT_DELTAS => {
+                    for delta_code in [(n >> 4) & 0x03, (n >> 2) & 0x03, n & 0x03] {
+                        if delta_code == DELTA2_SKIP || npixels >= geometry.width as usize {
+                            continue;
+                        }
+                        lastpixel =
+                            wrapping_nibble_delta(lastpixel, TWOBIT_DELTAS[delta_code as usize]);
+                        if !set_4bit_pixel(row, npixels, lastpixel) {
+                            return None;
+                        }
+                        npixels += 1;
+                    }
+                }
+                THUNDER_3BIT_DELTAS => {
+                    for delta_code in [(n >> 3) & 0x07, n & 0x07] {
+                        if delta_code == DELTA3_SKIP || npixels >= geometry.width as usize {
+                            continue;
+                        }
+                        lastpixel =
+                            wrapping_nibble_delta(lastpixel, THREEBIT_DELTAS[delta_code as usize]);
+                        if !set_4bit_pixel(row, npixels, lastpixel) {
+                            return None;
+                        }
+                        npixels += 1;
+                    }
+                }
+                THUNDER_RAW => {
+                    if !set_4bit_pixel(row, npixels, n & 0x0f) {
+                        return None;
+                    }
+                    lastpixel = n & 0x0f;
+                    npixels += 1;
+                }
+                _ => return None,
+            }
+        }
+    }
+    Some(output)
 }
 
 fn decode_lzw(input: &[u8], expected_size: usize) -> Option<Vec<u8>> {
@@ -882,9 +1112,57 @@ fn decode_fax_1d_line(reader: &mut CcittBitReader<'_>, width: u16) -> Option<Vec
     Some(transitions)
 }
 
+fn decode_fax_1d_line_exact(reader: &mut CcittBitReader<'_>, width: u16) -> Option<Vec<u16>> {
+    let mut transitions = Vec::new();
+    let mut current = FaxColor::White;
+    let mut x = 0u16;
+    let mut runs = 0usize;
+    while x < width {
+        let run = decode_fax_run(reader, current)?;
+        runs += 1;
+        if runs > usize::from(width).saturating_mul(4).saturating_add(64) {
+            return None;
+        }
+        x = x.checked_add(run)?;
+        if x > width {
+            return None;
+        }
+        if x < width {
+            transitions.push(x);
+            current = !current;
+        }
+    }
+    Some(transitions)
+}
+
 fn fill_to_boundary(bits: &mut TrackingWriter, boundary: u8) {
     while boundary != 0 && (bits.bits_written % usize::from(boundary)) != 0 {
         let _ = bits.write(fax::Bits { data: 0, len: 1 });
+    }
+}
+
+fn fax_alignment_boundary(mode: i32) -> Option<u8> {
+    if (mode & FAXMODE_BYTEALIGN) != 0 {
+        Some(8)
+    } else if (mode & FAXMODE_WORDALIGN) != 0 {
+        Some(16)
+    } else {
+        None
+    }
+}
+
+fn align_fax_reader(reader: &mut CcittBitReader<'_>, mode: i32) -> bool {
+    let Some(boundary) = fax_alignment_boundary(mode) else {
+        return true;
+    };
+    let boundary = usize::from(boundary);
+    let skip = (boundary - (reader.bit_pos % boundary)) % boundary;
+    skip < 256 && reader.consume(skip as u8).is_ok()
+}
+
+fn align_fax_writer(bits: &mut TrackingWriter, mode: i32) {
+    if let Some(boundary) = fax_alignment_boundary(mode) {
+        fill_to_boundary(bits, boundary);
     }
 }
 
@@ -951,7 +1229,13 @@ fn encode_run_length(bits: &mut TrackingWriter, color: FaxColor, mut run: u16) -
     write_entry(run)
 }
 
-fn encode_fax_1d_row(bits: &mut TrackingWriter, row: &[u8], width: u32, photometric: u16, lsb_first: bool) -> bool {
+fn encode_fax_1d_row(
+    bits: &mut TrackingWriter,
+    row: &[u8],
+    width: u32,
+    photometric: u16,
+    lsb_first: bool,
+) -> bool {
     let transitions = build_fax_transitions(row, width, photometric, lsb_first);
     let mut current = FaxColor::White;
     let mut start = 0u16;
@@ -977,7 +1261,8 @@ fn pack_fax_row(
     let mut current = FaxColor::White;
     let mut transition_index = 0usize;
     for x in 0..width {
-        while transition_index < transitions.len() && u32::from(transitions[transition_index]) == x {
+        while transition_index < transitions.len() && u32::from(transitions[transition_index]) == x
+        {
             current = !current;
             transition_index += 1;
         }
@@ -1019,6 +1304,26 @@ unsafe fn decode_group3_1d(
     input: &[u8],
     geometry: CodecGeometry,
 ) -> Option<Vec<u8>> {
+    if (fax_mode(tif) & FAXMODE_NOEOL) != 0 {
+        let bytes = prepare_fax_input(tif, input);
+        let mut reader = CcittBitReader::new(&bytes, 0);
+        let mut output = vec![0u8; geometry.row_size.checked_mul(geometry.rows)?];
+        for row_index in 0..geometry.rows {
+            let transitions = decode_fax_1d_line_exact(&mut reader, geometry.width as u16)?;
+            let start = row_index.checked_mul(geometry.row_size)?;
+            pack_fax_row(
+                &mut output[start..start + geometry.row_size],
+                geometry.width,
+                &transitions,
+                photometric(tif),
+                memory_fillorder_lsb(tif),
+            );
+            if !align_fax_reader(&mut reader, fax_mode(tif)) {
+                return None;
+            }
+        }
+        return Some(output);
+    }
     let row_size = geometry.row_size.checked_mul(geometry.rows)?;
     if let Some(rows) = decode_group3_rows(tif, input, geometry.width) {
         if rows.len() < geometry.rows {
@@ -1078,28 +1383,29 @@ unsafe fn decode_group3_rows(tif: *mut TIFF, input: &[u8], width: u32) -> Option
     }
 }
 
-unsafe fn decode_group4(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
+unsafe fn decode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     let bytes = prepare_fax_input(tif, input);
     let mut output = vec![0u8; geometry.row_size.checked_mul(geometry.rows)?];
     let mut row_index = 0usize;
-    fax::decoder::decode_g4(bytes.iter().copied(), geometry.width as u16, Some(geometry.rows as u16), |transitions| {
-        if row_index >= geometry.rows {
-            return;
-        }
-        let start = row_index * geometry.row_size;
-        pack_fax_row(
-            &mut output[start..start + geometry.row_size],
-            geometry.width,
-            transitions,
-            unsafe { photometric(tif) },
-            unsafe { memory_fillorder_lsb(tif) },
-        );
-        row_index += 1;
-    })?;
+    fax::decoder::decode_g4(
+        bytes.iter().copied(),
+        geometry.width as u16,
+        Some(geometry.rows as u16),
+        |transitions| {
+            if row_index >= geometry.rows {
+                return;
+            }
+            let start = row_index * geometry.row_size;
+            pack_fax_row(
+                &mut output[start..start + geometry.row_size],
+                geometry.width,
+                transitions,
+                unsafe { photometric(tif) },
+                unsafe { memory_fillorder_lsb(tif) },
+            );
+            row_index += 1;
+        },
+    )?;
     (row_index == geometry.rows).then_some(output)
 }
 
@@ -1109,12 +1415,15 @@ unsafe fn encode_group3_1d(
     geometry: CodecGeometry,
 ) -> Option<Vec<u8>> {
     let mut bits = TrackingWriter::with_capacity(input.len().checked_mul(12)?);
+    let mode = fax_mode(tif);
     for row_index in 0..geometry.rows {
         let start = row_index.checked_mul(geometry.row_size)?;
-        if group3_fillbits(tif) {
+        if (mode & FAXMODE_NOEOL) == 0 && group3_fillbits(tif) {
             fill_to_boundary(&mut bits, 8);
         }
-        bits.write(maps::EOL).ok()?;
+        if (mode & FAXMODE_NOEOL) == 0 {
+            bits.write(maps::EOL).ok()?;
+        }
         if !encode_fax_1d_row(
             &mut bits,
             &input[start..start + geometry.row_size],
@@ -1124,8 +1433,9 @@ unsafe fn encode_group3_1d(
         ) {
             return None;
         }
+        align_fax_writer(&mut bits, mode);
     }
-    if (*(*tif).inner).codec_state.fax_mode & FAXMODE_NORTC == 0 {
+    if (mode & FAXMODE_NORTC) == 0 {
         for _ in 0..6 {
             if group3_fillbits(tif) {
                 fill_to_boundary(&mut bits, 8);
@@ -1138,11 +1448,7 @@ unsafe fn encode_group3_1d(
     Some(output)
 }
 
-unsafe fn encode_group4(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
+unsafe fn encode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     let mut encoder =
         fax::encoder::Encoder::new(TrackingWriter::with_capacity(input.len().checked_mul(8)?));
     for row_index in 0..geometry.rows {
@@ -1150,9 +1456,8 @@ unsafe fn encode_group4(
         let row = &input[start..start + geometry.row_size];
         encoder
             .encode_line(
-                (0..geometry.width).map(|x| {
-                    row_pixel_color(row, x, photometric(tif), memory_fillorder_lsb(tif))
-                }),
+                (0..geometry.width)
+                    .map(|x| row_pixel_color(row, x, photometric(tif), memory_fillorder_lsb(tif))),
                 geometry.width as u16,
             )
             .ok()?;
@@ -1178,6 +1483,8 @@ pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
             decode_group3_1d(tif, input, geometry)?
         }
         COMPRESSION_CCITTFAX4 => decode_group4(tif, input, geometry)?,
+        COMPRESSION_NEXT => decode_next(input, geometry)?,
+        COMPRESSION_THUNDERSCAN => decode_thunderscan(input, geometry)?,
         _ => return None,
     };
     if active_scheme(tif) != COMPRESSION_CCITTRLE
@@ -1203,9 +1510,8 @@ pub(crate) unsafe fn safe_tiff_codec_encode_bytes(
 ) -> Option<Vec<u8>> {
     match active_scheme(tif) {
         COMPRESSION_NONE => encode_predictor_bytes(tif, geometry, input),
-        COMPRESSION_PACKBITS => {
-            encode_predictor_bytes(tif, geometry, input).map(|bytes| encode_packbits(&bytes, geometry.row_size))
-        }
+        COMPRESSION_PACKBITS => encode_predictor_bytes(tif, geometry, input)
+            .map(|bytes| encode_packbits(&bytes, geometry.row_size)),
         COMPRESSION_LZW => encode_lzw(&encode_predictor_bytes(tif, geometry, input)?),
         COMPRESSION_DEFLATE | COMPRESSION_ADOBE_DEFLATE => {
             encode_deflate(&encode_predictor_bytes(tif, geometry, input)?)
@@ -1322,12 +1628,20 @@ unsafe extern "C" fn fax3_decoderow(
         return 0;
     };
     let out = slice::from_raw_parts_mut(buf, row_size);
-    pack_fax_row(out, raw.width, &transitions, raw.photometric, raw.memory_lsb);
+    pack_fax_row(
+        out,
+        raw.width,
+        &transitions,
+        raw.photometric,
+        raw.memory_lsb,
+    );
     raw.bit_pos = reader.bit_pos;
     raw.ended = group3_rtc_is_available(&raw.bytes, raw.bit_pos, group3_fillbits(tif))
         || !group3_eol_is_available(&raw.bytes, raw.bit_pos, group3_fillbits(tif));
     let consumed_bytes = raw.bit_pos / 8;
-    (*tif).tif_rawcp = (*tif).tif_rawdata.add(consumed_bytes.min((*tif).tif_rawcc.max(0) as usize));
+    (*tif).tif_rawcp = (*tif)
+        .tif_rawdata
+        .add(consumed_bytes.min((*tif).tif_rawcc.max(0) as usize));
     (*tif).tif_rawcc = if raw.ended {
         0
     } else {
@@ -1340,11 +1654,58 @@ unsafe extern "C" fn init_dump_mode(_: *mut TIFF, _: c_int) -> c_int {
     1
 }
 
-unsafe extern "C" fn init_simple_codec(tif: *mut TIFF, scheme: c_int) -> c_int {
-    if !tif.is_null() && scheme as u16 == COMPRESSION_CCITTFAX3 {
+unsafe extern "C" fn init_simple_codec(_: *mut TIFF, _: c_int) -> c_int {
+    1
+}
+
+unsafe extern "C" fn init_ccitt_fax3(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
         (*tif).tif_setupdecode = Some(fax3_setupdecode);
         (*tif).tif_predecode = Some(fax3_predecode);
         (*tif).tif_decoderow = Some(fax3_decoderow);
+    }
+    1
+}
+
+unsafe extern "C" fn init_ccitt_rle(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
+        (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC | FAXMODE_NOEOL | FAXMODE_BYTEALIGN;
+    }
+    1
+}
+
+unsafe extern "C" fn init_ccitt_rlew(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
+        (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC | FAXMODE_NOEOL | FAXMODE_WORDALIGN;
+    }
+    1
+}
+
+unsafe extern "C" fn init_ccitt_fax4(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
+        (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC;
+    }
+    1
+}
+
+unsafe extern "C" fn thunderscan_setupdecode(tif: *mut TIFF) -> c_int {
+    (bits_per_sample(tif) == 4) as c_int
+}
+
+unsafe extern "C" fn init_thunderscan(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
+        (*tif).tif_setupdecode = Some(thunderscan_setupdecode);
+    }
+    1
+}
+
+unsafe extern "C" fn next_predecode(tif: *mut TIFF, _: u16) -> c_int {
+    (bits_per_sample(tif) == 2) as c_int
+}
+
+unsafe extern "C" fn init_next(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
+        (*tif).tif_predecode = Some(next_predecode);
     }
     1
 }
@@ -1363,6 +1724,8 @@ fn builtin_codec_configured(scheme: u16) -> bool {
         COMPRESSION_NONE
             | COMPRESSION_LZW
             | COMPRESSION_PACKBITS
+            | COMPRESSION_THUNDERSCAN
+            | COMPRESSION_NEXT
             | COMPRESSION_CCITTRLE
             | COMPRESSION_CCITTRLEW
             | COMPRESSION_CCITTFAX3
@@ -1391,12 +1754,12 @@ static BUILTIN_CODECS: [TIFFCodec; 14] = [
     TIFFCodec {
         name: NAME_THUNDER.as_ptr() as *mut c_char,
         scheme: COMPRESSION_THUNDERSCAN,
-        init: Some(init_not_configured),
+        init: Some(init_thunderscan),
     },
     TIFFCodec {
         name: NAME_NEXT.as_ptr() as *mut c_char,
         scheme: COMPRESSION_NEXT,
-        init: Some(init_not_configured),
+        init: Some(init_next),
     },
     TIFFCodec {
         name: NAME_JPEG.as_ptr() as *mut c_char,
@@ -1411,22 +1774,22 @@ static BUILTIN_CODECS: [TIFFCodec; 14] = [
     TIFFCodec {
         name: NAME_CCITT_RLE.as_ptr() as *mut c_char,
         scheme: COMPRESSION_CCITTRLE,
-        init: Some(init_simple_codec),
+        init: Some(init_ccitt_rle),
     },
     TIFFCodec {
         name: NAME_CCITT_RLEW.as_ptr() as *mut c_char,
         scheme: COMPRESSION_CCITTRLEW,
-        init: Some(init_simple_codec),
+        init: Some(init_ccitt_rlew),
     },
     TIFFCodec {
         name: NAME_CCITT_G3.as_ptr() as *mut c_char,
         scheme: COMPRESSION_CCITTFAX3,
-        init: Some(init_simple_codec),
+        init: Some(init_ccitt_fax3),
     },
     TIFFCodec {
         name: NAME_CCITT_G4.as_ptr() as *mut c_char,
         scheme: COMPRESSION_CCITTFAX4,
-        init: Some(init_simple_codec),
+        init: Some(init_ccitt_fax4),
     },
     TIFFCodec {
         name: NAME_DEFLATE.as_ptr() as *mut c_char,
@@ -1499,9 +1862,11 @@ pub unsafe extern "C" fn TIFFUnRegisterCODEC(codec: *mut TIFFCodec) {
         return;
     }
     let mut registry = registry().lock().expect("codec registry lock");
-    if let Some(index) = registry.codecs.iter().position(|entry| {
-        ptr::addr_of!((**entry).codec).cast_mut() == codec
-    }) {
+    if let Some(index) = registry
+        .codecs
+        .iter()
+        .position(|entry| ptr::addr_of!((**entry).codec).cast_mut() == codec)
+    {
         let raw = registry.codecs.remove(index);
         drop(Box::from_raw(raw));
     }
