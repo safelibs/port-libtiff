@@ -110,6 +110,13 @@ def repo_relative(path: Path) -> str:
     return path.resolve().relative_to(REPO_ROOT).as_posix()
 
 
+def display_path(path: Path) -> str:
+    try:
+        return repo_relative(path)
+    except Exception:
+        return str(path)
+
+
 def normalize_command_arg(arg: str) -> str:
     path_arg = Path(arg)
     if path_arg.is_absolute() and path_arg.exists() and REPO_ROOT in path_arg.resolve().parents:
@@ -639,20 +646,27 @@ def collect_inventory() -> Tuple[Dict[str, object], Dict[str, object], List[str]
     return inventory, manifest, platform_excluded_lines
 
 
-def validate_outputs(expected_inventory: str, expected_manifest: str, expected_exclusions: str) -> int:
+def validate_outputs(
+    expected_inventory: str,
+    expected_manifest: str,
+    expected_exclusions: str,
+    inventory_path: Path,
+    inputs_path: Path,
+    exclusions_path: Path,
+) -> int:
     failures = []
 
-    actual_inventory = INVENTORY_PATH.read_text() if INVENTORY_PATH.exists() else ""
+    actual_inventory = inventory_path.read_text() if inventory_path.exists() else ""
     if actual_inventory != expected_inventory:
-        failures.append(diff_text(repo_relative(INVENTORY_PATH), expected_inventory, actual_inventory))
+        failures.append(diff_text(display_path(inventory_path), expected_inventory, actual_inventory))
 
-    actual_manifest = INPUTS_PATH.read_text() if INPUTS_PATH.exists() else ""
+    actual_manifest = inputs_path.read_text() if inputs_path.exists() else ""
     if actual_manifest != expected_manifest:
-        failures.append(diff_text(repo_relative(INPUTS_PATH), expected_manifest, actual_manifest))
+        failures.append(diff_text(display_path(inputs_path), expected_manifest, actual_manifest))
 
-    actual_exclusions = LINUX_EXCLUDED_PATH.read_text() if LINUX_EXCLUDED_PATH.exists() else ""
+    actual_exclusions = exclusions_path.read_text() if exclusions_path.exists() else ""
     if actual_exclusions != expected_exclusions:
-        failures.append(diff_text(repo_relative(LINUX_EXCLUDED_PATH), expected_exclusions, actual_exclusions))
+        failures.append(diff_text(display_path(exclusions_path), expected_exclusions, actual_exclusions))
 
     if failures:
         for failure in failures:
@@ -664,9 +678,44 @@ def validate_outputs(expected_inventory: str, expected_manifest: str, expected_e
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "mode",
+        nargs="?",
+        choices=("generate", "validate", "check"),
+        help="Generate outputs or validate the checked-in files without mutating them.",
+    )
+    parser.add_argument(
         "--validate",
         action="store_true",
         help="Check the checked-in inventory and manifest without mutating them.",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Alias for --validate.",
+    )
+    parser.add_argument(
+        "--inventory",
+        "--inventory-path",
+        dest="inventory_path",
+        default=str(INVENTORY_PATH),
+        help="Path to the public-surface inventory JSON.",
+    )
+    parser.add_argument(
+        "--inputs",
+        "--input-manifest",
+        "--inputs-path",
+        "--input-manifest-path",
+        dest="inputs_path",
+        default=str(INPUTS_PATH),
+        help="Path to the public-surface input manifest JSON.",
+    )
+    parser.add_argument(
+        "--platform-excluded",
+        "--platform-excluded-linux",
+        "--platform-excluded-path",
+        dest="platform_excluded_path",
+        default=str(LINUX_EXCLUDED_PATH),
+        help="Path to the Linux platform exclusion text file.",
     )
     args = parser.parse_args()
 
@@ -676,12 +725,24 @@ def main() -> int:
     manifest_text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
     excluded_text = "".join(f"{name}\n" for name in platform_excluded_lines)
 
-    if args.validate:
-        return validate_outputs(inventory_text, manifest_text, excluded_text)
+    inventory_path = Path(args.inventory_path)
+    inputs_path = Path(args.inputs_path)
+    exclusions_path = Path(args.platform_excluded_path)
 
-    write_if_changed(INVENTORY_PATH, inventory_text)
-    write_if_changed(INPUTS_PATH, manifest_text)
-    write_if_changed(LINUX_EXCLUDED_PATH, excluded_text)
+    validate_mode = args.validate or args.check or args.mode in {"validate", "check"}
+    if validate_mode:
+        return validate_outputs(
+            inventory_text,
+            manifest_text,
+            excluded_text,
+            inventory_path,
+            inputs_path,
+            exclusions_path,
+        )
+
+    write_if_changed(inventory_path, inventory_text)
+    write_if_changed(inputs_path, manifest_text)
+    write_if_changed(exclusions_path, excluded_text)
     return 0
 
 
