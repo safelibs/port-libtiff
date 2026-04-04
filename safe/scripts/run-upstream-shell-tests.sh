@@ -21,11 +21,11 @@ EOF
 
 discover_tests() {
   awk '
-    /^[A-Z_]+TESTSCRIPTS[[:space:]]*=/ { capture = 1 }
+    /^[A-Z_]*TESTSCRIPTS[[:space:]]*=/ { capture = 1 }
     capture {
       line = $0
       sub(/#.*/, "", line)
-      sub(/^[A-Z_]+TESTSCRIPTS[[:space:]]*=[[:space:]]*/, "", line)
+      sub(/^[A-Z_]*TESTSCRIPTS[[:space:]]*=[[:space:]]*/, "", line)
       gsub(/\\/, " ", line)
       n = split(line, parts, /[[:space:]]+/)
       for (i = 1; i <= n; ++i) {

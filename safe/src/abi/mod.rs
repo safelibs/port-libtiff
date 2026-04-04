@@ -151,6 +151,15 @@ pub struct TIFFTagMethods {
 }
 
 pub type TIFFExtendProc = Option<unsafe extern "C" fn(*mut TIFF)>;
+pub type TIFFInitMethod = Option<unsafe extern "C" fn(*mut TIFF, c_int) -> c_int>;
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct TIFFCodec {
+    pub name: *mut c_char,
+    pub scheme: u16,
+    pub init: TIFFInitMethod,
+}
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -170,10 +179,14 @@ pub struct SafeTiffAbiLayoutProbe {
     pub tiff_tag_methods_vsetfield_offset: usize,
     pub tiff_tag_methods_vgetfield_offset: usize,
     pub tiff_tag_methods_printdir_offset: usize,
+    pub tiff_codec_size: usize,
+    pub tiff_codec_name_offset: usize,
+    pub tiff_codec_scheme_offset: usize,
+    pub tiff_codec_init_offset: usize,
 }
 
 pub(crate) static SAFE_TIFF_ABI_LAYOUT_PROBE: SafeTiffAbiLayoutProbe = SafeTiffAbiLayoutProbe {
-    version: 1,
+    version: 2,
     struct_size: size_of::<SafeTiffAbiLayoutProbe>(),
     tiff_field_info_size: size_of::<TIFFFieldInfo>(),
     tiff_field_info_field_tag_offset: offset_of!(TIFFFieldInfo, field_tag),
@@ -188,7 +201,13 @@ pub(crate) static SAFE_TIFF_ABI_LAYOUT_PROBE: SafeTiffAbiLayoutProbe = SafeTiffA
     tiff_tag_methods_vsetfield_offset: offset_of!(TIFFTagMethods, vsetfield),
     tiff_tag_methods_vgetfield_offset: offset_of!(TIFFTagMethods, vgetfield),
     tiff_tag_methods_printdir_offset: offset_of!(TIFFTagMethods, printdir),
+    tiff_codec_size: size_of::<TIFFCodec>(),
+    tiff_codec_name_offset: offset_of!(TIFFCodec, name),
+    tiff_codec_scheme_offset: offset_of!(TIFFCodec, scheme),
+    tiff_codec_init_offset: offset_of!(TIFFCodec, init),
 };
+
+unsafe impl Sync for TIFFCodec {}
 
 #[no_mangle]
 pub extern "C" fn safe_tiff_abi_layout_probe() -> *const SafeTiffAbiLayoutProbe {

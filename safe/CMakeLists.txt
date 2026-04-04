@@ -66,6 +66,7 @@ set(SAFE_RUST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/strile.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/abi/mod.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/mod.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/codec.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/directory.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_registry.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_tables.rs)

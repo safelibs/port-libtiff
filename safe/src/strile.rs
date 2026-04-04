@@ -1,7 +1,9 @@
 use crate::abi::TIFFDataType;
 use crate::core::{
-    _TIFFRewriteField, get_strile_tag_value_u64, get_tag_value, safe_tiff_directory_entry_is_dummy,
-    safe_tiff_set_field_marshaled, safe_tiff_set_field_marshaled_nondirty, TIFFRewriteDirectory,
+    _TIFFRewriteField, get_strile_tag_value_u64, get_tag_value, safe_tiff_codec_decode_bytes,
+    safe_tiff_codec_encode_bytes, safe_tiff_directory_entry_is_dummy,
+    safe_tiff_set_field_marshaled, safe_tiff_set_field_marshaled_nondirty, CodecGeometry,
+    DecodedStrileCache, PendingStrileWrite, TIFFRewriteDirectory,
 };
 use crate::{
     _TIFFcallocExt, _TIFFfree, _TIFFmallocExt, emit_error_message, read_from_proc, seek_in_proc,
@@ -439,26 +441,6 @@ unsafe fn apply_postdecode_bytes(tif: *mut TIFF, data: &mut [u8]) {
         128 => TIFFSwabArrayOfDouble(data.as_mut_ptr().cast::<f64>(), (data.len() / 8) as Tmsize),
         _ => {}
     }
-}
-
-unsafe fn decode_uncompressed_into(
-    tif: *mut TIFF,
-    module: &str,
-    input: &[u8],
-    output: &mut [u8],
-) -> bool {
-    if input.len() < output.len() {
-        emit_error_message(tif, module, "Not enough data for decode");
-        return false;
-    }
-    if !output.is_empty() {
-        ptr::copy(input.as_ptr(), output.as_mut_ptr(), output.len());
-        if should_reverse_bits(tif) {
-            TIFFReverseBits(output.as_mut_ptr(), output.len() as Tmsize);
-        }
-        apply_postdecode_bytes(tif, output);
-    }
-    true
 }
 
 unsafe fn encode_uncompressed_bytes(tif: *mut TIFF, data: &[u8]) -> Vec<u8> {
@@ -958,6 +940,8 @@ unsafe fn write_appended_strile_data(
     strile: u32,
     data: &[u8],
 ) -> bool {
+    (*tif_inner(tif)).codec_state.pending_striles.remove(&strile);
+    (*tif_inner(tif)).codec_state.decoded_cache = None;
     let Some(mut arrays) = ensure_strile_arrays(tif, module) else {
         return false;
     };
@@ -1006,6 +990,8 @@ unsafe fn write_overwrite_strile_data(
     strile: u32,
     data: &[u8],
 ) -> bool {
+    (*tif_inner(tif)).codec_state.pending_striles.remove(&strile);
+    (*tif_inner(tif)).codec_state.decoded_cache = None;
     let Some(mut arrays) = ensure_strile_arrays(tif, module) else {
         return false;
     };
@@ -1055,6 +1041,8 @@ unsafe fn write_scanline_data(
     let Some(strip) = compute_strip_internal(tif, row, sample, true) else {
         return false;
     };
+    (*tif_inner(tif)).codec_state.pending_striles.remove(&strip);
+    (*tif_inner(tif)).codec_state.decoded_cache = None;
     let Ok(index) = usize::try_from(strip) else {
         emit_error_message(tif, module, "Strip index out of range");
         return false;
@@ -1127,31 +1115,203 @@ unsafe fn read_strile_bytes(
 unsafe fn read_encoded_strile_bytes(
     tif: *mut TIFF,
     module: &str,
+    is_tile: bool,
     strile: u32,
+    geometry: CodecGeometry,
+    expected_size: usize,
     out: &mut [u8],
 ) -> Option<usize> {
-    let (offset, bytecount) = read_strile_value_pair(tif, strile)?;
     if out.is_empty() {
         return Some(0);
     }
-    if offset == 0 || bytecount == 0 || bytecount < out.len() as u64 {
-        emit_error_message(tif, module, "Not enough data for decode");
-        return None;
-    }
-    let mut raw = vec![0u8; out.len()];
-    if !read_exact_at(tif, offset, &mut raw) {
-        emit_error_message(tif, module, "Failed to read strile payload");
-        return None;
-    }
-    if decode_uncompressed_into(tif, module, &raw, out) {
-        Some(out.len())
-    } else {
+    if !load_decoded_strile_cache(tif, module, is_tile, strile, geometry, expected_size) {
         None
+    } else {
+        let cache = (*tif_inner(tif)).codec_state.decoded_cache.as_ref()?;
+        if cache.decoded.len() < out.len() {
+            emit_error_message(tif, module, "Decoded strile is smaller than requested");
+            return None;
+        }
+        out.copy_from_slice(&cache.decoded[..out.len()]);
+        if is_tile {
+            (*tif_inner(tif)).tif_curtile = strile;
+        } else {
+            (*tif_inner(tif)).tif_curstrip = strile;
+        }
+        Some(out.len())
     }
 }
 
 unsafe fn expected_strip_size_for_index(tif: *mut TIFF, strip: u32) -> Option<u64> {
     vstrip_size64_internal(tif, strip_size_rows_internal(tif, strip, true)?, true)
+}
+
+unsafe fn codec_geometry_for_strip(tif: *mut TIFF, strip: u32) -> Option<CodecGeometry> {
+    let row_size = usize::try_from(TIFFScanlineSize64(tif)).ok()?;
+    let rows = usize::try_from(strip_size_rows_internal(tif, strip, true)?).ok()?;
+    Some(CodecGeometry {
+        row_size,
+        rows,
+        width: image_width(tif)?,
+    })
+}
+
+unsafe fn codec_geometry_for_tile(tif: *mut TIFF) -> Option<CodecGeometry> {
+    let row_size = usize::try_from(TIFFTileRowSize64(tif)).ok()?;
+    let rows = usize::try_from(tile_length(tif)?).ok()?;
+    Some(CodecGeometry {
+        row_size,
+        rows,
+        width: tile_width(tif)?,
+    })
+}
+
+unsafe fn load_decoded_strile_cache(
+    tif: *mut TIFF,
+    module: &str,
+    is_tile: bool,
+    strile: u32,
+    geometry: CodecGeometry,
+    expected_size: usize,
+) -> bool {
+    if let Some(cache) = (*tif_inner(tif)).codec_state.decoded_cache.as_ref() {
+        if cache.is_tile == is_tile && cache.index == strile && cache.decoded.len() >= expected_size {
+            return true;
+        }
+    }
+    if let Some(staged) = (*tif_inner(tif)).codec_state.pending_striles.get(&strile) {
+        if staged.decoded.len() < expected_size {
+            emit_error_message(tif, module, "Pending strile buffer is truncated");
+            return false;
+        }
+        (*tif_inner(tif)).codec_state.decoded_cache = Some(DecodedStrileCache {
+            is_tile,
+            index: strile,
+            decoded: staged.decoded.clone(),
+        });
+        return true;
+    }
+    let Some((offset, bytecount)) = read_strile_value_pair(tif, strile) else {
+        emit_error_message(tif, module, "Strile out of range");
+        return false;
+    };
+    if offset == 0 || bytecount == 0 {
+        emit_error_message(tif, module, "Strile byte count is zero");
+        return false;
+    }
+    let Ok(raw_len) = usize::try_from(bytecount) else {
+        emit_error_message(tif, module, "Strile byte count is too large");
+        return false;
+    };
+    let mut raw = vec![0u8; raw_len];
+    if !read_exact_at(tif, offset, &mut raw) {
+        emit_error_message(tif, module, "Failed to read strile payload");
+        return false;
+    }
+    let Some(decoded) = safe_tiff_codec_decode_bytes(tif, &raw, geometry, expected_size) else {
+        emit_error_message(tif, module, "Codec decode failed");
+        return false;
+    };
+    (*tif_inner(tif)).codec_state.decoded_cache = Some(DecodedStrileCache {
+        is_tile,
+        index: strile,
+        decoded,
+    });
+    true
+}
+
+unsafe fn flush_pending_codec_striles(tif: *mut TIFF, module: &str) -> bool {
+    let inner = tif_inner(tif);
+    let mut pending = std::mem::take(&mut (*inner).codec_state.pending_striles);
+    let keys: Vec<u32> = pending.keys().copied().collect();
+    for strile in keys {
+        let Some(staged) = pending.remove(&strile) else {
+            continue;
+        };
+        let geometry = CodecGeometry {
+            row_size: staged.row_size,
+            rows: staged.rows,
+            width: staged.width,
+        };
+        let Some(encoded) = safe_tiff_codec_encode_bytes(tif, &staged.decoded, geometry) else {
+            emit_error_message(tif, module, "Codec encode failed");
+            pending.insert(strile, staged);
+            (*inner).codec_state.pending_striles.append(&mut pending);
+            return false;
+        };
+        if !write_overwrite_strile_data(tif, module, strile, &encoded) {
+            pending.insert(strile, staged);
+            (*inner).codec_state.pending_striles.append(&mut pending);
+            return false;
+        }
+    }
+    (*inner).codec_state.decoded_cache = None;
+    true
+}
+
+unsafe fn stage_pending_codec_scanline(
+    tif: *mut TIFF,
+    module: &str,
+    row: u32,
+    sample: u16,
+    data: &[u8],
+) -> bool {
+    let Some(strip) = compute_strip_internal(tif, row, sample, true) else {
+        return false;
+    };
+    let Some(geometry) = codec_geometry_for_strip(tif, strip) else {
+        emit_error_message(tif, module, "Failed to compute strip geometry");
+        return false;
+    };
+    let Some(expected_size) = geometry.row_size.checked_mul(geometry.rows) else {
+        emit_error_message(tif, module, "Strip decode size is too large");
+        return false;
+    };
+    let rps = rows_per_strip(tif);
+    let strip_row = if rps == u32::MAX { row } else { row % rps };
+    let Some(within_strip) =
+        checked_mul_u64(tif, module, u64::from(strip_row), geometry.row_size as u64)
+    else {
+        return false;
+    };
+    let Some(end_offset) = checked_add_u64(tif, module, within_strip, data.len() as u64) else {
+        return false;
+    };
+    if end_offset > expected_size as u64 {
+        emit_error_message(tif, module, "Scanline extends beyond the strip byte count");
+        return false;
+    }
+    let start = within_strip as usize;
+    let end = end_offset as usize;
+    let inner = tif_inner(tif);
+    let entry = (*inner)
+        .codec_state
+        .pending_striles
+        .entry(strip)
+        .or_insert_with(|| PendingStrileWrite {
+            decoded: vec![0; expected_size],
+            row_size: geometry.row_size,
+            rows: geometry.rows,
+            width: geometry.width,
+        });
+    if entry.row_size != geometry.row_size
+        || entry.rows != geometry.rows
+        || entry.width != geometry.width
+        || entry.decoded.len() != expected_size
+    {
+        *entry = PendingStrileWrite {
+            decoded: vec![0; expected_size],
+            row_size: geometry.row_size,
+            rows: geometry.rows,
+            width: geometry.width,
+        };
+    }
+    entry.decoded[start..end].copy_from_slice(data);
+    (*inner).codec_state.decoded_cache = None;
+    (*tif).tif_flags |= TIFF_DIRTYSTRIP | TIFF_BEENWRITING;
+    (*inner).tif_curstrip = strip;
+    (*tif).tif_row = row + 1;
+    true
 }
 
 unsafe fn read_scanline_bytes(tif: *mut TIFF, row: u32, sample: u16, out: &mut [u8]) -> bool {
@@ -1164,41 +1324,147 @@ unsafe fn read_scanline_bytes(tif: *mut TIFF, row: u32, sample: u16, out: &mut [
         emit_error_message(tif, module, "Row out of range");
         return false;
     }
+    if is_tiled_image(tif) {
+        let Some(width) = image_width(tif) else {
+            emit_error_message(tif, module, "Missing image width");
+            return false;
+        };
+        let Some(tile_width) = tile_width(tif) else {
+            emit_error_message(tif, module, "Missing tile width");
+            return false;
+        };
+        let Some(tile_length) = tile_length(tif) else {
+            emit_error_message(tif, module, "Missing tile length");
+            return false;
+        };
+        if tile_width == 0 || tile_length == 0 {
+            emit_error_message(tif, module, "Tile dimensions are invalid");
+            return false;
+        }
+        let samples = if planar_config(tif) == PLANARCONFIG_CONTIG {
+            usize::from(samples_per_pixel(tif).max(1))
+        } else {
+            1
+        };
+        let pixel_bits = usize::from(bits_per_sample(tif))
+            .checked_mul(samples)
+            .unwrap_or(0);
+        if pixel_bits == 0 || (pixel_bits % 8) != 0 {
+            emit_error_message(
+                tif,
+                module,
+                "Tiled scanline reads require byte-aligned pixels",
+            );
+            return false;
+        }
+        let bytes_per_pixel = pixel_bits / 8;
+        let Some(geometry) = codec_geometry_for_tile(tif) else {
+            emit_error_message(tif, module, "Failed to compute tile geometry");
+            return false;
+        };
+        let Some(expected_size) = geometry.row_size.checked_mul(geometry.rows) else {
+            emit_error_message(tif, module, "Tile decode size is too large");
+            return false;
+        };
+        let row_in_tile = usize::try_from(row % tile_length).unwrap_or(0);
+        let mut out_offset = 0usize;
+        let mut x = 0u32;
+        while x < width {
+            let Some(tile) = compute_tile_internal(tif, x, row, 0, sample) else {
+                emit_error_message(tif, module, "Failed to compute tile index");
+                return false;
+            };
+            if !load_decoded_strile_cache(tif, module, true, tile, geometry, expected_size) {
+                return false;
+            }
+            let Some(cache) = (*tif_inner(tif)).codec_state.decoded_cache.as_ref() else {
+                emit_error_message(tif, module, "Decoded tile cache is unavailable");
+                return false;
+            };
+            let row_start = match row_in_tile.checked_mul(geometry.row_size) {
+                Some(value) => value,
+                None => {
+                    emit_error_message(tif, module, "Tile row offset overflow");
+                    return false;
+                }
+            };
+            let tile_pixels = usize::try_from(tile_width.min(width - x)).unwrap_or(0);
+            let tile_bytes = match tile_pixels.checked_mul(bytes_per_pixel) {
+                Some(value) => value,
+                None => {
+                    emit_error_message(tif, module, "Tile row size overflow");
+                    return false;
+                }
+            };
+            let row_end = match row_start.checked_add(tile_bytes) {
+                Some(value) => value,
+                None => {
+                    emit_error_message(tif, module, "Tile row bounds overflow");
+                    return false;
+                }
+            };
+            let out_end = match out_offset.checked_add(tile_bytes) {
+                Some(value) => value,
+                None => {
+                    emit_error_message(tif, module, "Scanline assembly overflow");
+                    return false;
+                }
+            };
+            if row_end > cache.decoded.len() || out_end > out.len() {
+                emit_error_message(tif, module, "Tile row extends beyond decoded data");
+                return false;
+            }
+            out[out_offset..out_end].copy_from_slice(&cache.decoded[row_start..row_end]);
+            out_offset = out_end;
+            x = match x.checked_add(tile_width) {
+                Some(value) => value,
+                None => {
+                    emit_error_message(tif, module, "Tile iteration overflow");
+                    return false;
+                }
+            };
+            (*tif_inner(tif)).tif_curtile = tile;
+        }
+        if out_offset != out.len() {
+            emit_error_message(tif, module, "Assembled scanline size is invalid");
+            return false;
+        }
+        (*tif).tif_row = row + 1;
+        return true;
+    }
     let Some(strip) = compute_strip_internal(tif, row, sample, true) else {
         return false;
     };
-    let Some((offset, bytecount)) = read_strile_value_pair(tif, strip) else {
-        emit_error_message(tif, module, "Strip out of range");
+    let Some(geometry) = codec_geometry_for_strip(tif, strip) else {
+        emit_error_message(tif, module, "Failed to compute strip geometry");
         return false;
     };
-    if offset == 0 || bytecount == 0 {
-        emit_error_message(tif, module, "Strip byte count is zero");
+    let Some(expected_size) = geometry.row_size.checked_mul(geometry.rows) else {
+        emit_error_message(tif, module, "Strip decode size is too large");
+        return false;
+    };
+    if !load_decoded_strile_cache(tif, module, false, strip, geometry, expected_size) {
         return false;
     }
+    let Some(cache) = (*tif_inner(tif)).codec_state.decoded_cache.as_ref() else {
+        emit_error_message(tif, module, "Decoded strip cache is unavailable");
+        return false;
+    };
     let rps = rows_per_strip(tif);
     let strip_row = if rps == u32::MAX { row } else { row % rps };
-    let Some(within_strip) = checked_mul_u64(tif, module, u64::from(strip_row), out.len() as u64)
+    let Some(within_strip) =
+        checked_mul_u64(tif, module, u64::from(strip_row), geometry.row_size as u64)
     else {
         return false;
     };
     let Some(end_offset) = checked_add_u64(tif, module, within_strip, out.len() as u64) else {
         return false;
     };
-    if end_offset > bytecount {
+    if end_offset > expected_size as u64 || end_offset as usize > cache.decoded.len() {
         emit_error_message(tif, module, "Scanline extends beyond the strip byte count");
         return false;
     }
-    let Some(offset) = checked_add_u64(tif, module, offset, within_strip) else {
-        return false;
-    };
-    let mut raw = vec![0u8; out.len()];
-    if !read_exact_at(tif, offset, &mut raw) {
-        emit_error_message(tif, module, "Failed to read scanline data");
-        return false;
-    }
-    if !decode_uncompressed_into(tif, module, &raw, out) {
-        return false;
-    }
+    out.copy_from_slice(&cache.decoded[within_strip as usize..end_offset as usize]);
     (*tif_inner(tif)).tif_curstrip = strip;
     (*tif).tif_row = row + 1;
     true
@@ -1244,14 +1510,6 @@ unsafe fn check_write_mode(tif: *mut TIFF, tiles: bool, module: &str) -> bool {
             } else {
                 "Can not write scanlines to a tiled image"
             },
-        );
-        return false;
-    }
-    if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(
-            tif,
-            module,
-            "Only COMPRESSION_NONE is implemented in the safe port",
         );
         return false;
     }
@@ -1586,8 +1844,14 @@ pub unsafe extern "C" fn TIFFWriteScanline(
         return -1;
     };
     let data = slice::from_raw_parts(buf.cast::<u8>(), scanline_size);
-    let encoded = encode_uncompressed_bytes(tif, data);
-    if write_scanline_data(tif, module, row, sample, &encoded) {
+    if compression(tif) == COMPRESSION_NONE {
+        let encoded = encode_uncompressed_bytes(tif, data);
+        if write_scanline_data(tif, module, row, sample, &encoded) {
+            1
+        } else {
+            -1
+        }
+    } else if stage_pending_codec_scanline(tif, module, row, sample, data) {
         1
     } else {
         -1
@@ -1613,7 +1877,18 @@ pub unsafe extern "C" fn TIFFWriteEncodedStrip(
         return -1;
     };
     let bytes = slice::from_raw_parts(data.cast::<u8>(), size);
-    let encoded = encode_uncompressed_bytes(tif, bytes);
+    let Some(geometry) = codec_geometry_for_strip(tif, strip) else {
+        emit_error_message(tif, module, "Failed to compute strip geometry");
+        return -1;
+    };
+    let encoded = if compression(tif) == COMPRESSION_NONE {
+        encode_uncompressed_bytes(tif, bytes)
+    } else if let Some(encoded) = safe_tiff_codec_encode_bytes(tif, bytes, geometry) {
+        encoded
+    } else {
+        emit_error_message(tif, module, "Codec encode failed");
+        return -1;
+    };
     if write_overwrite_strile_data(tif, module, strip, &encoded) {
         (*tif_inner(tif)).tif_curstrip = strip;
         cc
@@ -1690,7 +1965,18 @@ pub unsafe extern "C" fn TIFFWriteEncodedTile(
         return -1;
     };
     let bytes = slice::from_raw_parts(data.cast::<u8>(), size_usize);
-    let encoded = encode_uncompressed_bytes(tif, bytes);
+    let Some(geometry) = codec_geometry_for_tile(tif) else {
+        emit_error_message(tif, module, "Failed to compute tile geometry");
+        return -1;
+    };
+    let encoded = if compression(tif) == COMPRESSION_NONE {
+        encode_uncompressed_bytes(tif, bytes)
+    } else if let Some(encoded) = safe_tiff_codec_encode_bytes(tif, bytes, geometry) {
+        encoded
+    } else {
+        emit_error_message(tif, module, "Codec encode failed");
+        return -1;
+    };
     if write_overwrite_strile_data(tif, module, tile, &encoded) {
         (*tif_inner(tif)).tif_curtile = tile;
         size as Tmsize
@@ -1733,7 +2019,11 @@ pub unsafe extern "C" fn TIFFReadScanline(
     row: u32,
     sample: u16,
 ) -> c_int {
-    if !check_read_mode(tif, false, "TIFFReadScanline") || buf.is_null() {
+    if tif.is_null() || buf.is_null() {
+        return -1;
+    }
+    if crate::TIFFGetMode(tif) == libc::O_WRONLY {
+        emit_error_message(tif, "TIFFReadScanline", "File not open for reading");
         return -1;
     }
     let size = TIFFScanlineSize64(tif);
@@ -1763,15 +2053,11 @@ pub unsafe extern "C" fn TIFFReadEncodedStrip(
     if !check_read_mode(tif, false, module) || buf.is_null() {
         return -1;
     }
-    if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(
-            tif,
-            module,
-            "Only COMPRESSION_NONE is implemented in the safe port",
-        );
-        return -1;
-    }
     let Some(expected_size) = expected_strip_size_for_index(tif, strip) else {
+        return -1;
+    };
+    let Some(geometry) = codec_geometry_for_strip(tif, strip) else {
+        emit_error_message(tif, module, "Failed to compute strip geometry");
         return -1;
     };
     let requested = if size == -1 {
@@ -1786,7 +2072,15 @@ pub unsafe extern "C" fn TIFFReadEncodedStrip(
         return -1;
     };
     let out = slice::from_raw_parts_mut(buf.cast::<u8>(), requested_usize);
-    match read_encoded_strile_bytes(tif, module, strip, out) {
+    match read_encoded_strile_bytes(
+        tif,
+        module,
+        false,
+        strip,
+        geometry,
+        expected_size as usize,
+        out,
+    ) {
         Some(read_size) => read_size as Tmsize,
         None => -1,
     }
@@ -1840,31 +2134,27 @@ pub unsafe extern "C" fn TIFFReadEncodedTile(
     if !check_read_mode(tif, true, module) || buf.is_null() {
         return -1;
     }
-    if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(
-            tif,
-            module,
-            "Only COMPRESSION_NONE is implemented in the safe port",
-        );
+    let Some(geometry) = codec_geometry_for_tile(tif) else {
+        emit_error_message(tif, module, "Failed to compute tile geometry");
         return -1;
-    }
-    let tile_size = TIFFTileSize64(tif);
-    if tile_size == 0 {
+    };
+    let Some(tile_size) = geometry.row_size.checked_mul(geometry.rows) else {
+        emit_error_message(tif, module, "Tile decode size is too large");
         return -1;
-    }
+    };
     let requested = if size == -1 {
-        tile_size
+        tile_size as u64
     } else if size < 0 {
         return -1;
     } else {
-        min(tile_size, size as u64)
+        min(tile_size as u64, size as u64)
     };
     let Ok(requested_usize) = usize::try_from(requested) else {
         emit_error_message(tif, module, "Requested tile size is too large");
         return -1;
     };
     let out = slice::from_raw_parts_mut(buf.cast::<u8>(), requested_usize);
-    match read_encoded_strile_bytes(tif, module, tile, out) {
+    match read_encoded_strile_bytes(tif, module, true, tile, geometry, tile_size, out) {
         Some(read_size) => read_size as Tmsize,
         None => -1,
     }
@@ -2054,28 +2344,32 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
         emit_error_message(tif, module, "File not open for reading");
         return 0;
     }
-    if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(
-            tif,
-            module,
-            "Only COMPRESSION_NONE is implemented in the safe port",
-        );
-        return 0;
-    }
-    let expected_size = if is_tiled_image(tif) {
+    let (geometry, expected_size) = if is_tiled_image(tif) {
         let mut err = 0;
         let _ = TIFFGetStrileByteCountWithErr(tif, strile, &mut err);
         if err != 0 {
             emit_error_message(tif, module, "Strile index out of range");
             return 0;
         }
-        TIFFTileSize64(tif)
+        let Some(geometry) = codec_geometry_for_tile(tif) else {
+            emit_error_message(tif, module, "Failed to compute tile geometry");
+            return 0;
+        };
+        let Some(expected_size) = geometry.row_size.checked_mul(geometry.rows) else {
+            emit_error_message(tif, module, "Tile decode size is too large");
+            return 0;
+        };
+        (geometry, expected_size as u64)
     } else {
-        let Some(size) = expected_strip_size_for_index(tif, strile) else {
+        let Some(expected_size) = expected_strip_size_for_index(tif, strile) else {
             emit_error_message(tif, module, "Strile index out of range");
             return 0;
         };
-        size
+        let Some(geometry) = codec_geometry_for_strip(tif, strile) else {
+            emit_error_message(tif, module, "Failed to compute strip geometry");
+            return 0;
+        };
+        (geometry, expected_size)
     };
     if outsize as u64 > expected_size {
         emit_error_message(tif, module, "Requested decode size is too large");
@@ -2089,7 +2383,17 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
     };
     let input = slice::from_raw_parts(inbuf.cast::<u8>(), input_size);
     let output = slice::from_raw_parts_mut(outbuf.cast::<u8>(), output_size);
-    decode_uncompressed_into(tif, module, input, output) as c_int
+    let Some(decoded) = safe_tiff_codec_decode_bytes(tif, input, geometry, expected_size as usize)
+    else {
+        emit_error_message(tif, module, "Codec decode failed");
+        return 0;
+    };
+    if decoded.len() < output.len() {
+        emit_error_message(tif, module, "Decoded strile is smaller than requested");
+        return 0;
+    }
+    output.copy_from_slice(&decoded[..output.len()]);
+    1
 }
 
 #[no_mangle]
@@ -2106,6 +2410,11 @@ pub unsafe extern "C" fn TIFFFlushData(tif: *mut TIFF) -> c_int {
     }
     if ((*tif).tif_flags & TIFF_BEENWRITING) == 0 {
         return 1;
+    }
+    if !(*tif_inner(tif)).codec_state.pending_striles.is_empty()
+        && !flush_pending_codec_striles(tif, "TIFFFlushData")
+    {
+        return 0;
     }
     (*tif).tif_rawcc = 0;
     (*tif).tif_rawcp = (*tif).tif_rawdata;

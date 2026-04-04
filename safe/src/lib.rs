@@ -3,14 +3,14 @@ mod core;
 mod strile;
 
 pub use abi::{
-    TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldArrayType, TIFFFieldInfo,
-    TIFFSetGetFieldType, TIFFTagMethods,
+    TIFFCodec, TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldArrayType,
+    TIFFFieldInfo, TIFFInitMethod, TIFFSetGetFieldType, TIFFTagMethods,
 };
 
 use crate::core::{
     current_tag_at, current_tag_count, free_directory_state, get_tag_value, last_directory,
-    number_of_directories, read_custom_directory, read_next_directory, set_directory,
-    set_sub_directory, DirectoryState, FieldRegistryState,
+    number_of_directories, read_custom_directory, read_next_directory, set_default_codec_methods,
+    set_directory, set_sub_directory, CodecState, DirectoryState, FieldRegistryState,
 };
 use crate::strile::StrileState;
 use libc::{c_char, c_int, c_void, off_t, size_t, ssize_t};
@@ -112,6 +112,7 @@ struct TiffHandleInner {
     owned_name: *mut c_char,
     directory_state: DirectoryState,
     field_registry: FieldRegistryState,
+    codec_state: CodecState,
     strile_state: StrileState,
 }
 
@@ -333,11 +334,7 @@ fn file_big_endian_from_swab(swab: bool) -> bool {
 }
 
 unsafe fn set_default_methods(tif: *mut TIFF) {
-    (*tif).tif_setupdecode = Some(stub_bool_method);
-    (*tif).tif_predecode = Some(stub_predecode_method);
-    (*tif).tif_decoderow = Some(stub_decoderow_method);
-    (*tif).tif_close = Some(stub_void_method);
-    (*tif).tif_cleanup = Some(stub_void_method);
+    set_default_codec_methods(tif);
 }
 
 unsafe fn tif_inner(tif: *mut TIFF) -> *mut TiffHandleInner {
@@ -927,6 +924,7 @@ unsafe fn make_handle(
         owned_name: name_owner,
         directory_state: DirectoryState::default(),
         field_registry: FieldRegistryState::default(),
+        codec_state: CodecState::default(),
         strile_state: StrileState::default(),
     });
 

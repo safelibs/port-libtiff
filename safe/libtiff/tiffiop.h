@@ -16,6 +16,12 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include <string.h>
 #include <limits.h>
@@ -163,6 +169,13 @@ struct TIFFOpenOptions
 #define TIFFmax(A, B) ((A) > (B) ? (A) : (B))
 #define TIFFmin(A, B) ((A) < (B) ? (A) : (B))
 #define TIFFArrayCount(a) (sizeof(a) / sizeof((a)[0]))
+
+typedef size_t TIFFIOSize_t;
+#define _TIFF_lseek_f(fildes, offset, whence) lseek(fildes, offset, whence)
+#define _TIFF_fseek_f(stream, offset, whence) fseek(stream, offset, whence)
+#define _TIFF_fstat_f(fildes, stat_buff) fstat(fildes, stat_buff)
+#define _TIFF_stat_s struct stat
+#define _TIFF_off_t off_t
 
 #if defined(__cplusplus)
 extern "C"

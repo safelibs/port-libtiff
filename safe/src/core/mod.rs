@@ -1,7 +1,15 @@
+mod codec;
 mod directory;
 mod field_registry;
 mod field_tables;
 
+pub(crate) use codec::{
+    safe_tiff_codec_decode_bytes, safe_tiff_codec_default_tag_value,
+    safe_tiff_codec_encode_bytes, safe_tiff_codec_get_tag_value,
+    safe_tiff_codec_reset_for_current_directory, safe_tiff_codec_set_field_marshaled,
+    safe_tiff_codec_set_scheme, safe_tiff_codec_unset_field, set_default_codec_methods,
+    CodecGeometry, CodecState, DecodedStrileCache, PendingStrileWrite,
+};
 pub(crate) use directory::{
     _TIFFRewriteField, current_tag_at, current_tag_count, free_directory_state,
     get_strile_tag_value_u64, get_tag_value, last_directory, number_of_directories,

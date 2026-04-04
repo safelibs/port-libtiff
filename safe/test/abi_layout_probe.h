@@ -26,6 +26,10 @@ extern "C"
         size_t tiff_tag_methods_vsetfield_offset;
         size_t tiff_tag_methods_vgetfield_offset;
         size_t tiff_tag_methods_printdir_offset;
+        size_t tiff_codec_size;
+        size_t tiff_codec_name_offset;
+        size_t tiff_codec_scheme_offset;
+        size_t tiff_codec_init_offset;
     } SafeTiffAbiLayoutProbe;
 
     const SafeTiffAbiLayoutProbe *safe_tiff_abi_layout_probe(void);

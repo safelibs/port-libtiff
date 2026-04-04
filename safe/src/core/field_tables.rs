@@ -26,7 +26,7 @@ macro_rules! field {
     };
 }
 
-pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 151] = [
+pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 160] = [
     field!(254, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 5, 1, 0, "SubfileType", std::ptr::null_mut()),
     field!(255, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 0, 1, 0, "OldSubfileType", std::ptr::null_mut()),
     field!(256, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 1, 0, 0, "ImageWidth", std::ptr::null_mut()),
@@ -38,6 +38,8 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 151] = [
     field!(264, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 0, "CellWidth", std::ptr::null_mut()),
     field!(265, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 0, "CellLength", std::ptr::null_mut()),
     field!(266, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 10, 0, 0, "FillOrder", std::ptr::null_mut()),
+    field!(292, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UINT32, 66, 0, 0, "Group3Options", std::ptr::null_mut()),
+    field!(293, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UINT32, 67, 0, 0, "Group4Options", std::ptr::null_mut()),
     field!(269, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_UNDEFINED, 65, 1, 0, "DocumentName", std::ptr::null_mut()),
     field!(270, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_UNDEFINED, 65, 1, 0, "ImageDescription", std::ptr::null_mut()),
     field!(271, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_UNDEFINED, 65, 1, 0, "Make", std::ptr::null_mut()),
@@ -67,6 +69,7 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 151] = [
     field!(306, 20, 20, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_UNDEFINED, 65, 1, 0, "DateTime", std::ptr::null_mut()),
     field!(315, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_UNDEFINED, 65, 1, 0, "Artist", std::ptr::null_mut()),
     field!(316, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_UNDEFINED, 65, 1, 0, "HostComputer", std::ptr::null_mut()),
+    field!(317, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 68, 1, 0, "Predictor", std::ptr::null_mut()),
     field!(318, 2, 2, TIFF_RATIONAL, 0, TIFF_SETGET_C0_FLOAT, TIFF_SETGET_UNDEFINED, 65, 1, 0, "WhitePoint", std::ptr::null_mut()),
     field!(319, 6, 6, TIFF_RATIONAL, 0, TIFF_SETGET_C0_FLOAT, TIFF_SETGET_UNDEFINED, 65, 1, 0, "PrimaryChromaticities", std::ptr::null_mut()),
     field!(320, -1, -1, TIFF_SHORT, 0, TIFF_SETGET_OTHER, TIFF_SETGET_UNDEFINED, 26, 1, 0, "ColorMap", std::ptr::null_mut()),
@@ -75,6 +78,9 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 151] = [
     field!(323, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 2, 0, 0, "TileLength", std::ptr::null_mut()),
     field!(324, -1, 1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 25, 0, 0, "TileOffsets", std::ptr::null_mut()),
     field!(325, -1, 1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 24, 0, 0, "TileByteCounts", std::ptr::null_mut()),
+    field!(326, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UINT32, 72, 1, 0, "BadFaxLines", std::ptr::null_mut()),
+    field!(327, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UINT16, 73, 1, 0, "CleanFaxData", std::ptr::null_mut()),
+    field!(328, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UINT32, 74, 1, 0, "ConsecutiveBadFaxLines", std::ptr::null_mut()),
     field!(330, -1, -1, TIFF_IFD8, 0, TIFF_SETGET_C16_IFD8, TIFF_SETGET_UNDEFINED, 49, 1, 1, "SubIFD", array_ptr!(TIFF_FIELD_ARRAY_IMAGE)),
     field!(332, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 0, 0, "InkSet", std::ptr::null_mut()),
     field!(333, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_C16_ASCII, TIFF_SETGET_UNDEFINED, 46, 1, 1, "InkNames", std::ptr::null_mut()),
@@ -166,6 +172,9 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 151] = [
     field!(50833, -1, -1, TIFF_UNDEFINED, 0, TIFF_SETGET_C16_UINT8, TIFF_SETGET_UNDEFINED, 65, 1, 1, "CurrentICCProfile", std::ptr::null_mut()),
     field!(50834, -1, -1, TIFF_SRATIONAL, 0, TIFF_SETGET_C16_FLOAT, TIFF_SETGET_UNDEFINED, 65, 1, 1, "CurrentPreProfileMatrix", std::ptr::null_mut()),
     field!(65563, 0, 0, TIFF_SHORT, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 0, 1, 0, "PerSample", std::ptr::null_mut()),
+    field!(65536, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 69, 1, 0, "FaxMode", std::ptr::null_mut()),
+    field!(65557, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 70, 1, 0, "ZipQuality", std::ptr::null_mut()),
+    field!(65570, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 71, 1, 0, "DeflateSubCodec", std::ptr::null_mut()),
     field!(346, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 0, "Indexed", std::ptr::null_mut()),
     field!(400, 1, 1, TIFF_IFD8, 0, TIFF_SETGET_IFD8, TIFF_SETGET_UNDEFINED, 65, 1, 0, "GlobalParametersIFD", std::ptr::null_mut()),
     field!(401, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 65, 1, 0, "ProfileType", std::ptr::null_mut()),

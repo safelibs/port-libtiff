@@ -35,7 +35,7 @@ int main(void)
 
     if (probe == NULL)
         fail("safe_tiff_abi_layout_probe returned NULL");
-    if (probe->version != 1)
+    if (probe->version != 2)
         fail("unexpected ABI layout probe version");
 
     expect_equal_size(probe->struct_size, sizeof(*probe),
@@ -79,6 +79,18 @@ int main(void)
     expect_equal_size(probe->tiff_tag_methods_printdir_offset,
                       offsetof(TIFFTagMethods, printdir),
                       "TIFFTagMethods.printdir");
+
+    expect_equal_size(probe->tiff_codec_size, sizeof(TIFFCodec),
+                      "TIFFCodec.sizeof");
+    expect_equal_size(probe->tiff_codec_name_offset,
+                      offsetof(TIFFCodec, name),
+                      "TIFFCodec.name");
+    expect_equal_size(probe->tiff_codec_scheme_offset,
+                      offsetof(TIFFCodec, scheme),
+                      "TIFFCodec.scheme");
+    expect_equal_size(probe->tiff_codec_init_offset,
+                      offsetof(TIFFCodec, init),
+                      "TIFFCodec.init");
 
     return 0;
 }

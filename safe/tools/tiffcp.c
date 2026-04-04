@@ -393,7 +393,13 @@ int main(int argc, char *argv[])
             tilewidth = deftilewidth;
             tilelength = deftilelength;
             g3opts = defg3opts;
-            if (!tiffcp(in, out) || !TIFFWriteDirectory(out))
+            if (!tiffcp(in, out))
+            {
+                (void)TIFFClose(in);
+                (void)TIFFClose(out);
+                return (EXIT_FAILURE);
+            }
+            if (!TIFFWriteDirectory(out))
             {
                 (void)TIFFClose(in);
                 (void)TIFFClose(out);
@@ -925,6 +931,11 @@ static int tiffcp(TIFF *in, TIFF *out)
         TIFFDefaultTileSize(out, &tilewidth, &tilelength);
         TIFFSetField(out, TIFFTAG_TILEWIDTH, tilewidth);
         TIFFSetField(out, TIFFTAG_TILELENGTH, tilelength);
+        {
+            uint32_t inputrowsperstrip = 0;
+            TIFFGetFieldDefaulted(in, TIFFTAG_ROWSPERSTRIP, &inputrowsperstrip);
+            TIFFSetField(out, TIFFTAG_ROWSPERSTRIP, inputrowsperstrip);
+        }
     }
     else
     {
@@ -949,7 +960,10 @@ static int tiffcp(TIFF *in, TIFF *out)
     if (config != (uint16_t)-1)
         TIFFSetField(out, TIFFTAG_PLANARCONFIG, config);
     else
-        CopyField(TIFFTAG_PLANARCONFIG, config);
+    {
+        TIFFGetFieldDefaulted(in, TIFFTAG_PLANARCONFIG, &config);
+        TIFFSetField(out, TIFFTAG_PLANARCONFIG, config);
+    }
     if (samplesperpixel <= 4)
         CopyTag(TIFFTAG_TRANSFERFUNCTION, 4, TIFF_SHORT);
     CopyTag(TIFFTAG_COLORMAP, 4, TIFF_SHORT);
@@ -1121,7 +1135,11 @@ static int tiffcp(TIFF *in, TIFF *out)
         CopyTag(p->tag, p->count, p->type);
 
     cf = pickCopyFunc(in, out, bitspersample, samplesperpixel);
-    return (cf ? (*cf)(in, out, length, width, samplesperpixel) : FALSE);
+    if (cf == NULL)
+        return FALSE;
+    if (!(*cf)(in, out, length, width, samplesperpixel))
+        return FALSE;
+    return TRUE;
 }
 
 /*

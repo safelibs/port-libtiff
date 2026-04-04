@@ -2,8 +2,14 @@ use super::field_registry::{
     _TIFFCreateAnonField, _TIFFGetExifFields, _TIFFGetGpsFields, _TIFFMergeFields,
     safe_tiff_record_custom_tag, safe_tiff_remove_custom_tag, TIFFFindField,
 };
-use super::{initialize_field_registry, reset_default_directory, reset_field_registry_with_array};
+use super::{
+    initialize_field_registry, reset_default_directory, reset_field_registry_with_array,
+    safe_tiff_codec_default_tag_value, safe_tiff_codec_get_tag_value,
+    safe_tiff_codec_reset_for_current_directory, safe_tiff_codec_set_field_marshaled,
+    safe_tiff_codec_set_scheme, safe_tiff_codec_unset_field,
+};
 use crate::abi::{TIFFDataType, TIFFFieldArray};
+use crate::strile::TIFFFlushData;
 use crate::{
     emit_error_message, emit_warning_message, parse_u16, parse_u32, parse_u64, read_from_proc,
     seek_in_proc, tif_inner, write_to_proc, TIFF, TIFF_BIGENDIAN, TIFF_ISTILED,
@@ -43,6 +49,9 @@ const TAG_FILLORDER: u32 = 266;
 const TAG_XRESOLUTION: u32 = 282;
 const TAG_YRESOLUTION: u32 = 283;
 const TAG_ORIENTATION: u32 = 274;
+const TAG_GROUP3OPTIONS: u32 = 292;
+const TAG_GROUP4OPTIONS: u32 = 293;
+const TAG_PREDICTOR: u32 = 317;
 const TAG_SAMPLESPERPIXEL: u32 = 277;
 const TAG_ROWSPERSTRIP: u32 = 278;
 const TAG_STRIPBYTECOUNTS: u32 = 279;
@@ -70,6 +79,13 @@ const TAG_TILEDEPTH: u32 = 32998;
 const TAG_STRIPOFFSETS: u32 = 273;
 const TAG_YCBCRSUBSAMPLING: u32 = 530;
 const TAG_YCBCRPOSITIONING: u32 = 531;
+const TAG_FAXMODE: u32 = 65536;
+const TAG_ZIPQUALITY: u32 = 65557;
+const TAG_DEFLATE_SUBCODEC: u32 = 65570;
+
+const PREDICTOR_NONE: u16 = 1;
+const PREDICTOR_HORIZONTAL: u16 = 2;
+const PREDICTOR_FLOATINGPOINT: u16 = 3;
 
 const TIFF_FILLORDER: u32 = 0x00003;
 const TIFF_DIRTYDIRECT: u32 = 0x00008;
@@ -422,6 +438,14 @@ unsafe fn set_current_directory(
     (*tif_inner(tif)).next_diroff = next_offset;
     (*tif_inner(tif)).strile_state.defer_array_writing = false;
     (*tif).tif_curdir = curdir_value;
+    safe_tiff_codec_reset_for_current_directory(
+        tif,
+        current_u16_value_or_default(tif, TAG_COMPRESSION, COMPRESSION_NONE),
+    );
+    let _ = safe_tiff_codec_set_scheme(
+        tif,
+        current_u16_value_or_default(tif, TAG_COMPRESSION, COMPRESSION_NONE) as c_int,
+    );
 }
 
 fn checked_total_bytes(
@@ -1574,6 +1598,9 @@ unsafe fn default_tag_value(
     out_count: *mut u64,
     out_data: *mut *const c_void,
 ) -> c_int {
+    if safe_tiff_codec_default_tag_value(tif, tag, out_type, out_count, out_data) != 0 {
+        return 1;
+    }
     let current = directory_state(tif).current.as_ref();
     let bits_per_sample = current
         .and_then(|dir| dir.find_tag(TAG_BITSPERSAMPLE))
@@ -1623,8 +1650,16 @@ unsafe fn default_tag_value(
             let (data, count) = cache_u16_values(tif, vec![1]);
             (TIFFDataType::TIFF_SHORT, count, data)
         }
+        TAG_GROUP3OPTIONS | TAG_GROUP4OPTIONS => {
+            let (data, count) = cache_u32_values(tif, vec![0]);
+            (TIFFDataType::TIFF_LONG, count, data)
+        }
         TAG_ORIENTATION => {
             let (data, count) = cache_u16_values(tif, vec![ORIENTATION_TOPLEFT]);
+            (TIFFDataType::TIFF_SHORT, count, data)
+        }
+        TAG_PREDICTOR => {
+            let (data, count) = cache_u16_values(tif, vec![PREDICTOR_NONE]);
             (TIFFDataType::TIFF_SHORT, count, data)
         }
         TAG_SAMPLESPERPIXEL => {
@@ -1741,6 +1776,10 @@ pub(crate) unsafe fn get_tag_value(
 ) -> c_int {
     if tif.is_null() || out_type.is_null() || out_count.is_null() || out_data.is_null() {
         return 0;
+    }
+
+    if safe_tiff_codec_get_tag_value(tif, tag, out_type, out_count, out_data) != 0 {
+        return 1;
     }
 
     if is_strile_tag(tag) && !materialize_deferred_strile_tag(tif, tag) {
@@ -2462,6 +2501,13 @@ unsafe fn single_u32(entry: &ParsedTag) -> Option<u32> {
     }
 }
 
+unsafe fn single_i32(entry: &ParsedTag) -> Option<i32> {
+    match &entry.values {
+        StoredValues::I32(values) if values.len() == 1 => Some(values[0]),
+        _ => None,
+    }
+}
+
 unsafe fn validate_and_normalize_tag(
     tif: *mut TIFF,
     field_bit: u16,
@@ -2497,6 +2543,16 @@ unsafe fn validate_and_normalize_tag(
                 return false;
             }
         }
+        TAG_GROUP3OPTIONS | TAG_GROUP4OPTIONS => {
+            if single_u32(parsed).is_none() {
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} expects a single uint32 value", tag),
+                );
+                return false;
+            }
+        }
         TAG_ORIENTATION => {
             let Some(value) = single_u16(parsed) else {
                 emit_error_message(
@@ -2511,6 +2567,23 @@ unsafe fn validate_and_normalize_tag(
                     tif,
                     module_name,
                     format!("Bad value {} for Orientation tag", value),
+                );
+                return false;
+            }
+        }
+        TAG_PREDICTOR => {
+            let Some(value) = single_u16(parsed) else {
+                emit_error_message(tif, module_name, "Predictor expects a single uint16 value");
+                return false;
+            };
+            if !matches!(
+                value,
+                PREDICTOR_NONE | PREDICTOR_HORIZONTAL | PREDICTOR_FLOATINGPOINT
+            ) {
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for Predictor tag", value),
                 );
                 return false;
             }
@@ -2652,6 +2725,16 @@ unsafe fn validate_and_normalize_tag(
                 Some(DirectoryKind::SubIfd)
             ) {
                 emit_error_message(tif, module_name, "Sorry, cannot nest SubIFDs");
+                return false;
+            }
+        }
+        TAG_FAXMODE | TAG_ZIPQUALITY | TAG_DEFLATE_SUBCODEC => {
+            if single_i32(parsed).is_none() {
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} expects a single integer value", tag),
+                );
                 return false;
             }
         }
@@ -2812,6 +2895,10 @@ unsafe fn safe_tiff_set_field_marshaled_impl(
         return 0;
     }
 
+    if safe_tiff_codec_set_field_marshaled(tif, normalized_tag, storage_type, count, data) != 0 {
+        return 1;
+    }
+
     upsert_current_tag_with_flags(
         tif,
         parsed,
@@ -2836,6 +2923,9 @@ pub unsafe extern "C" fn safe_tiff_unset_field(tif: *mut TIFF, tag: u32) -> c_in
         TAG_DATATYPE => TAG_SAMPLEFORMAT,
         _ => tag,
     };
+    if safe_tiff_codec_unset_field(tif, actual_tag) != 0 {
+        return 1;
+    }
     remove_current_tag(tif, actual_tag, (*field).field_bit == FIELD_CUSTOM)
 }
 
@@ -4084,12 +4174,8 @@ pub(crate) unsafe fn safe_tiff_directory_entry_is_dummy(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn TIFFSetCompressionScheme(tif: *mut TIFF, _scheme: c_int) -> c_int {
-    if tif.is_null() {
-        0
-    } else {
-        1
-    }
+pub unsafe extern "C" fn TIFFSetCompressionScheme(tif: *mut TIFF, scheme: c_int) -> c_int {
+    safe_tiff_codec_set_scheme(tif, scheme)
 }
 
 #[no_mangle]
@@ -4135,6 +4221,9 @@ pub unsafe extern "C" fn TIFFWriteCustomDirectory(tif: *mut TIFF, pdiroff: *mut 
         }
         return 0;
     }
+    if TIFFFlushData(tif) == 0 {
+        return 0;
+    }
     let Some(current) = directory_state(tif).current.clone() else {
         emit_error_message(tif, module_name, "No directory is loaded for writing");
         return 0;
@@ -4162,6 +4251,9 @@ pub unsafe extern "C" fn TIFFWriteDirectory(tif: *mut TIFF) -> c_int {
         return 0;
     }
     if !ensure_writable_directory(tif) {
+        return 0;
+    }
+    if TIFFFlushData(tif) == 0 {
         return 0;
     }
     let Some(current) = directory_state(tif).current.clone() else {
@@ -4301,6 +4393,9 @@ pub unsafe extern "C" fn TIFFCheckpointDirectory(tif: *mut TIFF) -> c_int {
     if !ensure_writable_directory(tif) {
         return 0;
     }
+    if TIFFFlushData(tif) == 0 {
+        return 0;
+    }
     let Some(current) = directory_state(tif).current.clone() else {
         emit_error_message(tif, module_name, "No directory is loaded for writing");
         return 0;
@@ -4352,6 +4447,9 @@ pub unsafe extern "C" fn TIFFRewriteDirectory(tif: *mut TIFF) -> c_int {
         return 0;
     }
     if !ensure_writable_directory(tif) {
+        return 0;
+    }
+    if TIFFFlushData(tif) == 0 {
         return 0;
     }
     let Some(current) = directory_state(tif).current.clone() else {
