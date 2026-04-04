@@ -79,7 +79,6 @@ pub struct TIFF {
     pub tif_warnhandler: TIFFErrorHandlerExtRRaw,
     pub tif_warnhandler_user_data: *mut c_void,
     pub tif_max_single_mem_alloc: Tmsize,
-    name_owner: *mut c_char,
     mapped_base: *mut c_void,
     mapped_size: Toff,
     header_magic: u16,
@@ -318,10 +317,31 @@ unsafe fn destroy_handle_allocation(tif: *mut TIFF) {
     if tif.is_null() {
         return;
     }
-    let boxed = Box::from_raw(tif);
-    if !boxed.name_owner.is_null() {
-        let _ = CString::from_raw(boxed.name_owner);
-    }
+    _TIFFfree(tif.cast::<c_void>());
+}
+
+unsafe fn emit_early_tiff_structure_oom(
+    opts: *mut TIFFOpenOptions,
+    clientdata: Thandle,
+    name_ptr: *const c_char,
+) {
+    static OOM_DETAIL: &[u8] = b"Out of memory (TIFF structure)\0";
+    static NAMELESS: &[u8] = b"<null>\0";
+    static FORMAT: &[u8] = b"%s: %s\0";
+    let mut message = [0 as c_char; 512];
+    let file_name = if name_ptr.is_null() {
+        NAMELESS.as_ptr().cast()
+    } else {
+        name_ptr
+    };
+    libc::snprintf(
+        message.as_mut_ptr(),
+        message.len(),
+        FORMAT.as_ptr().cast(),
+        file_name,
+        OOM_DETAIL.as_ptr().cast::<c_char>(),
+    );
+    safe_tiff_emit_early_error_message(opts, clientdata, c_module(MODULE_TIFF_CLIENT_OPEN_EXT), message.as_ptr());
 }
 
 unsafe fn read_from_proc(tif: *mut TIFF, buf: *mut c_void, size: Tmsize) -> bool {
@@ -891,8 +911,20 @@ unsafe fn make_handle(
         return ptr::null_mut();
     }
 
-    let name_owner = make_cstring(&name).into_raw();
-    let boxed = Box::new(TIFF {
+    let Some(size_to_alloc) = mem::size_of::<TIFF>().checked_add(name.len() + 1) else {
+        emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
+        return ptr::null_mut();
+    };
+    let tif = _TIFFcalloc(1, size_to_alloc as Tmsize).cast::<TIFF>();
+    if tif.is_null() {
+        emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
+        return ptr::null_mut();
+    }
+    let name_owner = tif.cast::<u8>().add(mem::size_of::<TIFF>()).cast::<c_char>();
+    ptr::copy_nonoverlapping(name.as_bytes().as_ptr(), name_owner.cast::<u8>(), name.len());
+    *name_owner.add(name.len()) = 0;
+
+    ptr::write(tif, TIFF {
         tif_name: name_owner,
         tif_fd: -1,
         tif_mode: open_flags & !(libc::O_CREAT | libc::O_TRUNC),
@@ -943,7 +975,6 @@ unsafe fn make_handle(
         } else {
             (*opts).max_single_mem_alloc
         },
-        name_owner,
         mapped_base: ptr::null_mut(),
         mapped_size: 0,
         header_magic: 0,
@@ -960,7 +991,6 @@ unsafe fn make_handle(
         || closeproc.is_none()
         || sizeproc.is_none()
     {
-        let tif = Box::into_raw(boxed);
         emit_error_message(
             tif,
             "TIFFClientOpenExt",
@@ -970,7 +1000,6 @@ unsafe fn make_handle(
         return ptr::null_mut();
     }
 
-    let tif = Box::into_raw(boxed);
     set_default_methods(tif);
     if open_flags == libc::O_RDONLY {
         (*tif).tif_flags |= TIFF_MAPPED;
@@ -1027,13 +1056,13 @@ pub extern "C" fn TIFFGetVersion() -> *const c_char {
 
 #[no_mangle]
 pub extern "C" fn TIFFOpenOptionsAlloc() -> *mut TIFFOpenOptions {
-    Box::into_raw(Box::new(TIFFOpenOptions::default()))
+    unsafe { _TIFFcalloc(1, mem::size_of::<TIFFOpenOptions>() as Tmsize).cast::<TIFFOpenOptions>() }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFOpenOptionsFree(opts: *mut TIFFOpenOptions) {
     if !opts.is_null() {
-        drop(Box::from_raw(opts));
+        _TIFFfree(opts.cast::<c_void>());
     }
 }
 
