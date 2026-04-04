@@ -6,16 +6,13 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SAFE_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 SAFE_TEST_DIR="${SAFE_ROOT}/test"
 SAFE_BUILD_DIR="${SAFE_ROOT}/build"
-SAFE_BUILD_TEST_DIR="${SAFE_BUILD_DIR}/test"
-SAFE_BUILD_TOOLS_DIR="${SAFE_BUILD_DIR}/tools"
-MAKEFILE_AM="${SAFE_TEST_DIR}/Makefile.am"
 
 tests_filter=""
 include_regex=""
 
 usage() {
   cat <<'EOF'
-Usage: run-upstream-shell-tests.sh [--tests test1.sh,test2.sh] [--include-regex regex]
+Usage: run-upstream-shell-tests.sh [--build-dir dir] [--test-dir dir] [--tests test1.sh,test2.sh] [--include-regex regex]
 EOF
 }
 
@@ -46,6 +43,14 @@ while [[ $# -gt 0 ]]; do
       tests_filter="${2:-}"
       shift 2
       ;;
+    --build-dir)
+      SAFE_BUILD_DIR=$(cd "${2:-}" && pwd)
+      shift 2
+      ;;
+    --test-dir)
+      SAFE_TEST_DIR=$(cd "${2:-}" && pwd)
+      shift 2
+      ;;
     --include-regex)
       include_regex="${2:-}"
       shift 2
@@ -61,6 +66,11 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+SAFE_ROOT=$(cd "${SAFE_TEST_DIR}/.." && pwd)
+SAFE_BUILD_TEST_DIR="${SAFE_BUILD_DIR}/test"
+SAFE_BUILD_TOOLS_DIR="${SAFE_BUILD_DIR}/tools"
+MAKEFILE_AM="${SAFE_TEST_DIR}/Makefile.am"
 
 mapfile -t discovered_tests < <(discover_tests)
 if [[ ${#discovered_tests[@]} -eq 0 ]]; then

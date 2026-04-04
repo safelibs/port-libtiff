@@ -697,42 +697,50 @@ fn decode_packbits(input: &[u8], expected_size: usize) -> Option<Vec<u8>> {
     })
 }
 
-fn encode_packbits(input: &[u8]) -> Vec<u8> {
-    let mut output = Vec::new();
+fn encode_packbits_row(row: &[u8], output: &mut Vec<u8>) {
     let mut index = 0usize;
-    while index < input.len() {
-        let run_start = index;
+    while index < row.len() {
         let mut run_len = 1usize;
-        while run_start + run_len < input.len()
-            && input[run_start] == input[run_start + run_len]
-            && run_len < 128
-        {
+        while index + run_len < row.len() && row[index] == row[index + run_len] && run_len < 128 {
             run_len += 1;
         }
         if run_len >= 3 {
             output.push((1i16 - run_len as i16) as u8);
-            output.push(input[run_start]);
+            output.push(row[index]);
             index += run_len;
             continue;
         }
+
         let literal_start = index;
         index += run_len;
-        while index < input.len() {
+        while index < row.len() {
             let mut next_run = 1usize;
-            while index + next_run < input.len()
-                && input[index] == input[index + next_run]
+            while index + next_run < row.len()
+                && row[index] == row[index + next_run]
                 && next_run < 128
             {
                 next_run += 1;
             }
-            if next_run >= 3 || index - literal_start >= 128 {
+            if next_run >= 3 || index - literal_start + next_run > 128 {
                 break;
             }
             index += next_run;
         }
-        let literal_len = (index - literal_start).min(128);
+
+        let literal_len = index - literal_start;
         output.push((literal_len - 1) as u8);
-        output.extend_from_slice(&input[literal_start..literal_start + literal_len]);
+        output.extend_from_slice(&row[literal_start..index]);
+    }
+}
+
+fn encode_packbits(input: &[u8], row_size: usize) -> Vec<u8> {
+    let mut output = Vec::with_capacity(input.len());
+    if row_size == 0 {
+        encode_packbits_row(input, &mut output);
+        return output;
+    }
+    for row in input.chunks(row_size) {
+        encode_packbits_row(row, &mut output);
     }
     output
 }
@@ -1195,7 +1203,9 @@ pub(crate) unsafe fn safe_tiff_codec_encode_bytes(
 ) -> Option<Vec<u8>> {
     match active_scheme(tif) {
         COMPRESSION_NONE => encode_predictor_bytes(tif, geometry, input),
-        COMPRESSION_PACKBITS => encode_predictor_bytes(tif, geometry, input).map(|bytes| encode_packbits(&bytes)),
+        COMPRESSION_PACKBITS => {
+            encode_predictor_bytes(tif, geometry, input).map(|bytes| encode_packbits(&bytes, geometry.row_size))
+        }
         COMPRESSION_LZW => encode_lzw(&encode_predictor_bytes(tif, geometry, input)?),
         COMPRESSION_DEFLATE | COMPRESSION_ADOBE_DEFLATE => {
             encode_deflate(&encode_predictor_bytes(tif, geometry, input)?)
