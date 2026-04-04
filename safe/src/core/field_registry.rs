@@ -85,14 +85,14 @@ unsafe fn tag_compare(lhs: *const TIFFField, rhs: *const TIFFField) -> Ordering 
     }
 }
 
-unsafe fn compare_field_to_key(field: *const TIFFField, tag: u32, dt: TIFFDataType) -> Ordering {
+unsafe fn compare_key_to_field(tag: u32, dt: TIFFDataType, field: *const TIFFField) -> Ordering {
     let field = &*field;
-    if field.field_tag != tag {
-        field.field_tag.cmp(&tag)
-    } else if dt.0 == TIFF_ANY.0 || field.field_type.0 == TIFF_ANY.0 {
+    if tag != field.field_tag {
+        tag.cmp(&field.field_tag)
+    } else if dt.0 == TIFF_ANY.0 {
         Ordering::Equal
     } else {
-        dt.0.cmp(&field.field_type.0)
+        field.field_type.0.cmp(&dt.0)
     }
 }
 
@@ -108,19 +108,26 @@ unsafe fn find_field_impl(
         }
     }
 
-    match state
-        .fields
-        .binary_search_by(|probe| compare_field_to_key(*probe, tag, dt))
-    {
-        Ok(index) => {
-            state.foundfield = state.fields[index];
-            state.foundfield
-        }
-        Err(_) => {
-            state.foundfield = ptr::null();
-            ptr::null()
+    let mut left = 0usize;
+    let mut right = state.fields.len();
+    while left < right {
+        let mid = left + (right - left) / 2;
+        match compare_key_to_field(tag, dt, state.fields[mid]) {
+            Ordering::Less => {
+                right = mid;
+            }
+            Ordering::Greater => {
+                left = mid + 1;
+            }
+            Ordering::Equal => {
+                state.foundfield = state.fields[mid];
+                return state.foundfield;
+            }
         }
     }
+
+    state.foundfield = ptr::null();
+    ptr::null()
 }
 
 unsafe fn find_field_by_name_impl(

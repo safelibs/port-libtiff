@@ -102,7 +102,7 @@
     },
     {
       "path": "safe/build/libtiff/libtiff.so.6",
-      "sha256": "0e67d97ec0f7c0c4299d70aba59db6fdf9c1d31df8cd855c125715695e084cec"
+      "sha256": "94eb45e457de25d28201f5eda55f6769e90ab4fb8e8ae5b4d62e20f7f0153f6f"
     },
     {
       "path": "safe/capi/libtiff-safe.map",

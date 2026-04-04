@@ -22,6 +22,7 @@ enum
 {
     TIFFTAG_SMOKE_CUSTOM = 65010,
     TIFFTAG_EXTENDER_CUSTOM = 65011,
+    TIFFTAG_SMOKE_GENERIC = 65012,
 };
 
 static const TIFFFieldInfo custom_field_info[] = {
@@ -32,6 +33,11 @@ static const TIFFFieldInfo custom_field_info[] = {
 static const TIFFFieldInfo extender_field_info[] = {
     {TIFFTAG_EXTENDER_CUSTOM, 1, 1, TIFF_LONG, FIELD_CUSTOM, 1, 0,
      "ExtenderCustom"},
+};
+
+static const TIFFFieldInfo generic_field_info[] = {
+    {TIFFTAG_SMOKE_GENERIC, 1, 1, TIFF_ANY, FIELD_CUSTOM, 1, 0,
+     "SmokeGeneric"},
 };
 
 static TIFFExtendProc g_parent_extender = NULL;
@@ -141,6 +147,10 @@ int main(void)
            "TIFFFieldWithTag mismatch");
     expect(TIFFFieldWithName(tif, "ImageWidth") == field,
            "TIFFFieldWithName mismatch");
+    expect(TIFFFindField(tif, TIFFTAG_SMINSAMPLEVALUE, TIFF_ANY) != NULL,
+           "expected TIFF_ANY lookup for SMinSampleValue");
+    expect(TIFFFindField(tif, TIFFTAG_SMINSAMPLEVALUE, TIFF_SHORT) == NULL,
+           "typed lookup must not match a TIFF_ANY descriptor");
 
     tag_methods = TIFFAccessTagMethods(tif);
     expect(tag_methods != NULL, "TIFFAccessTagMethods returned NULL");
@@ -180,6 +190,15 @@ int main(void)
            "unexpected custom field count size");
     expect(TIFFFieldIsAnonymous(custom_field) == 0,
            "merged custom field should not be anonymous");
+    expect(TIFFMergeFieldInfo(tif, generic_field_info,
+                              (uint32_t)(sizeof(generic_field_info) /
+                                         sizeof(generic_field_info[0]))) == 0,
+           "TIFFMergeFieldInfo failed for generic field");
+    field = TIFFFindField(tif, TIFFTAG_SMOKE_GENERIC, TIFF_ANY);
+    expect_field(field, TIFFTAG_SMOKE_GENERIC, TIFF_ANY, 1, 1, 0,
+                 "SmokeGeneric");
+    expect(TIFFFindField(tif, TIFFTAG_SMOKE_GENERIC, TIFF_SHORT) == NULL,
+           "typed lookup must miss a generic custom descriptor");
     expect(TIFFSetField(tif, TIFFTAG_SMOKE_CUSTOM, (uint32_t)1, &custom_value) == 1,
            "TIFFSetField failed for merged custom field");
     expect(TIFFGetTagListCount(tif) == 1,
