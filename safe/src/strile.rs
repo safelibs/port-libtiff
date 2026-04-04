@@ -10,19 +10,26 @@ use std::ptr;
 use std::slice;
 
 const COMPRESSION_NONE: u16 = 1;
+const FILLORDER_MSB2LSB: u16 = 1;
+const FILLORDER_LSB2MSB: u16 = 2;
 const PHOTOMETRIC_YCBCR: u16 = 6;
 
 const PLANARCONFIG_CONTIG: u16 = 1;
 const PLANARCONFIG_SEPARATE: u16 = 2;
+const SAMPLEFORMAT_UINT: u16 = 1;
+const SAMPLEFORMAT_COMPLEXINT: u16 = 5;
+const SAMPLEFORMAT_COMPLEXIEEEFP: u16 = 6;
 
 const TAG_IMAGEWIDTH: u32 = 256;
 const TAG_IMAGELENGTH: u32 = 257;
 const TAG_BITSPERSAMPLE: u32 = 258;
 const TAG_COMPRESSION: u32 = 259;
 const TAG_PHOTOMETRIC: u32 = 262;
+const TAG_FILLORDER: u32 = 266;
 const TAG_SAMPLESPERPIXEL: u32 = 277;
 const TAG_ROWSPERSTRIP: u32 = 278;
 const TAG_PLANARCONFIG: u32 = 284;
+const TAG_SAMPLEFORMAT: u32 = 339;
 const TAG_TILEWIDTH: u32 = 322;
 const TAG_TILELENGTH: u32 = 323;
 const TAG_TILEOFFSETS: u32 = 324;
@@ -36,6 +43,8 @@ const TAG_TILEDEPTH: u32 = 32998;
 const TIFF_DIRTYDIRECT: u32 = 0x00008;
 const TIFF_BUFFERSETUP: u32 = 0x00010;
 const TIFF_BEENWRITING: u32 = 0x00040;
+const TIFF_SWAB: u32 = 0x00080;
+const TIFF_NOBITREV: u32 = 0x00100;
 const TIFF_MYBUFFER: u32 = 0x00200;
 const TIFF_ISTILED: u32 = 0x00400;
 const TIFF_MAPPED: u32 = 0x00800;
@@ -368,6 +377,96 @@ unsafe fn photometric(tif: *mut TIFF) -> u16 {
 
 unsafe fn compression(tif: *mut TIFF) -> u16 {
     get_tag_scalar_u16(tif, TAG_COMPRESSION, true).unwrap_or(COMPRESSION_NONE)
+}
+
+unsafe fn sample_format(tif: *mut TIFF) -> u16 {
+    get_tag_scalar_u16(tif, TAG_SAMPLEFORMAT, true).unwrap_or(SAMPLEFORMAT_UINT)
+}
+
+unsafe fn fill_order(tif: *mut TIFF) -> u16 {
+    get_tag_scalar_u16(tif, TAG_FILLORDER, true).unwrap_or(FILLORDER_MSB2LSB)
+}
+
+unsafe fn should_reverse_bits(tif: *mut TIFF) -> bool {
+    let order = fill_order(tif);
+    (order == FILLORDER_MSB2LSB || order == FILLORDER_LSB2MSB)
+        && ((*tif).tif_flags & TIFF_NOBITREV) == 0
+        && ((*tif).tif_flags & order as u32) == 0
+}
+
+unsafe fn apply_postdecode_bytes(tif: *mut TIFF, data: &mut [u8]) {
+    if ((*tif).tif_flags & TIFF_SWAB) == 0 {
+        return;
+    }
+
+    match bits_per_sample(tif) {
+        8 => {}
+        16 => TIFFSwabArrayOfShort(
+            data.as_mut_ptr().cast::<u16>(),
+            (data.len() / 2) as Tmsize,
+        ),
+        24 => TIFFSwabArrayOfTriples(data.as_mut_ptr(), (data.len() / 3) as Tmsize),
+        32 => {
+            if sample_format(tif) == SAMPLEFORMAT_COMPLEXINT {
+                TIFFSwabArrayOfShort(
+                    data.as_mut_ptr().cast::<u16>(),
+                    (data.len() / 2) as Tmsize,
+                );
+            } else {
+                TIFFSwabArrayOfLong(
+                    data.as_mut_ptr().cast::<u32>(),
+                    (data.len() / 4) as Tmsize,
+                );
+            }
+        }
+        64 => {
+            if matches!(
+                sample_format(tif),
+                SAMPLEFORMAT_COMPLEXINT | SAMPLEFORMAT_COMPLEXIEEEFP
+            ) {
+                TIFFSwabArrayOfLong(
+                    data.as_mut_ptr().cast::<u32>(),
+                    (data.len() / 4) as Tmsize,
+                );
+            } else {
+                TIFFSwabArrayOfDouble(
+                    data.as_mut_ptr().cast::<f64>(),
+                    (data.len() / 8) as Tmsize,
+                );
+            }
+        }
+        128 => TIFFSwabArrayOfDouble(
+            data.as_mut_ptr().cast::<f64>(),
+            (data.len() / 8) as Tmsize,
+        ),
+        _ => {}
+    }
+}
+
+unsafe fn decode_uncompressed_into(tif: *mut TIFF, module: &str, input: &[u8], output: &mut [u8]) -> bool {
+    if input.len() < output.len() {
+        emit_error_message(tif, module, "Not enough data for decode");
+        return false;
+    }
+    if !output.is_empty() {
+        ptr::copy(input.as_ptr(), output.as_mut_ptr(), output.len());
+        if should_reverse_bits(tif) {
+            TIFFReverseBits(output.as_mut_ptr(), output.len() as Tmsize);
+        }
+        apply_postdecode_bytes(tif, output);
+    }
+    true
+}
+
+unsafe fn encode_uncompressed_bytes(tif: *mut TIFF, data: &[u8]) -> Vec<u8> {
+    let mut encoded = data.to_vec();
+    if !encoded.is_empty() {
+        apply_postdecode_bytes(tif, &mut encoded);
+        if should_reverse_bits(tif) {
+            TIFFReverseBits(encoded.as_mut_ptr(), encoded.len() as Tmsize);
+        }
+    }
+    encoded
 }
 
 unsafe fn ycbcr_subsampling(tif: *mut TIFF) -> Option<(u16, u16)> {
@@ -976,6 +1075,34 @@ unsafe fn read_strile_bytes(tif: *mut TIFF, module: &str, strile: u32, size: usi
     }
 }
 
+unsafe fn read_encoded_strile_bytes(
+    tif: *mut TIFF,
+    module: &str,
+    strile: u32,
+    out: &mut [u8],
+) -> Option<usize> {
+    let (arrays, index) = strile_bounds(tif, strile)?;
+    let offset = arrays.offsets[index];
+    let bytecount = arrays.bytecounts[index];
+    if out.is_empty() {
+        return Some(0);
+    }
+    if offset == 0 || bytecount == 0 || bytecount < out.len() as u64 {
+        emit_error_message(tif, module, "Not enough data for decode");
+        return None;
+    }
+    let mut raw = vec![0u8; out.len()];
+    if !read_exact_at(tif, offset, &mut raw) {
+        emit_error_message(tif, module, "Failed to read strile payload");
+        return None;
+    }
+    if decode_uncompressed_into(tif, module, &raw, out) {
+        Some(out.len())
+    } else {
+        None
+    }
+}
+
 unsafe fn expected_strip_size_for_index(tif: *mut TIFF, strip: u32) -> Option<u64> {
     vstrip_size64_internal(tif, strip_size_rows_internal(tif, strip, true)?, true)
 }
@@ -1016,8 +1143,12 @@ unsafe fn read_scanline_bytes(tif: *mut TIFF, row: u32, sample: u16, out: &mut [
     let Some(offset) = checked_add_u64(tif, module, arrays.offsets[index], within_strip) else {
         return false;
     };
-    if !read_exact_at(tif, offset, out) {
+    let mut raw = vec![0u8; out.len()];
+    if !read_exact_at(tif, offset, &mut raw) {
         emit_error_message(tif, module, "Failed to read scanline data");
+        return false;
+    }
+    if !decode_uncompressed_into(tif, module, &raw, out) {
         return false;
     }
     (*tif_inner(tif)).tif_curstrip = strip;
@@ -1393,7 +1524,8 @@ pub unsafe extern "C" fn TIFFWriteScanline(
         return -1;
     };
     let data = slice::from_raw_parts(buf.cast::<u8>(), scanline_size);
-    if write_scanline_data(tif, module, row, sample, data) {
+    let encoded = encode_uncompressed_bytes(tif, data);
+    if write_scanline_data(tif, module, row, sample, &encoded) {
         1
     } else {
         -1
@@ -1419,7 +1551,8 @@ pub unsafe extern "C" fn TIFFWriteEncodedStrip(
         return -1;
     };
     let bytes = slice::from_raw_parts(data.cast::<u8>(), size);
-    if write_overwrite_strile_data(tif, module, strip, bytes) {
+    let encoded = encode_uncompressed_bytes(tif, bytes);
+    if write_overwrite_strile_data(tif, module, strip, &encoded) {
         (*tif_inner(tif)).tif_curstrip = strip;
         cc
     } else {
@@ -1495,7 +1628,8 @@ pub unsafe extern "C" fn TIFFWriteEncodedTile(
         return -1;
     };
     let bytes = slice::from_raw_parts(data.cast::<u8>(), size_usize);
-    if write_overwrite_strile_data(tif, module, tile, bytes) {
+    let encoded = encode_uncompressed_bytes(tif, bytes);
+    if write_overwrite_strile_data(tif, module, tile, &encoded) {
         (*tif_inner(tif)).tif_curtile = tile;
         size as Tmsize
     } else {
@@ -1585,7 +1719,8 @@ pub unsafe extern "C" fn TIFFReadEncodedStrip(
         emit_error_message(tif, module, "Requested strip size is too large");
         return -1;
     };
-    match read_strile_bytes(tif, module, strip, requested_usize, buf) {
+    let out = slice::from_raw_parts_mut(buf.cast::<u8>(), requested_usize);
+    match read_encoded_strile_bytes(tif, module, strip, out) {
         Some(read_size) => read_size as Tmsize,
         None => -1,
     }
@@ -1658,7 +1793,8 @@ pub unsafe extern "C" fn TIFFReadEncodedTile(
         emit_error_message(tif, module, "Requested tile size is too large");
         return -1;
     };
-    match read_strile_bytes(tif, module, tile, requested_usize, buf) {
+    let out = slice::from_raw_parts_mut(buf.cast::<u8>(), requested_usize);
+    match read_encoded_strile_bytes(tif, module, tile, out) {
         Some(read_size) => read_size as Tmsize,
         None => -1,
     }
@@ -1784,17 +1920,31 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
         return 0;
     }
     let expected_size = if is_tiled_image(tif) {
+        if strile_bounds(tif, strile).is_none() {
+            emit_error_message(tif, module, "Strile index out of range");
+            return 0;
+        }
         TIFFTileSize64(tif)
     } else {
-        expected_strip_size_for_index(tif, strile).unwrap_or(0)
+        let Some(size) = expected_strip_size_for_index(tif, strile) else {
+            emit_error_message(tif, module, "Strile index out of range");
+            return 0;
+        };
+        size
     };
-    let copy_size = min(expected_size, insize as u64);
-    if copy_size > outsize as u64 {
-        emit_error_message(tif, module, "Output buffer is too small");
+    if outsize as u64 > expected_size {
+        emit_error_message(tif, module, "Requested decode size is too large");
         return 0;
     }
-    ptr::copy_nonoverlapping(inbuf.cast::<u8>(), outbuf.cast::<u8>(), copy_size as usize);
-    1
+    let Ok(input_size) = usize::try_from(insize) else {
+        return 0;
+    };
+    let Ok(output_size) = usize::try_from(outsize) else {
+        return 0;
+    };
+    let input = slice::from_raw_parts(inbuf.cast::<u8>(), input_size);
+    let output = slice::from_raw_parts_mut(outbuf.cast::<u8>(), output_size);
+    decode_uncompressed_into(tif, module, input, output) as c_int
 }
 
 #[no_mangle]

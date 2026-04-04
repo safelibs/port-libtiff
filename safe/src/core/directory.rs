@@ -67,6 +67,7 @@ const TAG_TILEDEPTH: u32 = 32998;
 const TAG_YCBCRSUBSAMPLING: u32 = 530;
 const TAG_YCBCRPOSITIONING: u32 = 531;
 
+const TIFF_FILLORDER: u32 = 0x00003;
 const TIFF_DIRTYDIRECT: u32 = 0x00008;
 const TIFF_BEENWRITING: u32 = 0x00040;
 const TIFF_DIRTYSTRIP: u32 = 0x200000;
@@ -1709,17 +1710,9 @@ unsafe fn header_link_offset(tif: *mut TIFF) -> u64 {
 }
 
 unsafe fn sync_fillorder_flags(tif: *mut TIFF) {
-    let order = directory_state(tif)
-        .current
-        .as_ref()
-        .and_then(|current| current.find_tag(TAG_FILLORDER))
-        .and_then(|entry| match &entry.values {
-            StoredValues::U16(values) => values.first().copied(),
-            _ => None,
-        })
-        .unwrap_or(FILLORDER_MSB2LSB_U16);
-    (*tif).tif_flags &= !0x3;
-    (*tif).tif_flags |= order as u32;
+    if ((*tif).tif_flags & TIFF_FILLORDER) == 0 {
+        (*tif).tif_flags |= FILLORDER_MSB2LSB_U16 as u32;
+    }
 }
 
 unsafe fn clear_main_chain_cache(tif: *mut TIFF) {
