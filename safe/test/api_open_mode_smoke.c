@@ -336,6 +336,16 @@ int main(void)
     TIFFClose(tif);
     expect_prefix(path, big_le, sizeof(big_le), "w8DO");
 
+    tif = TIFFOpen(path, "wbl");
+    expect(tif != NULL, "TIFFOpen(wbl) failed");
+    expect(TIFFIsByteSwapped(tif), "mixed wbl modifiers should preserve upstream swab semantics");
+#if HOST_BIGENDIAN
+    expect(!TIFFIsBigEndian(tif), "wbl should create little-endian files on big-endian hosts");
+#else
+    expect(TIFFIsBigEndian(tif), "wbl should create big-endian files on little-endian hosts");
+#endif
+    TIFFClose(tif);
+
     tif = TIFFOpen(path, "w+");
     expect(tif != NULL, "TIFFOpen(w+) failed");
     expect(TIFFGetMode(tif) == O_RDWR, "w+ should use O_RDWR");

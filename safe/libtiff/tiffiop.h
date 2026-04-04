@@ -46,9 +46,10 @@ typedef int (*TIFFCodeMethod)(TIFF *tif, uint8_t *buf, tmsize_t size,
 
 struct tiff
 {
+    /* Build-only facade fields. The Rust core owns the full lifecycle state
+     * behind an internal pointer, so copied tools must not allocate/copy this.
+     */
     char *tif_name;
-    int tif_fd;
-    int tif_mode;
     uint32_t tif_flags;
 #define TIFF_FILLORDER 0x00003U
 #define TIFF_DIRTYHEADER 0x00004U
@@ -78,8 +79,6 @@ struct tiff
 #define TIFF_CHOPPEDUPARRAYS 0x4000000U
     uint32_t tif_row;
     tdir_t tif_curdir;
-    uint32_t tif_curstrip;
-    uint32_t tif_curtile;
     uint8_t *tif_rawdata;
     tmsize_t tif_rawdatasize;
     uint8_t *tif_rawcp;
@@ -101,7 +100,6 @@ struct tiff
     void *tif_errorhandler_user_data;
     TIFFErrorHandlerExtR tif_warnhandler;
     void *tif_warnhandler_user_data;
-    tmsize_t tif_max_single_mem_alloc;
 };
 
 struct TIFFOpenOptions

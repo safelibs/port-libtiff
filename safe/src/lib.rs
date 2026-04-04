@@ -49,14 +49,12 @@ const MODULE_TIFF_OPEN: &[u8] = b"TIFFOpen\0";
 
 #[repr(C)]
 pub struct TIFF {
+    // Build-only facade fields used by copied tools and C-side lifecycle shims.
+    // The authoritative lifecycle/open state lives in `TiffHandleInner`.
     pub tif_name: *mut c_char,
-    pub tif_fd: c_int,
-    pub tif_mode: c_int,
     pub tif_flags: u32,
     pub tif_row: u32,
     pub tif_curdir: u32,
-    pub tif_curstrip: u32,
-    pub tif_curtile: u32,
     pub tif_rawdata: *mut u8,
     pub tif_rawdatasize: Tmsize,
     pub tif_rawcp: *mut u8,
@@ -78,7 +76,16 @@ pub struct TIFF {
     pub tif_errorhandler_user_data: *mut c_void,
     pub tif_warnhandler: TIFFErrorHandlerExtRRaw,
     pub tif_warnhandler_user_data: *mut c_void,
-    pub tif_max_single_mem_alloc: Tmsize,
+    inner: *mut TiffHandleInner,
+}
+
+#[repr(C)]
+struct TiffHandleInner {
+    tif_fd: c_int,
+    tif_mode: c_int,
+    tif_curstrip: u32,
+    tif_curtile: u32,
+    tif_max_single_mem_alloc: Tmsize,
     mapped_base: *mut c_void,
     mapped_size: Toff,
     header_magic: u16,
@@ -87,6 +94,7 @@ pub struct TIFF {
     _reserved0: u16,
     current_diroff: Toff,
     next_diroff: Toff,
+    owned_name: *mut c_char,
 }
 
 #[repr(C)]
@@ -313,9 +321,20 @@ unsafe fn set_default_methods(tif: *mut TIFF) {
     (*tif).tif_cleanup = Some(stub_void_method);
 }
 
+unsafe fn tif_inner(tif: *mut TIFF) -> *mut TiffHandleInner {
+    (*tif).inner
+}
+
 unsafe fn destroy_handle_allocation(tif: *mut TIFF) {
     if tif.is_null() {
         return;
+    }
+    let inner = tif_inner(tif);
+    if !inner.is_null() {
+        if !(*inner).owned_name.is_null() {
+            _TIFFfree((*inner).owned_name.cast::<c_void>());
+        }
+        _TIFFfree(inner.cast::<c_void>());
     }
     _TIFFfree(tif.cast::<c_void>());
 }
@@ -369,12 +388,13 @@ unsafe fn map_contents(tif: *mut TIFF) {
     if (*tif).tif_flags & TIFF_MAPPED == 0 {
         return;
     }
+    let inner = tif_inner(tif);
     let mut base: *mut c_void = ptr::null_mut();
     let mut size: Toff = 0;
     match (*tif).tif_mapproc {
         Some(proc_) if proc_((*tif).tif_clientdata, &mut base, &mut size) != 0 => {
-            (*tif).mapped_base = base;
-            (*tif).mapped_size = size;
+            (*inner).mapped_base = base;
+            (*inner).mapped_size = size;
         }
         _ => {
             (*tif).tif_flags &= !TIFF_MAPPED;
@@ -427,21 +447,13 @@ unsafe fn apply_mode_modifiers(
     for &byte in mode_bytes {
         match byte {
             b'b' => {
-                if open_flags & libc::O_CREAT != 0 {
-                    if !host_is_big_endian() {
-                        (*tif).tif_flags |= TIFF_SWAB;
-                    } else {
-                        (*tif).tif_flags &= !TIFF_SWAB;
-                    }
+                if open_flags & libc::O_CREAT != 0 && !host_is_big_endian() {
+                    (*tif).tif_flags |= TIFF_SWAB;
                 }
             }
             b'l' => {
-                if open_flags & libc::O_CREAT != 0 {
-                    if host_is_big_endian() {
-                        (*tif).tif_flags |= TIFF_SWAB;
-                    } else {
-                        (*tif).tif_flags &= !TIFF_SWAB;
-                    }
+                if open_flags & libc::O_CREAT != 0 && host_is_big_endian() {
+                    (*tif).tif_flags |= TIFF_SWAB;
                 }
             }
             b'B' => {
@@ -505,35 +517,37 @@ unsafe fn apply_mode_modifiers(
 }
 
 unsafe fn initialize_created_header(tif: *mut TIFF) {
+    let inner = tif_inner(tif);
     let file_big_endian = file_big_endian_from_swab((*tif).tif_flags & TIFF_SWAB != 0);
-    (*tif).header_magic = if file_big_endian {
+    (*inner).header_magic = if file_big_endian {
         TIFF_BIGENDIAN
     } else {
         TIFF_LITTLEENDIAN
     };
-    (*tif).header_version = if (*tif).tif_flags & TIFF_BIGTIFF != 0 {
+    (*inner).header_version = if (*tif).tif_flags & TIFF_BIGTIFF != 0 {
         TIFF_VERSION_BIG
     } else {
         TIFF_VERSION_CLASSIC
     };
-    (*tif).header_size = if (*tif).header_version == TIFF_VERSION_BIG {
+    (*inner).header_size = if (*inner).header_version == TIFF_VERSION_BIG {
         16
     } else {
         8
     };
-    (*tif).current_diroff = 0;
-    (*tif).next_diroff = 0;
+    (*inner).current_diroff = 0;
+    (*inner).next_diroff = 0;
 }
 
 unsafe fn write_created_header(tif: *mut TIFF, module_name: &str) -> bool {
+    let inner = tif_inner(tif);
     if seek_in_proc(tif, 0, libc::SEEK_SET) != 0 {
         emit_error_message(tif, module_name, "Error writing TIFF header");
         return false;
     }
 
-    if (*tif).header_version == TIFF_VERSION_CLASSIC {
+    if (*inner).header_version == TIFF_VERSION_CLASSIC {
         let mut header = [0u8; 8];
-        let file_big_endian = (*tif).header_magic == TIFF_BIGENDIAN;
+        let file_big_endian = (*inner).header_magic == TIFF_BIGENDIAN;
         header[0] = if file_big_endian { b'M' } else { b'I' };
         header[1] = header[0];
         let version = if file_big_endian {
@@ -555,7 +569,7 @@ unsafe fn write_created_header(tif: *mut TIFF, module_name: &str) -> bool {
         )
     } else {
         let mut header = [0u8; 16];
-        let file_big_endian = (*tif).header_magic == TIFF_BIGENDIAN;
+        let file_big_endian = (*inner).header_magic == TIFF_BIGENDIAN;
         header[0] = if file_big_endian { b'M' } else { b'I' };
         header[1] = header[0];
         let version = if file_big_endian {
@@ -629,6 +643,7 @@ unsafe fn read_existing_header(
     module_name: &str,
     report_short_read_error: bool,
 ) -> HeaderReadResult {
+    let inner = tif_inner(tif);
     let mut header = [0u8; 8];
     if !read_from_proc(
         tif,
@@ -659,7 +674,7 @@ unsafe fn read_existing_header(
     };
 
     let version = parse_u16(&header[2..4], file_big_endian);
-    (*tif).header_magic = if file_big_endian {
+    (*inner).header_magic = if file_big_endian {
         TIFF_BIGENDIAN
     } else {
         TIFF_LITTLEENDIAN
@@ -671,10 +686,10 @@ unsafe fn read_existing_header(
 
     match version {
         TIFF_VERSION_CLASSIC => {
-            (*tif).header_version = TIFF_VERSION_CLASSIC;
-            (*tif).header_size = 8;
+            (*inner).header_version = TIFF_VERSION_CLASSIC;
+            (*inner).header_size = 8;
             (*tif).tif_flags &= !TIFF_BIGTIFF;
-            (*tif).next_diroff = parse_u32(&header[4..8], file_big_endian) as u64;
+            (*inner).next_diroff = parse_u32(&header[4..8], file_big_endian) as u64;
         }
         TIFF_VERSION_BIG => {
             let mut extra = [0u8; 8];
@@ -710,10 +725,10 @@ unsafe fn read_existing_header(
                 );
                 return HeaderReadResult::Fatal;
             }
-            (*tif).header_version = TIFF_VERSION_BIG;
-            (*tif).header_size = 16;
+            (*inner).header_version = TIFF_VERSION_BIG;
+            (*inner).header_size = 16;
             (*tif).tif_flags |= TIFF_BIGTIFF;
-            (*tif).next_diroff = parse_u64(&extra[0..8], file_big_endian);
+            (*inner).next_diroff = parse_u64(&extra[0..8], file_big_endian);
         }
         _ => {
             emit_error_message(
@@ -737,8 +752,9 @@ unsafe fn read_existing_header(
 }
 
 unsafe fn read_directory_internal(tif: *mut TIFF) -> bool {
+    let inner = tif_inner(tif);
     let module_name = c_name((*tif).tif_name);
-    let dir_offset = (*tif).next_diroff;
+    let dir_offset = (*inner).next_diroff;
     if dir_offset == 0 {
         emit_error_message(tif, &module_name, "Cannot read TIFF directory");
         return false;
@@ -748,8 +764,8 @@ unsafe fn read_directory_internal(tif: *mut TIFF) -> bool {
         return false;
     }
 
-    let file_big_endian = (*tif).header_magic == TIFF_BIGENDIAN;
-    let next_offset = if (*tif).header_version == TIFF_VERSION_CLASSIC {
+    let file_big_endian = (*inner).header_magic == TIFF_BIGENDIAN;
+    let next_offset = if (*inner).header_version == TIFF_VERSION_CLASSIC {
         let mut count = [0u8; 2];
         if !read_from_proc(tif, count.as_mut_ptr().cast::<c_void>(), 2) {
             emit_error_message(tif, &module_name, "Cannot read TIFF directory");
@@ -805,8 +821,8 @@ unsafe fn read_directory_internal(tif: *mut TIFF) -> bool {
         parse_u64(&next, file_big_endian)
     };
 
-    (*tif).current_diroff = dir_offset;
-    (*tif).next_diroff = next_offset;
+    (*inner).current_diroff = dir_offset;
+    (*inner).next_diroff = next_offset;
     (*tif).tif_curdir = if (*tif).tif_curdir == TIFF_NON_EXISTENT_DIR_NUMBER {
         0
     } else {
@@ -816,6 +832,7 @@ unsafe fn read_directory_internal(tif: *mut TIFF) -> bool {
 }
 
 unsafe fn finalize_open(tif: *mut TIFF, mode_bytes: &[u8], open_flags: c_int) -> bool {
+    let inner = tif_inner(tif);
     let module_name = c_name((*tif).tif_name);
 
     if (open_flags & libc::O_TRUNC) != 0 {
@@ -831,10 +848,10 @@ unsafe fn finalize_open(tif: *mut TIFF, mode_bytes: &[u8], open_flags: c_int) ->
         let _ = saved_position;
     }
 
-    match read_existing_header(tif, &module_name, (*tif).tif_mode == libc::O_RDONLY) {
+    match read_existing_header(tif, &module_name, (*inner).tif_mode == libc::O_RDONLY) {
         HeaderReadResult::Valid => {}
         HeaderReadResult::NeedCreate => {
-            if (*tif).tif_mode == libc::O_RDONLY {
+            if (*inner).tif_mode == libc::O_RDONLY {
                 return false;
             }
             initialize_created_header(tif);
@@ -864,7 +881,7 @@ unsafe fn fail_open(tif: *mut TIFF) {
     if tif.is_null() {
         return;
     }
-    (*tif).tif_mode = libc::O_RDONLY;
+    (*tif_inner(tif)).tif_mode = libc::O_RDONLY;
     TIFFCleanup(tif);
 }
 
@@ -899,7 +916,14 @@ unsafe fn make_handle(
         None => return ptr::null_mut(),
     };
 
-    let alloc_size = (mem::size_of::<TIFF>() + name_bytes.len() + 1) as Tmsize;
+    let Some(alloc_size_usize) = mem::size_of::<TIFF>()
+        .checked_add(mem::size_of::<TiffHandleInner>())
+        .and_then(|value| value.checked_add(name_bytes.len() + 1))
+    else {
+        emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
+        return ptr::null_mut();
+    };
+    let alloc_size = alloc_size_usize as Tmsize;
     if !opts.is_null()
         && (*opts).max_single_mem_alloc > 0
         && alloc_size > (*opts).max_single_mem_alloc
@@ -916,28 +940,53 @@ unsafe fn make_handle(
         return ptr::null_mut();
     }
 
-    let Some(size_to_alloc) = mem::size_of::<TIFF>().checked_add(name_bytes.len() + 1) else {
-        emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
-        return ptr::null_mut();
-    };
-    let tif = _TIFFcalloc(1, size_to_alloc as Tmsize).cast::<TIFF>();
+    let tif = _TIFFcalloc(1, mem::size_of::<TIFF>() as Tmsize).cast::<TIFF>();
     if tif.is_null() {
         emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
         return ptr::null_mut();
     }
-    let name_owner = tif.cast::<u8>().add(mem::size_of::<TIFF>()).cast::<c_char>();
+    let inner = _TIFFcalloc(1, mem::size_of::<TiffHandleInner>() as Tmsize).cast::<TiffHandleInner>();
+    if inner.is_null() {
+        _TIFFfree(tif.cast::<c_void>());
+        emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
+        return ptr::null_mut();
+    }
+    let name_owner = _TIFFcalloc(1, (name_bytes.len() + 1) as Tmsize).cast::<c_char>();
+    if name_owner.is_null() {
+        _TIFFfree(inner.cast::<c_void>());
+        _TIFFfree(tif.cast::<c_void>());
+        emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
+        return ptr::null_mut();
+    }
     ptr::copy_nonoverlapping(name_bytes.as_ptr(), name_owner.cast::<u8>(), name_bytes.len());
     *name_owner.add(name_bytes.len()) = 0;
 
-    ptr::write(tif, TIFF {
-        tif_name: name_owner,
+    ptr::write(inner, TiffHandleInner {
         tif_fd: -1,
         tif_mode: open_flags & !(libc::O_CREAT | libc::O_TRUNC),
+        tif_curstrip: u32::MAX,
+        tif_curtile: u32::MAX,
+        tif_max_single_mem_alloc: if opts.is_null() {
+            0
+        } else {
+            (*opts).max_single_mem_alloc
+        },
+        mapped_base: ptr::null_mut(),
+        mapped_size: 0,
+        header_magic: 0,
+        header_version: 0,
+        header_size: 0,
+        _reserved0: 0,
+        current_diroff: 0,
+        next_diroff: 0,
+        owned_name: name_owner,
+    });
+
+    ptr::write(tif, TIFF {
+        tif_name: name_owner,
         tif_flags: FILLORDER_MSB2LSB,
         tif_row: u32::MAX,
         tif_curdir: TIFF_NON_EXISTENT_DIR_NUMBER,
-        tif_curstrip: u32::MAX,
-        tif_curtile: u32::MAX,
         tif_rawdata: ptr::null_mut(),
         tif_rawdatasize: 0,
         tif_rawcp: ptr::null_mut(),
@@ -975,19 +1024,7 @@ unsafe fn make_handle(
         } else {
             (*opts).warnhandler_user_data
         },
-        tif_max_single_mem_alloc: if opts.is_null() {
-            0
-        } else {
-            (*opts).max_single_mem_alloc
-        },
-        mapped_base: ptr::null_mut(),
-        mapped_size: 0,
-        header_magic: 0,
-        header_version: 0,
-        header_size: 0,
-        _reserved0: 0,
-        current_diroff: 0,
-        next_diroff: 0,
+        inner,
     });
 
     if readproc.is_none()
@@ -1034,7 +1071,7 @@ unsafe fn emit_limit_error(tif: *mut TIFF, function_name: &str, size: Tmsize) {
     if tif.is_null() {
         return;
     }
-    let limit = (*tif).tif_max_single_mem_alloc;
+    let limit = (*tif_inner(tif)).tif_max_single_mem_alloc;
     if limit > 0 {
         emit_error_message(
             tif,
@@ -1152,7 +1189,9 @@ pub unsafe extern "C" fn _TIFFfree(p: *mut c_void) {
 
 #[no_mangle]
 pub unsafe extern "C" fn _TIFFmallocExt(tif: *mut TIFF, s: Tmsize) -> *mut c_void {
-    if !tif.is_null() && (*tif).tif_max_single_mem_alloc > 0 && s > (*tif).tif_max_single_mem_alloc
+    if !tif.is_null()
+        && (*tif_inner(tif)).tif_max_single_mem_alloc > 0
+        && s > (*tif_inner(tif)).tif_max_single_mem_alloc
     {
         emit_limit_error(tif, "_TIFFmallocExt", s);
         ptr::null_mut()
@@ -1163,11 +1202,11 @@ pub unsafe extern "C" fn _TIFFmallocExt(tif: *mut TIFF, s: Tmsize) -> *mut c_voi
 
 #[no_mangle]
 pub unsafe extern "C" fn _TIFFcallocExt(tif: *mut TIFF, nmemb: Tmsize, siz: Tmsize) -> *mut c_void {
-    if !tif.is_null() && (*tif).tif_max_single_mem_alloc > 0 {
+    if !tif.is_null() && (*tif_inner(tif)).tif_max_single_mem_alloc > 0 {
         let Some(total) = check_mul_tmsize(nmemb, siz) else {
             return ptr::null_mut();
         };
-        if total > (*tif).tif_max_single_mem_alloc {
+        if total > (*tif_inner(tif)).tif_max_single_mem_alloc {
             emit_limit_error(tif, "_TIFFcallocExt", total);
             return ptr::null_mut();
         }
@@ -1177,7 +1216,9 @@ pub unsafe extern "C" fn _TIFFcallocExt(tif: *mut TIFF, nmemb: Tmsize, siz: Tmsi
 
 #[no_mangle]
 pub unsafe extern "C" fn _TIFFreallocExt(tif: *mut TIFF, p: *mut c_void, s: Tmsize) -> *mut c_void {
-    if !tif.is_null() && (*tif).tif_max_single_mem_alloc > 0 && s > (*tif).tif_max_single_mem_alloc
+    if !tif.is_null()
+        && (*tif_inner(tif)).tif_max_single_mem_alloc > 0
+        && s > (*tif_inner(tif)).tif_max_single_mem_alloc
     {
         emit_limit_error(tif, "_TIFFreallocExt", s);
         ptr::null_mut()
@@ -1386,7 +1427,7 @@ pub unsafe extern "C" fn TIFFFdOpenExt(
         opts,
     );
     if !tif.is_null() {
-        (*tif).tif_fd = fd;
+        (*tif_inner(tif)).tif_fd = fd;
     }
     tif
 }
@@ -1434,8 +1475,9 @@ pub unsafe extern "C" fn TIFFCleanup(tif: *mut TIFF) {
     if tif.is_null() {
         return;
     }
+    let inner = tif_inner(tif);
 
-    if (*tif).tif_mode != libc::O_RDONLY {
+    if (*inner).tif_mode != libc::O_RDONLY {
         let _ = TIFFFlush(tif);
     }
 
@@ -1448,16 +1490,16 @@ pub unsafe extern "C" fn TIFFCleanup(tif: *mut TIFF) {
         (*tif).tif_rawdata = ptr::null_mut();
     }
 
-    if ((*tif).tif_flags & TIFF_MAPPED) != 0 && !(*tif).mapped_base.is_null() {
+    if ((*tif).tif_flags & TIFF_MAPPED) != 0 && !(*inner).mapped_base.is_null() {
         if let Some(unmap) = (*tif).tif_unmapproc {
             unmap(
                 (*tif).tif_clientdata,
-                (*tif).mapped_base,
-                (*tif).mapped_size,
+                (*inner).mapped_base,
+                (*inner).mapped_size,
             );
         }
-        (*tif).mapped_base = ptr::null_mut();
-        (*tif).mapped_size = 0;
+        (*inner).mapped_base = ptr::null_mut();
+        (*inner).mapped_size = 0;
     }
 
     destroy_handle_allocation(tif);
@@ -1509,13 +1551,14 @@ pub unsafe extern "C" fn TIFFSetFileName(tif: *mut TIFF, name: *const c_char) ->
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFileno(tif: *mut TIFF) -> c_int {
-    (*tif).tif_fd
+    (*tif_inner(tif)).tif_fd
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFSetFileno(tif: *mut TIFF, fd: c_int) -> c_int {
-    let old = (*tif).tif_fd;
-    (*tif).tif_fd = fd;
+    let inner = tif_inner(tif);
+    let old = (*inner).tif_fd;
+    (*inner).tif_fd = fd;
     old
 }
 
@@ -1533,13 +1576,14 @@ pub unsafe extern "C" fn TIFFSetClientdata(tif: *mut TIFF, clientdata: Thandle) 
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFGetMode(tif: *mut TIFF) -> c_int {
-    (*tif).tif_mode
+    (*tif_inner(tif)).tif_mode
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFSetMode(tif: *mut TIFF, mode: c_int) -> c_int {
-    let old = (*tif).tif_mode;
-    (*tif).tif_mode = mode;
+    let inner = tif_inner(tif);
+    let old = (*inner).tif_mode;
+    (*inner).tif_mode = mode;
     old
 }
 
@@ -1590,17 +1634,17 @@ pub unsafe extern "C" fn TIFFCurrentDirectory(tif: *mut TIFF) -> u32 {
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFCurrentDirOffset(tif: *mut TIFF) -> u64 {
-    (*tif).current_diroff
+    (*tif_inner(tif)).current_diroff
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFCurrentStrip(tif: *mut TIFF) -> u32 {
-    (*tif).tif_curstrip
+    (*tif_inner(tif)).tif_curstrip
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFCurrentTile(tif: *mut TIFF) -> u32 {
-    (*tif).tif_curtile
+    (*tif_inner(tif)).tif_curtile
 }
 
 #[no_mangle]
@@ -1625,12 +1669,12 @@ pub unsafe extern "C" fn TIFFIsMSB2LSB(tif: *mut TIFF) -> c_int {
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFIsBigEndian(tif: *mut TIFF) -> c_int {
-    ((*tif).header_magic == TIFF_BIGENDIAN) as c_int
+    ((*tif_inner(tif)).header_magic == TIFF_BIGENDIAN) as c_int
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFIsBigTIFF(tif: *mut TIFF) -> c_int {
-    ((*tif).header_version == TIFF_VERSION_BIG) as c_int
+    ((*tif_inner(tif)).header_version == TIFF_VERSION_BIG) as c_int
 }
 
 #[no_mangle]
