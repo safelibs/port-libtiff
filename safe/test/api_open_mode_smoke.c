@@ -102,6 +102,17 @@ static void write_empty_big_tiff(const char *path)
     close(fd);
 }
 
+static void write_invalid_file(const char *path)
+{
+    static const unsigned char invalid_bytes[] = {'N', 'O', 'T', 'A',
+                                                  'T', 'I', 'F', 'F'};
+    int fd = open(path, O_WRONLY | O_TRUNC);
+    if (fd < 0)
+        fail("open for invalid write failed");
+    write_full(fd, invalid_bytes, sizeof(invalid_bytes));
+    close(fd);
+}
+
 static void capture_warning(const char *module, const char *fmt, va_list ap)
 {
     (void)module;
@@ -168,6 +179,18 @@ static TIFF *open_client_read(const char *path, const char *mode,
                           NULL, NULL);
 }
 
+static TIFF *open_client_rw(const char *path, const char *mode,
+                            ClientFile *client)
+{
+    client->fd = open(path, O_RDWR);
+    client->close_called = 0;
+    if (client->fd < 0)
+        fail("client open rw failed");
+    return TIFFClientOpen(path, mode, (thandle_t)client, client_read,
+                          client_write, client_seek, client_close, client_size,
+                          NULL, NULL);
+}
+
 static void expect_prefix(const char *path, const unsigned char *expected,
                           size_t expected_size, const char *label)
 {
@@ -186,9 +209,12 @@ int main(void)
     static const unsigned char classic_le[] = {'I', 'I', 42, 0, 0, 0, 0, 0};
     static const unsigned char big_le[] = {'I', 'I', 43, 0, 8, 0, 0, 0,
                                            0,   0,   0,  0, 0, 0, 0, 0};
+    static const unsigned char invalid_bytes[] = {'N', 'O', 'T', 'A',
+                                                  'T', 'I', 'F', 'F'};
     char path[] = "api_open_mode_smokeXXXXXX";
     char read_path[] = "api_open_mode_readXXXXXX";
     char big_read_path[] = "api_open_mode_big_readXXXXXX";
+    char invalid_path[] = "api_open_mode_invalidXXXXXX";
     TIFF *tif;
     TIFFOpenOptions *opts;
     int fd;
@@ -211,6 +237,12 @@ int main(void)
         fail("mkstemp big read path failed");
     close(fd);
     write_empty_big_tiff(big_read_path);
+
+    fd = mkstemp(invalid_path);
+    if (fd < 0)
+        fail("mkstemp invalid path failed");
+    close(fd);
+    write_invalid_file(invalid_path);
 
     tif = TIFFOpen(path, "wb");
     expect(tif != NULL, "TIFFOpen(wb) failed");
@@ -276,6 +308,28 @@ int main(void)
     expect(TIFFGetMode(tif) == O_RDWR, "a+ should use O_RDWR");
     TIFFClose(tif);
     expect_prefix(path, classic_le, sizeof(classic_le), "a+");
+
+    tif = TIFFOpen(invalid_path, "r+");
+    expect(tif == NULL, "TIFFOpen(r+) should reject invalid existing files");
+    expect_prefix(invalid_path, invalid_bytes, sizeof(invalid_bytes),
+                  "invalid r+");
+
+    fd = open(invalid_path, O_RDWR);
+    if (fd < 0)
+        fail("open invalid a+ failed");
+    tif = TIFFFdOpen(fd, invalid_path, "a+");
+    expect(tif == NULL, "TIFFFdOpen(a+) should reject invalid existing files");
+    close(fd);
+    expect_prefix(invalid_path, invalid_bytes, sizeof(invalid_bytes),
+                  "invalid a+");
+
+    tif = open_client_rw(invalid_path, "a", &client);
+    expect(tif == NULL,
+           "TIFFClientOpen(a) should reject invalid existing files");
+    close(client.fd);
+    client.fd = -1;
+    expect_prefix(invalid_path, invalid_bytes, sizeof(invalid_bytes),
+                  "invalid client a");
 
     tif = TIFFOpen(read_path, "rM");
     expect(tif != NULL, "TIFFOpen(rM) failed");
@@ -359,5 +413,6 @@ int main(void)
     unlink(path);
     unlink(read_path);
     unlink(big_read_path);
+    unlink(invalid_path);
     return 0;
 }

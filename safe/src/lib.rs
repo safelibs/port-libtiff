@@ -598,11 +598,17 @@ fn parse_u64(bytes: &[u8], big_endian: bool) -> u64 {
     }
 }
 
+enum HeaderReadResult {
+    Valid,
+    NeedCreate,
+    Fatal,
+}
+
 unsafe fn read_existing_header(
     tif: *mut TIFF,
     module_name: &str,
     report_short_read_error: bool,
-) -> bool {
+) -> HeaderReadResult {
     let mut header = [0u8; 8];
     if !read_from_proc(
         tif,
@@ -612,7 +618,7 @@ unsafe fn read_existing_header(
         if report_short_read_error {
             emit_error_message(tif, module_name, "Cannot read TIFF header");
         }
-        return false;
+        return HeaderReadResult::NeedCreate;
     }
 
     let file_big_endian = match (&header[0], &header[1]) {
@@ -628,7 +634,7 @@ unsafe fn read_existing_header(
                     bad_magic, bad_magic
                 ),
             );
-            return false;
+            return HeaderReadResult::Fatal;
         }
     };
 
@@ -658,7 +664,7 @@ unsafe fn read_existing_header(
                 extra.len() as Tmsize,
             ) {
                 emit_error_message(tif, module_name, "Cannot read TIFF header");
-                return false;
+                return HeaderReadResult::Fatal;
             }
             let offsetsize = parse_u16(&header[4..6], file_big_endian);
             let unused = parse_u16(&header[6..8], file_big_endian);
@@ -671,7 +677,7 @@ unsafe fn read_existing_header(
                         offsetsize, offsetsize
                     ),
                 );
-                return false;
+                return HeaderReadResult::Fatal;
             }
             if unused != 0 {
                 emit_error_message(
@@ -682,7 +688,7 @@ unsafe fn read_existing_header(
                         unused, unused
                     ),
                 );
-                return false;
+                return HeaderReadResult::Fatal;
             }
             (*tif).header_version = TIFF_VERSION_BIG;
             (*tif).header_size = 16;
@@ -698,7 +704,7 @@ unsafe fn read_existing_header(
                     version, version
                 ),
             );
-            return false;
+            return HeaderReadResult::Fatal;
         }
     }
 
@@ -707,7 +713,7 @@ unsafe fn read_existing_header(
     (*tif).tif_rawdatasize = 0;
     (*tif).tif_rawcp = ptr::null_mut();
     (*tif).tif_rawcc = 0;
-    true
+    HeaderReadResult::Valid
 }
 
 unsafe fn read_directory_internal(tif: *mut TIFF) -> bool {
@@ -805,15 +811,19 @@ unsafe fn finalize_open(tif: *mut TIFF, mode_bytes: &[u8], open_flags: c_int) ->
         let _ = saved_position;
     }
 
-    if !read_existing_header(tif, &module_name, (*tif).tif_mode == libc::O_RDONLY) {
-        if (*tif).tif_mode == libc::O_RDONLY {
-            return false;
+    match read_existing_header(tif, &module_name, (*tif).tif_mode == libc::O_RDONLY) {
+        HeaderReadResult::Valid => {}
+        HeaderReadResult::NeedCreate => {
+            if (*tif).tif_mode == libc::O_RDONLY {
+                return false;
+            }
+            initialize_created_header(tif);
+            if !write_created_header(tif, &module_name) {
+                return false;
+            }
+            return default_directory(tif);
         }
-        initialize_created_header(tif);
-        if !write_created_header(tif, &module_name) {
-            return false;
-        }
-        return default_directory(tif);
+        HeaderReadResult::Fatal => return false,
     }
 
     match mode_bytes[0] {
