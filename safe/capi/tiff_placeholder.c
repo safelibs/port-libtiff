@@ -123,6 +123,11 @@ static int safe_stub_vget_field(TIFF *tif, uint32_t tag, va_list ap,
     }
 }
 
+static int safe_default_vget_field(TIFF *tif, uint32_t tag, va_list ap)
+{
+    return safe_stub_vget_field(tif, tag, ap, 0);
+}
+
 static uint64_t safe_stub_scanline_size64(TIFF *tif)
 {
     (void)tif;
@@ -193,6 +198,33 @@ static int call_error_handler_extr_message(TIFFErrorHandlerExtR handler,
     stop = handler(tif, user_data, module, fmt, ap);
     va_end(ap);
     return stop;
+}
+
+static int safe_default_vset_field(TIFF *tif, uint32_t tag, va_list ap)
+{
+    if (tif == NULL)
+        return 0;
+
+    if (tag == TIFFTAG_FILLORDER)
+    {
+        int order = va_arg(ap, int);
+        tif->tif_flags &= ~TIFF_FILLORDER;
+        tif->tif_flags |=
+            (order == FILLORDER_LSB2MSB) ? FILLORDER_LSB2MSB
+                                         : FILLORDER_MSB2LSB;
+    }
+    safe_tiff_record_custom_tag(tif, tag);
+    return 1;
+}
+
+void safe_tiff_initialize_tag_methods(TIFFTagMethods *methods)
+{
+    if (methods == NULL)
+        return;
+
+    methods->vsetfield = safe_default_vset_field;
+    methods->vgetfield = safe_default_vget_field;
+    methods->printdir = NULL;
 }
 
 TIFFErrorHandler TIFFSetErrorHandler(TIFFErrorHandler handler)
@@ -421,14 +453,23 @@ int TIFFGetField(TIFF *tif, uint32_t tag, ...)
     va_list ap;
     int ret;
     va_start(ap, tag);
-    ret = safe_stub_vget_field(tif, tag, ap, 0);
+    ret = TIFFVGetField(tif, tag, ap);
     va_end(ap);
     return ret;
 }
 
 int TIFFVGetField(TIFF *tif, uint32_t tag, va_list ap)
 {
-    return safe_stub_vget_field(tif, tag, ap, 0);
+    TIFFTagMethods *tag_methods;
+
+    if (tif == NULL)
+        return 0;
+
+    tag_methods = TIFFAccessTagMethods(tif);
+    if (tag_methods != NULL && tag_methods->vgetfield != NULL)
+        return tag_methods->vgetfield(tif, tag, ap);
+
+    return safe_default_vget_field(tif, tag, ap);
 }
 
 int TIFFGetFieldDefaulted(TIFF *tif, uint32_t tag, ...)
@@ -458,18 +499,16 @@ int TIFFSetField(TIFF *tif, uint32_t tag, ...)
 
 int TIFFVSetField(TIFF *tif, uint32_t tag, va_list ap)
 {
+    TIFFTagMethods *tag_methods;
+
     if (tif == NULL)
         return 0;
 
-    if (tag == TIFFTAG_FILLORDER)
-    {
-        int order = va_arg(ap, int);
-        tif->tif_flags &= ~TIFF_FILLORDER;
-        tif->tif_flags |=
-            (order == FILLORDER_LSB2MSB) ? FILLORDER_LSB2MSB : FILLORDER_MSB2LSB;
-    }
-    safe_tiff_record_custom_tag(tif, tag);
-    return 1;
+    tag_methods = TIFFAccessTagMethods(tif);
+    if (tag_methods != NULL && tag_methods->vsetfield != NULL)
+        return tag_methods->vsetfield(tif, tag, ap);
+
+    return safe_default_vset_field(tif, tag, ap);
 }
 
 int TIFFUnsetField(TIFF *tif, uint32_t tag)

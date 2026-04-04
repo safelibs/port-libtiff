@@ -146,6 +146,16 @@ int main(void)
     expect(tag_methods != NULL, "TIFFAccessTagMethods returned NULL");
     expect(TIFFAccessTagMethods(tif) == tag_methods,
            "TIFFAccessTagMethods should be stable");
+    expect(tag_methods->vsetfield != NULL,
+           "TIFFAccessTagMethods should expose a default vsetfield callback");
+    expect(tag_methods->vgetfield != NULL,
+           "TIFFAccessTagMethods should expose a default vgetfield callback");
+    expect(tag_methods->printdir == NULL,
+           "TIFFAccessTagMethods default printdir should be NULL");
+    expect(tag_methods->vsetfield != TIFFVSetField,
+           "TIFFAccessTagMethods should expose the internal vsetfield callback");
+    expect(tag_methods->vgetfield != TIFFVGetField,
+           "TIFFAccessTagMethods should expose the internal vgetfield callback");
 
     expect(TIFFGetClientInfo(tif, "smoke-client") == NULL,
            "unexpected preexisting client info");

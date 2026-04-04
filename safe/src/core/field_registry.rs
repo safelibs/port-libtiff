@@ -19,6 +19,10 @@ const FIELD_CUSTOM: u16 = 65;
 
 static TAG_EXTENDER: Mutex<TIFFExtendProc> = Mutex::new(None);
 
+unsafe extern "C" {
+    fn safe_tiff_initialize_tag_methods(methods: *mut TIFFTagMethods);
+}
+
 struct AnonymousField {
     field: Box<TIFFField>,
     _name: CString,
@@ -41,13 +45,17 @@ pub(crate) struct FieldRegistryState {
 
 impl Default for FieldRegistryState {
     fn default() -> Self {
+        let mut tagmethods = TIFFTagMethods::default();
+        unsafe {
+            safe_tiff_initialize_tag_methods(&mut tagmethods);
+        }
         Self {
             fields: Vec::new(),
             foundfield: ptr::null(),
             compat_arrays: Vec::new(),
             anonymous_fields: Vec::new(),
             client_info: Vec::new(),
-            tagmethods: TIFFTagMethods::default(),
+            tagmethods,
             tag_list: Vec::new(),
         }
     }
@@ -427,6 +435,7 @@ pub(crate) unsafe fn reset_default_directory(tif: *mut TIFF) -> bool {
         let state = registry_state_mut(tif);
         state.compat_arrays.clear();
         state.tagmethods = TIFFTagMethods::default();
+        safe_tiff_initialize_tag_methods(&mut state.tagmethods);
         state.foundfield = ptr::null();
         state.tag_list.clear();
     }

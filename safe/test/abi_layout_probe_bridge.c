@@ -28,3 +28,13 @@ void safe_tiff_emit_early_error_message(TIFFOpenOptions *opts,
     (void)module;
     (void)message;
 }
+
+void safe_tiff_initialize_tag_methods(TIFFTagMethods *methods)
+{
+    if (methods == NULL)
+        return;
+
+    methods->vsetfield = NULL;
+    methods->vgetfield = NULL;
+    methods->printdir = NULL;
+}
