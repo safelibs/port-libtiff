@@ -30,6 +30,7 @@
 #include "tif_config.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,9 +40,9 @@
 #endif
 
 #include "tiffio.h"
-#include "tiffiop.h" // for struct TIFF
 
 #define ERROR_STRING_SIZE 1024
+#define OPEN_SUCCEEDS_WRITE_FAIL_LIMIT 4096
 
 /* Test TIFFLIB_AT_LEAST() macro */
 #if !TIFFLIB_AT_LEAST(TIFFLIB_MAJOR_VERSION, TIFFLIB_MINOR_VERSION,            \
@@ -220,19 +221,18 @@ int main()
     ret += test_error_handler();
     fprintf(stderr, "---- test_TIFFOpenOptionsSetMaxSingleMemAlloc "
                     "with non-BigTIFF ---- \n");
-    ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(1, TRUE, -1, FALSE);
+    ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(1, true, -1, false);
     ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(
-        sizeof(TIFF) + strlen("test_error_handler.tif") + 1, FALSE, TRUE,
-        FALSE);
+        OPEN_SUCCEEDS_WRITE_FAIL_LIMIT, false, true, false);
     ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(
-        VALUE_SAMPLESPERPIXEL * sizeof(short), FALSE, FALSE, FALSE);
+        VALUE_SAMPLESPERPIXEL * sizeof(short), false, false, false);
 
     fprintf(stderr, "\n---- test_TIFFOpenOptionsSetMaxSingleMemAlloc "
                     "with BigTIFF ---- \n");
-    ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(1, TRUE, -1, TRUE);
+    ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(1, true, -1, true);
     ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(
-        sizeof(TIFF) + strlen("test_error_handler.tif") + 1, FALSE, TRUE, TRUE);
+        OPEN_SUCCEEDS_WRITE_FAIL_LIMIT, false, true, true);
     ret += test_TIFFOpenOptionsSetMaxSingleMemAlloc(
-        VALUE_SAMPLESPERPIXEL * sizeof(short), FALSE, FALSE, TRUE);
+        VALUE_SAMPLESPERPIXEL * sizeof(short), false, false, true);
     return ret;
 }

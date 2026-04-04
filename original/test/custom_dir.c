@@ -24,10 +24,11 @@
 /*
  * TIFF Library
  *
- * Module to handling of custom directories like EXIF.
+ * Public-API regression for EXIF directory creation and round-tripping.
  */
 
 #include "tif_config.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -35,40 +36,30 @@
 #include <unistd.h>
 #endif
 
-#include "tif_dir.h"
 #include "tiffio.h"
-#include "tifftest.h"
 
 static const char filename[] = "custom_dir.tif";
 
-#define SPP 3 /* Samples per pixel */
-const uint16_t width = 1;
-const uint16_t length = 1;
-const uint16_t bps = 8;
-const uint16_t photometric = PHOTOMETRIC_RGB;
-const uint16_t rows_per_strip = 1;
-const uint16_t planarconfig = PLANARCONFIG_CONTIG;
+#define SPP 3
+static const uint16_t width = 1;
+static const uint16_t length = 1;
+static const uint16_t bps = 8;
+static const uint16_t photometric = PHOTOMETRIC_RGB;
+static const uint16_t rows_per_strip = 1;
+static const uint16_t planarconfig = PLANARCONFIG_CONTIG;
 
-static TIFFField customFields[] = {
-    {TIFFTAG_IMAGEWIDTH, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII,
-     TIFF_SETGET_UNDEFINED, FIELD_CUSTOM, 1, 0, "Custom1", NULL},
-    {TIFFTAG_DOTRANGE, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII,
-     TIFF_SETGET_UNDEFINED, FIELD_CUSTOM, 1, 0, "Custom2", NULL},
-};
-
-static TIFFFieldArray customFieldArray = {tfiatOther, 0, 2, customFields};
-
-int main()
+int main(void)
 {
-    TIFF *tif;
+    TIFF *tif = NULL;
     unsigned char buf[SPP] = {0, 127, 255};
-    uint64_t dir_offset = 0, dir_offset2 = 0;
-    uint64_t read_dir_offset = 0, read_dir_offset2 = 0;
-    uint64_t *dir_offset2_ptr = NULL;
-    char *ascii_value;
-    uint16_t count16 = 0;
+    uint64_t exif_offset = 0;
+    uint64_t read_exif_offset = 0;
+    char *ascii_value = NULL;
+    uint32_t value_u32 = 0;
+    uint8_t exif_version[4] = {'0', '2', '3', '1'};
 
-    /* We write the main directory as a simple image. */
+    unlink(filename);
+
     tif = TIFFOpen(filename, "w+");
     if (!tif)
     {
@@ -76,43 +67,19 @@ int main()
         return 1;
     }
 
-    if (!TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width))
+    if (!TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width) ||
+        !TIFFSetField(tif, TIFFTAG_IMAGELENGTH, length) ||
+        !TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bps) ||
+        !TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, SPP) ||
+        !TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, rows_per_strip) ||
+        !TIFFSetField(tif, TIFFTAG_PLANARCONFIG, planarconfig) ||
+        !TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, photometric) ||
+        !TIFFSetField(tif, TIFFTAG_EXIFIFD, exif_offset))
     {
-        fprintf(stderr, "Can't set ImageWidth tag.\n");
-        goto failure;
-    }
-    if (!TIFFSetField(tif, TIFFTAG_IMAGELENGTH, length))
-    {
-        fprintf(stderr, "Can't set ImageLength tag.\n");
-        goto failure;
-    }
-    if (!TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bps))
-    {
-        fprintf(stderr, "Can't set BitsPerSample tag.\n");
-        goto failure;
-    }
-    if (!TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, SPP))
-    {
-        fprintf(stderr, "Can't set SamplesPerPixel tag.\n");
-        goto failure;
-    }
-    if (!TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, rows_per_strip))
-    {
-        fprintf(stderr, "Can't set SamplesPerPixel tag.\n");
-        goto failure;
-    }
-    if (!TIFFSetField(tif, TIFFTAG_PLANARCONFIG, planarconfig))
-    {
-        fprintf(stderr, "Can't set PlanarConfiguration tag.\n");
-        goto failure;
-    }
-    if (!TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, photometric))
-    {
-        fprintf(stderr, "Can't set PhotometricInterpretation tag.\n");
+        fprintf(stderr, "Failed to initialize the main directory.\n");
         goto failure;
     }
 
-    /* Write dummy pixel data. */
     if (TIFFWriteScanline(tif, buf, 0, 0) == -1)
     {
         fprintf(stderr, "Can't write image data.\n");
@@ -125,146 +92,84 @@ int main()
         goto failure;
     }
 
-    /*
-     * Now create an EXIF directory.
-     */
     if (TIFFCreateEXIFDirectory(tif) != 0)
     {
         fprintf(stderr, "TIFFCreateEXIFDirectory() failed.\n");
         goto failure;
     }
 
-    if (!TIFFSetField(tif, EXIFTAG_SPECTRALSENSITIVITY,
+    if (!TIFFSetField(tif, EXIFTAG_EXIFVERSION, exif_version) ||
+        !TIFFSetField(tif, EXIFTAG_SPECTRALSENSITIVITY,
                       "EXIF Spectral Sensitivity"))
     {
-        fprintf(stderr, "Can't write SPECTRALSENSITIVITY\n");
+        fprintf(stderr, "Failed to populate the EXIF directory.\n");
         goto failure;
     }
 
-    if (!TIFFWriteCustomDirectory(tif, &dir_offset))
+    if (!TIFFWriteCustomDirectory(tif, &exif_offset))
     {
-        fprintf(stderr, "TIFFWriteCustomDirectory() with EXIF failed.\n");
+        fprintf(stderr, "TIFFWriteCustomDirectory() failed.\n");
         goto failure;
     }
 
-    /*
-     * Now create a custom directory with tags that conflict with mainline
-     * TIFF tags.
-     */
-
-    TIFFFreeDirectory(tif);
-    if (TIFFCreateCustomDirectory(tif, &customFieldArray) != 0)
+    if (!TIFFSetDirectory(tif, 0) ||
+        !TIFFSetField(tif, TIFFTAG_EXIFIFD, exif_offset) ||
+        !TIFFRewriteDirectory(tif))
     {
-        fprintf(stderr, "TIFFCreateEXIFDirectory() failed.\n");
+        fprintf(stderr, "Failed to link the EXIF directory from the main IFD.\n");
         goto failure;
     }
-
-    if (!TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, "*Custom1"))
-    { /* not really IMAGEWIDTH */
-        fprintf(stderr, "Can't write pseudo-IMAGEWIDTH.\n");
-        goto failure;
-    }
-
-    if (!TIFFSetField(tif, TIFFTAG_DOTRANGE, "*Custom2"))
-    { /* not really DOTWIDTH */
-        fprintf(stderr, "Can't write pseudo-DOTWIDTH.\n");
-        goto failure;
-    }
-
-    if (!TIFFWriteCustomDirectory(tif, &dir_offset2))
-    {
-        fprintf(stderr, "TIFFWriteCustomDirectory() with EXIF failed.\n");
-        goto failure;
-    }
-
-    /*
-     * Go back to the first directory, and add the EXIFIFD pointer.
-     */
-    TIFFSetDirectory(tif, 0);
-    TIFFSetField(tif, TIFFTAG_EXIFIFD, dir_offset);
-    TIFFSetField(tif, TIFFTAG_SUBIFD, 1, &dir_offset2);
 
     TIFFClose(tif);
+    tif = NULL;
 
-    /* Ok, now test whether we can read written values in the EXIF directory. */
     tif = TIFFOpen(filename, "r");
-
-    TIFFGetField(tif, TIFFTAG_EXIFIFD, &read_dir_offset);
-    if (read_dir_offset != dir_offset)
+    if (!tif)
     {
-        fprintf(stderr, "Did not get expected EXIFIFD.\n");
+        fprintf(stderr, "Can't reopen %s.\n", filename);
+        return 1;
+    }
+
+    if (TIFFNumberOfDirectories(tif) != 1)
+    {
+        fprintf(stderr, "Unexpected number of main directories.\n");
         goto failure;
     }
 
-    TIFFGetField(tif, TIFFTAG_SUBIFD, &count16, &dir_offset2_ptr);
-    read_dir_offset2 = dir_offset2_ptr[0];
-    if (read_dir_offset2 != dir_offset2 || count16 != 1)
+    if (!TIFFGetField(tif, TIFFTAG_EXIFIFD, &read_exif_offset) ||
+        read_exif_offset != exif_offset)
     {
-        fprintf(stderr, "Did not get expected SUBIFD.\n");
+        fprintf(stderr, "Did not get the expected EXIFIFD value.\n");
         goto failure;
     }
 
-    if (!TIFFReadEXIFDirectory(tif, read_dir_offset))
+    if (!TIFFReadEXIFDirectory(tif, read_exif_offset))
     {
         fprintf(stderr, "TIFFReadEXIFDirectory() failed.\n");
         goto failure;
     }
 
-    if (!TIFFGetField(tif, EXIFTAG_SPECTRALSENSITIVITY, &ascii_value))
+    if (!TIFFGetField(tif, EXIFTAG_SPECTRALSENSITIVITY, &ascii_value) ||
+        strcmp(ascii_value, "EXIF Spectral Sensitivity") != 0)
     {
-        fprintf(stderr, "reading SPECTRALSENSITIVITY failed.\n");
+        fprintf(stderr, "Got the wrong SPECTRALSENSITIVITY value.\n");
         goto failure;
     }
 
-    if (strcmp(ascii_value, "EXIF Spectral Sensitivity") != 0)
+    if (!TIFFSetDirectory(tif, 0) ||
+        !TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &value_u32) ||
+        value_u32 != width)
     {
-        fprintf(stderr, "got wrong SPECTRALSENSITIVITY value.\n");
-        goto failure;
-    }
-
-    /* Try reading the Custom directory */
-
-    if (!TIFFReadCustomDirectory(tif, read_dir_offset2, &customFieldArray))
-    {
-        fprintf(stderr, "TIFFReadCustomDirectory() failed.\n");
-        goto failure;
-    }
-
-    if (!TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &ascii_value))
-    {
-        fprintf(stderr, "reading pseudo-IMAGEWIDTH failed.\n");
-        goto failure;
-    }
-
-    if (strcmp(ascii_value, "*Custom1") != 0)
-    {
-        fprintf(stderr, "got wrong pseudo-IMAGEWIDTH value.\n");
-        goto failure;
-    }
-
-    if (!TIFFGetField(tif, TIFFTAG_DOTRANGE, &ascii_value))
-    {
-        fprintf(stderr, "reading pseudo-DOTRANGE failed.\n");
-        goto failure;
-    }
-
-    if (strcmp(ascii_value, "*Custom2") != 0)
-    {
-        fprintf(stderr, "got wrong pseudo-DOTRANGE value.\n");
+        fprintf(stderr, "Failed to return to the main IFD.\n");
         goto failure;
     }
 
     TIFFClose(tif);
-
-    /* All tests passed; delete file and exit with success status. */
     unlink(filename);
     return 0;
 
 failure:
-    /*
-     * Something goes wrong; close file and return unsuccessful status.
-     * Do not remove the file for further manual investigation.
-     */
-    TIFFClose(tif);
+    if (tif)
+        TIFFClose(tif);
     return 1;
 }

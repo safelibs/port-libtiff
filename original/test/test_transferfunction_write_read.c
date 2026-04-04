@@ -68,11 +68,13 @@ const uint16_t *ptfR2;
 int setup_transfer_functions(void)
 {
     if (pTransferFunctionData)
-        _TIFFfree(pTransferFunctionData);
+        free(pTransferFunctionData);
 
     /* Setup array with some more values to shift start of the three arrays. */
     nSamplesPerTransferFunction = ((uint32_t)1 << bps);
-    pTransferFunctionData = _TIFFmalloc(3 * (tmsize_t)nSamplesPerTransferFunction * sizeof(uint16_t));
+    pTransferFunctionData =
+        malloc(3U * (size_t)nSamplesPerTransferFunction *
+               sizeof(uint16_t));
     if (!pTransferFunctionData)
         return 1;
 
@@ -114,11 +116,17 @@ int read_check_transferfunctions(TIFF **ptif, const char *filename, int blnClose
     }
     else
     {
-        if (ptfR0 != NULL && !_TIFFmemcmp(ptfx0, ptfR0, nSamplesPerTransferFunction * sizeof(uint16_t)))
+        if (ptfR0 != NULL &&
+            memcmp(ptfx0, ptfR0,
+                   nSamplesPerTransferFunction * sizeof(uint16_t)) == 0)
             retval += 1;
-        if (ptfR1 != NULL && !_TIFFmemcmp(ptfx1, ptfR1, nSamplesPerTransferFunction * sizeof(uint16_t)))
+        if (ptfR1 != NULL &&
+            memcmp(ptfx1, ptfR1,
+                   nSamplesPerTransferFunction * sizeof(uint16_t)) == 0)
             retval += 2;
-        if (ptfR2 != NULL && !_TIFFmemcmp(ptfx2, ptfR2, nSamplesPerTransferFunction * sizeof(uint16_t)))
+        if (ptfR2 != NULL &&
+            memcmp(ptfx2, ptfR2,
+                   nSamplesPerTransferFunction * sizeof(uint16_t)) == 0)
             retval += 4;
     }
 
@@ -229,14 +237,14 @@ int write_basic_IFD_data(TIFF **ptif, const char *fileneme, int wrtTransferFunct
 
     /* Setup buffer for image line */
     size_t bufLen = (size_t)width * spp * (bps + 7) / 8;
-    bufLine = _TIFFmalloc(bufLen);
+    bufLine = malloc(bufLen);
     if (!bufLine)
     {
         fprintf(stderr, "write_basic_IFD_data(): Can't allocate bufLine buffer.\n");
         GOTOFAILURE(1);
     }
     if (bufLen > sizeof(buf))
-        _TIFFmemcpy(bufLine, buf, sizeof(buf));
+        memcpy(bufLine, buf, sizeof(buf));
 
     /* Write dummy pixel data. */
     for (int i = 0; i < length; i++)
@@ -252,7 +260,7 @@ int write_basic_IFD_data(TIFF **ptif, const char *fileneme, int wrtTransferFunct
 
 failure:
     if (bufLine) 
-        _TIFFfree(bufLine);
+        free(bufLine);
     if (blnCloseFile)
     {
         TIFFClose(tif);

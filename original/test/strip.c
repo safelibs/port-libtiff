@@ -28,6 +28,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "tiffio.h"
@@ -79,7 +80,7 @@ int read_strips(TIFF *tif, const tdata_t array, const tsize_t size)
         return -1;
     }
 
-    buf = _TIFFmalloc(stripsize);
+    buf = malloc((size_t)stripsize);
     if (!buf)
     {
         fprintf(stderr, "Can't allocate space for strip buffer.\n");
@@ -105,12 +106,12 @@ int read_strips(TIFF *tif, const tdata_t array, const tsize_t size)
         if (memcmp(buf, (char *)array + offset, bufsize) != 0)
         {
             fprintf(stderr, "Wrong data read for strip %" PRIu32 ".\n", strip);
-            _TIFFfree(buf);
+            free(buf);
             return -1;
         }
     }
 
-    _TIFFfree(buf);
+    free(buf);
 
     return 0;
 }
