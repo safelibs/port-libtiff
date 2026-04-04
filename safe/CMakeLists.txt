@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(libtiff_safe VERSION 4.5.1 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 set(_safe_default_tools OFF)
 set(_safe_default_tests OFF)
@@ -28,6 +29,10 @@ enable_testing()
 
 set(LIBTIFF_SONAME_VERSION 6)
 set(LIBTIFF_SHARED_VERSION 6.0.1)
+set(LIBTIFF_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+set(LIBTIFF_MINOR_VERSION ${PROJECT_VERSION_MINOR})
+set(LIBTIFF_MICRO_VERSION ${PROJECT_VERSION_PATCH})
+set(TIFF_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/tiff")
 
 set(HAVE_GETOPT TRUE CACHE BOOL "Use the host getopt implementation" FORCE)
 set(JPEG_SUPPORT ON)
@@ -144,6 +149,7 @@ add_library(
   capi/tiff_placeholder.c
   capi/jpeg_helper.c
   capi/external_codec_helper.c)
+add_library(TIFF::tiff ALIAS tiff)
 target_include_directories(
   tiff
   PUBLIC
@@ -176,11 +182,15 @@ endif()
 safe_mirror_shared_library_for_verifier(tiff)
 
 add_library(tiffxx SHARED capi/tiffxx_placeholder.cxx)
+add_library(TIFF::CXX ALIAS tiffxx)
 target_include_directories(
   tiffxx
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/libtiff)
+target_compile_options(tiffxx PRIVATE -fno-inline -fno-default-inline)
 target_link_libraries(tiffxx PRIVATE tiff)
 set_target_properties(
   tiffxx
@@ -192,12 +202,48 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_link_options(
     tiffxx
     PRIVATE
-      "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/capi/libtiffxx-safe.map")
+      "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/capi/libtiffxx-safe.map"
+      "-Wl,--undefined=_ZNKSt4fposI11__mbstate_tEcvlEv"
+      "-Wl,--undefined=_ZNKSt4fposI11__mbstate_tEmiERKS1_")
 endif()
 safe_mirror_shared_library_for_verifier(tiffxx)
 
+set(prefix "${CMAKE_INSTALL_PREFIX}")
+set(exec_prefix "\${prefix}")
+if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+  set(libdir "${CMAKE_INSTALL_LIBDIR}")
+else()
+  set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+endif()
+if(IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
+  set(includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+else()
+  set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+endif()
+set(tiff_libs_private " -ldeflate -ljbig -lLerc -lm")
+set(tiff_requires_private " zlib libjpeg liblzma libzstd libwebp")
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig/libtiff-4.pc.in
+  ${CMAKE_CURRENT_BINARY_DIR}/libtiff-4.pc
+  @ONLY)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TiffConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/TiffConfig.cmake
+  @ONLY)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/TiffConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
+
 install(
-  TARGETS tiff tiffxx
+  TARGETS tiff
+  EXPORT TiffTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(
+  TARGETS tiffxx
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -207,6 +253,19 @@ install(
   FILES_MATCHING
     PATTERN "*.h"
     PATTERN "*.hxx")
+install(
+  EXPORT TiffTargets
+  FILE TiffTargets.cmake
+  NAMESPACE TIFF::
+  DESTINATION ${TIFF_CONFIGDIR})
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/TiffConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/TiffConfigVersion.cmake
+  DESTINATION ${TIFF_CONFIGDIR})
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/libtiff-4.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 if(tiff-tools)
   add_subdirectory(tools)

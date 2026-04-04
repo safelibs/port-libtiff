@@ -1,3 +1,15 @@
 /build/
+/build-debian/
+/build-perf/
+/dist/
 /target/
-
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/*.debhelper.log
+/debian/*.substvars
+/debian/libtiff6/
+/debian/libtiffxx6/
+/debian/libtiff-dev/
+/debian/libtiff-tools/
+/debian/tmp/

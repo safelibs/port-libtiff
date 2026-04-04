@@ -1868,6 +1868,7 @@ unsafe fn clear_main_chain_cache(tif: *mut TIFF) {
 }
 
 unsafe fn initialize_writable_directory(tif: *mut TIFF, kind: DirectoryKind) -> bool {
+    ensure_main_chain_initialized(tif);
     let ok = match kind {
         DirectoryKind::Main | DirectoryKind::SubIfd => reset_default_directory(tif),
         DirectoryKind::Custom(info) => reset_field_registry_with_array(tif, info),
@@ -1923,6 +1924,7 @@ unsafe fn ensure_writable_directory(tif: *mut TIFF) -> bool {
     if directory_state(tif).current.is_some() {
         true
     } else {
+        ensure_main_chain_initialized(tif);
         if !initialize_field_registry(tif) {
             emit_error_message(tif, "TIFFSetField", "Failed to initialize field registry");
             return false;

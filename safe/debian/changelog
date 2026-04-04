@@ -1,3 +1,9 @@
+tiff (1:4.5.1+git230720-4ubuntu2.5+safelibs1) noble-security; urgency=medium
+
+  * Rebuild the safe libtiff packaging and compatibility surface.
+
+ -- OpenAI <noreply@openai.com>  Sat, 04 Apr 2026 12:30:00 -0700
+
 tiff (4.5.1+git230720-4ubuntu2.5) noble-security; urgency=medium
 
   * SECURITY UPDATE: null-pointer dereference

@@ -4,18 +4,20 @@ Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Laszlo Boszormenyi (GCS) <gcs@debian.org>
 Build-Depends: debhelper-compat (= 13),
-               freeglut3-dev,
-               libglu1-mesa-dev,
+               cargo,
+               cmake,
+               g++,
                libjbig-dev,
                libjpeg-dev,
                liblzma-dev,
                libzstd-dev,
                libwebp-dev,
-               libxi-dev,
-               zlib1g-dev,
                libdeflate-dev,
                liblerc-dev [!s390x !hppa !powerpc !ppc64 !sparc64 !i386],
-               sphinx <!nodoc>
+               ninja-build,
+               pkg-config,
+               rustc,
+               zlib1g-dev
 Standards-Version: 4.6.2
 Homepage: https://libtiff.gitlab.io/libtiff/
 Rules-Requires-Root: no
@@ -69,21 +71,7 @@ Breaks: libtiff4-dev (<< 4.0.3-6~),
 Description: Tag Image File Format library (TIFF), development files
  libtiff is a library providing support for the Tag Image File Format
  (TIFF), a widely used format for storing image data.  This package
- includes the development files, static library, and header files.
-
-Package: libtiff5-dev
-Section: oldlibs
-Depends: libtiff-dev (>= 4.0.10-1),
-         ${misc:Depends}
-Recommends: pkg-config
-Architecture: any
-Multi-Arch: same
-Description: Tag Image File Format library (TIFF), development files (transitional package)
- libtiff is a library providing support for the Tag Image File Format
- (TIFF), a widely used format for storing image data.  This package
- includes the development files, static library, and header files.
- .
- This is a transitional package. It can safely be removed.
+ includes the development files, shared-library symlinks, and headers.
 
 Package: libtiff-tools
 Section: graphics
@@ -91,33 +79,8 @@ Architecture: any
 Multi-Arch: foreign
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Suggests: libtiff-opengl
 Description: TIFF manipulation and conversion tools
  libtiff is a library providing support for the Tag Image File Format
  (TIFF), a widely used format for storing image data.  This package
  includes tools for converting TIFF images to and from other formats
- and tools for doing simple manipulations of TIFF images.  See also
- libtiff-opengl.
-
-Package: libtiff-opengl
-Section: graphics
-Architecture: any
-Multi-Arch: foreign
-Depends: ${misc:Depends},
-         ${shlibs:Depends}
-Description: TIFF manipulation and conversion tools
- libtiff is a library providing support for the Tag Image File Format
- (TIFF), a widely used format for storing image data.  This package
- contains libtiff tools that depend upon opengl.  It complements the
- libtiff-tools package, which contains the libtiff tools that don't
- depend upon opengl.
-
-Package: libtiff-doc
-Section: doc
-Depends: ${misc:Depends}, libjs-jquery, libjs-sphinxdoc, libjs-underscore
-Architecture: all
-Multi-Arch: foreign
-Description: TIFF manipulation and conversion documentation
- libtiff is a library providing support for the Tag Image File Format
- (TIFF), a widely used format for storing image data.  This package
- contains documentation.
+ and tools for doing simple manipulations of TIFF images.

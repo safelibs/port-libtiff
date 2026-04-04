@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_TAG="${LIBTIFF_ORIGINAL_TEST_IMAGE:-libtiff-original-test:ubuntu24.04}"
+SAFE_DIST_INPUT="${LIBTIFF_SAFE_DIST_DIR:-}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker is required to run $0" >&2
@@ -16,6 +17,23 @@ fi
 
 if [[ ! -f "$ROOT/dependents.json" ]]; then
   echo "missing dependents.json" >&2
+  exit 1
+fi
+
+if [[ -z "$SAFE_DIST_INPUT" ]]; then
+  echo "LIBTIFF_SAFE_DIST_DIR must point at the generated safe .deb directory" >&2
+  exit 1
+fi
+
+if [[ "$SAFE_DIST_INPUT" = /* ]]; then
+  SAFE_DIST_HOST_DIR="$SAFE_DIST_INPUT"
+else
+  SAFE_DIST_HOST_DIR="$ROOT/$SAFE_DIST_INPUT"
+fi
+SAFE_DIST_HOST_DIR="$(realpath "$SAFE_DIST_HOST_DIR")"
+
+if [[ ! -d "$SAFE_DIST_HOST_DIR" ]]; then
+  echo "missing safe dist dir: $SAFE_DIST_HOST_DIR" >&2
   exit 1
 fi
 
@@ -41,6 +59,8 @@ RUN apt-get update \
       libjpeg-dev \
       liblzma-dev \
       libopencv-dev \
+      libtiff-dev \
+      libtiff-tools \
       libwebp-dev \
       libzstd-dev \
       netpbm \
@@ -61,6 +81,7 @@ DOCKERFILE
 
 docker run --rm -i \
   -v "$ROOT":/work:ro \
+  -v "$SAFE_DIST_HOST_DIR":/dist:ro \
   "$IMAGE_TAG" \
   bash -s <<'CONTAINER_SCRIPT'
 set -euo pipefail
@@ -69,11 +90,12 @@ export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
 
 ROOT=/work
-SRC_ROOT=/work/original
-BUILD_ROOT=/tmp/libtiff-original-build
+DIST_ROOT=/dist
 FIXTURE_DIR=/tmp/libtiff-fixtures
 TEST_ROOT=/tmp/libtiff-dependent-tests
 MULTIARCH="$(gcc -print-multiarch)"
+EXPECTED_SAFE_VERSION="1:4.5.1+git230720-4ubuntu2.5+safelibs1"
+ARCHIVE_BASELINE_VERSION="4.5.1+git230720-4ubuntu2.5"
 
 log_step() {
   printf '\n==> %s\n' "$1"
@@ -121,24 +143,53 @@ reset_test_dir() {
   printf '%s\n' "$dir"
 }
 
-assert_uses_local_libtiff() {
+find_deb_by_package() {
+  local package="$1"
+  local deb
+
+  while IFS= read -r candidate; do
+    if [[ "$(dpkg-deb -f "$candidate" Package)" == "$package" ]]; then
+      deb="$candidate"
+      break
+    fi
+  done < <(find "$DIST_ROOT" -maxdepth 1 -type f -name '*.deb' | sort)
+
+  [[ -n "${deb:-}" ]] || die "unable to locate ${package}.deb under $DIST_ROOT"
+  printf '%s\n' "$deb"
+}
+
+assert_uses_packaged_libtiff() {
   local target="$1"
   local label="$2"
+  local runtime_path
   local resolved
 
-  resolved="$(ldd "$target" 2>/dev/null | awk '$1 == "libtiff.so.6" { print $3; exit }')"
-  [[ -n "$resolved" ]] || die "$label does not resolve libtiff.so.6"
-  resolved="$(readlink -f "$resolved")"
+  ldd "$target" >/tmp/ldd-check.log 2>&1 || {
+    cat /tmp/ldd-check.log >&2
+    exit 1
+  }
+  runtime_path="$(awk '$1 == "libtiff.so.6" { print $3; exit }' /tmp/ldd-check.log)"
+  [[ -n "$runtime_path" ]] || die "$label does not resolve libtiff.so.6"
+  resolved="$(readlink -f "$runtime_path")"
 
   case "$resolved" in
-    /usr/local/*)
+    /usr/lib/"$MULTIARCH"/*)
       ;;
     *)
-      printf '%s resolved libtiff.so.6 to %s instead of /usr/local\n' "$label" "$resolved" >&2
+      printf '%s resolved libtiff.so.6 to %s instead of /usr/lib/%s\n' \
+        "$label" "$resolved" "$MULTIARCH" >&2
       ldd "$target" >&2
       exit 1
       ;;
   esac
+
+  dpkg -S "$resolved" >/tmp/dpkg-owner.log 2>&1 || {
+    cat /tmp/dpkg-owner.log >&2
+    exit 1
+  }
+  require_contains /tmp/dpkg-owner.log "libtiff6:"
+
+  require_contains /tmp/ldd-check.log "$runtime_path"
 }
 
 require_valid_tiff() {
@@ -182,41 +233,56 @@ if actual != expected:
 PY
 }
 
-build_original_libtiff() {
-  log_step "Building original libtiff"
+install_safe_packages() {
+  local libtiff6_deb
+  local libtiffxx6_deb
+  local libtiff_dev_deb
+  local libtiff_tools_deb
+  local package
+  local version
+  local archive_version
 
-  cmake -S "$SRC_ROOT" -B "$BUILD_ROOT" -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr/local \
-    -DBUILD_SHARED_LIBS=ON \
-    -Dtiff-tools=ON \
-    -Dtiff-tests=OFF \
-    -Dtiff-contrib=OFF \
-    -Dtiff-docs=OFF \
-    >/tmp/libtiff-cmake.log 2>&1 || {
-      cat /tmp/libtiff-cmake.log >&2
+  log_step "Installing safe libtiff packages"
+
+  libtiff6_deb="$(find_deb_by_package libtiff6)"
+  libtiffxx6_deb="$(find_deb_by_package libtiffxx6)"
+  libtiff_dev_deb="$(find_deb_by_package libtiff-dev)"
+  libtiff_tools_deb="$(find_deb_by_package libtiff-tools)"
+
+  for package in \
+    "$libtiff6_deb" \
+    "$libtiffxx6_deb" \
+    "$libtiff_dev_deb" \
+    "$libtiff_tools_deb"; do
+    version="$(dpkg-deb -f "$package" Version)"
+    [[ "$version" == "$EXPECTED_SAFE_VERSION" ]] || \
+      die "unexpected package version for $package: $version"
+    dpkg --compare-versions "$version" gt "$ARCHIVE_BASELINE_VERSION" || \
+      die "version $version does not sort above $ARCHIVE_BASELINE_VERSION"
+  done
+
+  for package in libtiff6 libtiffxx6 libtiff-dev libtiff-tools; do
+    archive_version="$(dpkg-query -W -f='${Version}' "$package")"
+    dpkg --compare-versions "$archive_version" eq "$ARCHIVE_BASELINE_VERSION" || \
+      die "unexpected archive version for $package: $archive_version"
+  done
+
+  apt-get install -y \
+    "$libtiff6_deb" \
+    "$libtiffxx6_deb" \
+    "$libtiff_dev_deb" \
+    "$libtiff_tools_deb" >/tmp/apt-local-debs.log 2>&1 || {
+      cat /tmp/apt-local-debs.log >&2
       exit 1
     }
 
-  cmake --build "$BUILD_ROOT" --parallel >/tmp/libtiff-build.log 2>&1 || {
-    cat /tmp/libtiff-build.log >&2
-    exit 1
-  }
+  for package in libtiff6 libtiffxx6 libtiff-dev libtiff-tools; do
+    version="$(dpkg-query -W -f='${Version}' "$package")"
+    [[ "$version" == "$EXPECTED_SAFE_VERSION" ]] || \
+      die "failed to install $package at $EXPECTED_SAFE_VERSION"
+  done
 
-  cmake --install "$BUILD_ROOT" >/tmp/libtiff-install.log 2>&1 || {
-    cat /tmp/libtiff-install.log >&2
-    exit 1
-  }
-
-  printf '/usr/local/lib\n/usr/local/lib/%s\n' "$MULTIARCH" > /etc/ld.so.conf.d/zz-libtiff-local.conf
-  ldconfig
-
-  export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/$MULTIARCH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-
-  find /usr/local -type f -name 'libtiff.so.6*' -print -quit >/dev/null || \
-    die "unable to locate installed /usr/local libtiff.so.6"
-
-  assert_uses_local_libtiff "$(command -v tiffinfo)" "installed tiffinfo"
+  assert_uses_packaged_libtiff "$(command -v tiffinfo)" "installed tiffinfo"
 }
 
 prepare_fixtures() {
@@ -225,11 +291,11 @@ prepare_fixtures() {
   rm -rf "$FIXTURE_DIR" "$TEST_ROOT"
   mkdir -p "$FIXTURE_DIR" "$TEST_ROOT"
 
-  cp "$SRC_ROOT/test/images/rgb-3c-8b.tiff" "$FIXTURE_DIR/input.tiff"
+  cp "$ROOT/original/test/images/rgb-3c-8b.tiff" "$FIXTURE_DIR/input.tiff"
   require_valid_tiff "$FIXTURE_DIR/input.tiff"
 
-  tiff2pdf -o "$FIXTURE_DIR/input.pdf" "$FIXTURE_DIR/input.tiff" >/tmp/tiff2pdf.log 2>&1 || {
-    cat /tmp/tiff2pdf.log >&2
+  convert "$FIXTURE_DIR/input.tiff" "$FIXTURE_DIR/input.pdf" >/tmp/fixture-convert.log 2>&1 || {
+    cat /tmp/fixture-convert.log >&2
     exit 1
   }
 
@@ -242,7 +308,7 @@ test_gimp() {
 
   log_step "gimp"
   plugin="$(find_file_or_die /usr/lib '*/gimp/*/plug-ins/file-tiff/file-tiff')"
-  assert_uses_local_libtiff "$plugin" "gimp TIFF plug-in"
+  assert_uses_packaged_libtiff "$plugin" "gimp TIFF plug-in"
 
   dir="$(reset_test_dir gimp)"
   cp "$FIXTURE_DIR/input.tiff" "$dir/input.tiff"
@@ -266,7 +332,7 @@ test_imagemagick() {
 
   log_step "imagemagick"
   coder="$(find_file_or_die /usr/lib '*/ImageMagick-*/modules-*/coders/tiff.so')"
-  assert_uses_local_libtiff "$coder" "ImageMagick TIFF coder"
+  assert_uses_packaged_libtiff "$coder" "ImageMagick TIFF coder"
 
   dir="$(reset_test_dir imagemagick)"
   convert "$FIXTURE_DIR/input.tiff" -rotate 90 "$dir/output.tiff" >/tmp/imagemagick.log 2>&1 || {
@@ -288,7 +354,7 @@ test_graphicsmagick() {
   log_step "graphicsmagick"
   lib="$(ldconfig -p | awk '/libGraphicsMagick.*\.so/ { print $NF; exit }')"
   [[ -n "$lib" ]] || die "unable to locate GraphicsMagick shared library"
-  assert_uses_local_libtiff "$lib" "GraphicsMagick shared library"
+  assert_uses_packaged_libtiff "$lib" "GraphicsMagick shared library"
 
   dir="$(reset_test_dir graphicsmagick)"
   gm convert "$FIXTURE_DIR/input.tiff" -flip "$dir/output.tiff" >/tmp/graphicsmagick.log 2>&1 || {
@@ -310,7 +376,7 @@ test_gdal() {
   log_step "gdal-bin"
   lib="$(ldconfig -p | awk '/libgdal\.so/ { print $NF; exit }')"
   [[ -n "$lib" ]] || die "unable to locate libgdal shared library"
-  assert_uses_local_libtiff "$lib" "libgdal shared library"
+  assert_uses_packaged_libtiff "$lib" "libgdal shared library"
 
   dir="$(reset_test_dir gdal-bin)"
   gdal_translate -of GTiff "$FIXTURE_DIR/input.tiff" "$dir/output.tiff" >/tmp/gdal-translate.log 2>&1 || {
@@ -332,7 +398,7 @@ test_poppler() {
   log_step "poppler-utils"
   lib="$(ldconfig -p | awk '/libpoppler\.so/ { print $NF; exit }')"
   [[ -n "$lib" ]] || die "unable to locate libpoppler shared library"
-  assert_uses_local_libtiff "$lib" "libpoppler shared library"
+  assert_uses_packaged_libtiff "$lib" "libpoppler shared library"
 
   dir="$(reset_test_dir poppler-utils)"
   pdftocairo -tiff -singlefile "$FIXTURE_DIR/input.pdf" "$dir/poppler" >/tmp/pdftocairo.log 2>&1 || {
@@ -348,7 +414,7 @@ test_qt6_image_formats() {
 
   log_step "qt6-image-formats-plugins"
   plugin="$(find_file_or_die /usr/lib '*/qt6/plugins/imageformats/libqtiff.so')"
-  assert_uses_local_libtiff "$plugin" "Qt TIFF image plug-in"
+  assert_uses_packaged_libtiff "$plugin" "Qt TIFF image plug-in"
 
   dir="$(reset_test_dir qt6-image-formats-plugins)"
   cat > "$dir/qt_tiff_probe.cpp" <<'CPP'
@@ -419,7 +485,7 @@ print(_imaging.__file__)
 PY
 )"
   [[ -n "$imaging_so" ]] || die "unable to locate Pillow _imaging extension"
-  assert_uses_local_libtiff "$imaging_so" "Pillow _imaging extension"
+  assert_uses_packaged_libtiff "$imaging_so" "Pillow _imaging extension"
 
   dir="$(reset_test_dir python3-pil)"
   python3 <<PY >"$dir/pillow.log"
@@ -442,7 +508,7 @@ test_netpbm() {
   local dir
 
   log_step "netpbm"
-  assert_uses_local_libtiff "$(command -v tifftopnm)" "tifftopnm"
+  assert_uses_packaged_libtiff "$(command -v tifftopnm)" "tifftopnm"
 
   dir="$(reset_test_dir netpbm)"
   tifftopnm "$FIXTURE_DIR/input.tiff" > "$dir/output.ppm" 2>"$dir/tifftopnm.log" || {
@@ -464,7 +530,7 @@ test_tesseract() {
   log_step "tesseract-ocr"
   lib="$(ldconfig -p | awk '/liblept\.so/ { print $NF; exit }')"
   [[ -n "$lib" ]] || die "unable to locate liblept shared library"
-  assert_uses_local_libtiff "$lib" "Leptonica shared library"
+  assert_uses_packaged_libtiff "$lib" "Leptonica shared library"
 
   dir="$(reset_test_dir tesseract-ocr)"
   pbmtext '12345' | pnmscale 10 > "$dir/ocr-input.pbm"
@@ -490,7 +556,7 @@ test_ghostscript() {
   log_step "ghostscript"
   lib="$(ldconfig -p | awk '/libgs\.so/ { print $NF; exit }')"
   [[ -n "$lib" ]] || die "unable to locate libgs shared library"
-  assert_uses_local_libtiff "$lib" "Ghostscript shared library"
+  assert_uses_packaged_libtiff "$lib" "Ghostscript shared library"
 
   dir="$(reset_test_dir ghostscript)"
   gs -q -dNOPAUSE -dBATCH -sDEVICE=tiff24nc \
@@ -508,7 +574,7 @@ test_gdk_pixbuf() {
 
   log_step "libgdk-pixbuf-2.0-0"
   loader="$(find_file_or_die /usr/lib '*/gdk-pixbuf-2.0/*/loaders/libpixbufloader-tiff.so')"
-  assert_uses_local_libtiff "$loader" "GDK Pixbuf TIFF loader"
+  assert_uses_packaged_libtiff "$loader" "GDK Pixbuf TIFF loader"
 
   query_loaders="$(find_file_or_die /usr '*/gdk-pixbuf-query-loaders')"
   "$query_loaders" >/tmp/gdk-pixbuf-loaders.log 2>&1 || {
@@ -534,7 +600,7 @@ test_opencv() {
   log_step "libopencv-imgcodecs406t64"
   lib="$(ldconfig -p | awk '/libopencv_imgcodecs\.so/ { print $NF; exit }')"
   [[ -n "$lib" ]] || die "unable to locate libopencv_imgcodecs shared library"
-  assert_uses_local_libtiff "$lib" "OpenCV imgcodecs shared library"
+  assert_uses_packaged_libtiff "$lib" "OpenCV imgcodecs shared library"
 
   dir="$(reset_test_dir libopencv-imgcodecs406t64)"
   cat > "$dir/opencv_tiff_probe.cpp" <<'CPP'
@@ -585,7 +651,7 @@ test_sane_airscan() {
 
   log_step "sane-airscan"
   backend="$(find_file_or_die /usr/lib '*/sane/libsane-airscan.so*')"
-  assert_uses_local_libtiff "$backend" "sane-airscan backend"
+  assert_uses_packaged_libtiff "$backend" "sane-airscan backend"
 
   dir="$(reset_test_dir sane-airscan)"
   mkdir -p "$dir/sane.d"
@@ -609,7 +675,7 @@ EOF
 
 main() {
   validate_dependents_inventory
-  build_original_libtiff
+  install_safe_packages
   prepare_fixtures
 
   test_gimp

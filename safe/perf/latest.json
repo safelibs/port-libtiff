@@ -9,8 +9,8 @@
     "max_workload_slowdown": 2.0,
     "max_suite_median_slowdown": 1.5
   },
-  "temp_root": "/tmp/libtiff-perf-zsgd7w1m",
-  "suite_median_slowdown": 0.9533609927234027,
+  "temp_root": "/tmp/libtiff-perf-hldn1fk7",
+  "suite_median_slowdown": 0.9554082801120974,
   "suite_passed": true,
   "results": [
     {
@@ -25,15 +25,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0020952699705958366,
+              "duration_seconds": 0.0019107769476249814,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
               "payload_size": 428,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/warmup-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/warmup-01/stderr.bin",
               "output_path": null
             }
           ],
@@ -45,15 +45,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0021553710103034973,
+              "duration_seconds": 0.0015005399473011494,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
               "payload_size": 428,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-01/stderr.bin",
               "output_path": null
             },
             {
@@ -62,15 +62,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0022607119753956795,
+              "duration_seconds": 0.0015044129686430097,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
               "payload_size": 428,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-02/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-02/stderr.bin",
               "output_path": null
             },
             {
@@ -79,15 +79,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0023308239178732038,
+              "duration_seconds": 0.001521744066849351,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
               "payload_size": 428,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-03/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-03/stderr.bin",
               "output_path": null
             },
             {
@@ -96,15 +96,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002236410975456238,
+              "duration_seconds": 0.001453031087294221,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
               "payload_size": 428,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-04/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-04/stderr.bin",
               "output_path": null
             },
             {
@@ -113,19 +113,19 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002198668895289302,
+              "duration_seconds": 0.0014167160261422396,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
               "payload_size": 428,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/original/timed-05/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/original/timed-05/stderr.bin",
               "output_path": null
             }
           ],
-          "median_seconds": 0.002236410975456238
+          "median_seconds": 0.0015005399473011494
         },
         "safe": {
           "warmups": [
@@ -135,15 +135,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.003600555006414652,
+              "duration_seconds": 0.001732858014293015,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
               "payload_size": 440,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/warmup-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/warmup-01/stderr.bin",
               "output_path": null
             }
           ],
@@ -155,15 +155,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.001915273955091834,
+              "duration_seconds": 0.001334578962996602,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
               "payload_size": 440,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-01/stderr.bin",
               "output_path": null
             },
             {
@@ -172,15 +172,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0020174530800431967,
+              "duration_seconds": 0.0012332909973338246,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
               "payload_size": 440,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-02/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-02/stderr.bin",
               "output_path": null
             },
             {
@@ -189,15 +189,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002133595058694482,
+              "duration_seconds": 0.0013726800680160522,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
               "payload_size": 440,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-03/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-03/stderr.bin",
               "output_path": null
             },
             {
@@ -206,15 +206,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002187140053138137,
+              "duration_seconds": 0.0013403509510681033,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
               "payload_size": 440,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-04/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-04/stderr.bin",
               "output_path": null
             },
             {
@@ -223,22 +223,22 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0016674320213496685,
+              "duration_seconds": 0.001316412934102118,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
               "payload_size": 440,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-rgb-3c-8b/safe/timed-05/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-rgb-3c-8b/safe/timed-05/stderr.bin",
               "output_path": null
             }
           ],
-          "median_seconds": 0.0020174530800431967
+          "median_seconds": 0.001334578962996602
         }
       },
-      "slowdown_ratio": 0.9020940704476856,
+      "slowdown_ratio": 0.8893991562150395,
       "passed": true,
       "workload_threshold": 2.0
     },
@@ -254,15 +254,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.002193185966461897,
+              "duration_seconds": 0.0014790080022066832,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
               "payload_size": 2586,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/warmup-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/warmup-01/stderr.bin",
               "output_path": null
             }
           ],
@@ -274,15 +274,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0022181409876793623,
+              "duration_seconds": 0.0014045089483261108,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
               "payload_size": 2586,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-01/stderr.bin",
               "output_path": null
             },
             {
@@ -291,15 +291,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0018962849862873554,
+              "duration_seconds": 0.001400760025717318,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
               "payload_size": 2586,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-02/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-02/stderr.bin",
               "output_path": null
             },
             {
@@ -308,15 +308,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.002389602013863623,
+              "duration_seconds": 0.0014043000992387533,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
               "payload_size": 2586,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-03/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-03/stderr.bin",
               "output_path": null
             },
             {
@@ -325,15 +325,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.002219093032181263,
+              "duration_seconds": 0.0013119670329615474,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
               "payload_size": 2586,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-04/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-04/stderr.bin",
               "output_path": null
             },
             {
@@ -342,19 +342,19 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0017282329499721527,
+              "duration_seconds": 0.0014241209719330072,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
               "payload_size": 2586,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/original/timed-05/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/original/timed-05/stderr.bin",
               "output_path": null
             }
           ],
-          "median_seconds": 0.0022181409876793623
+          "median_seconds": 0.0014043000992387533
         },
         "safe": {
           "warmups": [
@@ -364,15 +364,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0020961289992555976,
+              "duration_seconds": 0.0013222100678831339,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
               "payload_size": 2510,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/warmup-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/warmup-01/stderr.bin",
               "output_path": null
             }
           ],
@@ -384,15 +384,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0021087229251861572,
+              "duration_seconds": 0.0012800219701603055,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
               "payload_size": 2510,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-01/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-01/stderr.bin",
               "output_path": null
             },
             {
@@ -401,15 +401,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0021174310240894556,
+              "duration_seconds": 0.0013078319607302547,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
               "payload_size": 2510,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-02/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-02/stderr.bin",
               "output_path": null
             },
             {
@@ -418,15 +418,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.002114689094014466,
+              "duration_seconds": 0.0013433719286695123,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
               "payload_size": 2510,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-03/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-03/stderr.bin",
               "output_path": null
             },
             {
@@ -435,15 +435,15 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.002051398972980678,
+              "duration_seconds": 0.0012744130799546838,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
               "payload_size": 2510,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-04/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-04/stderr.bin",
               "output_path": null
             },
             {
@@ -452,22 +452,22 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
               ],
-              "duration_seconds": 0.0021202079951763153,
+              "duration_seconds": 0.0013160050148144364,
               "returncode": 0,
               "valid": true,
               "validation_message": "stdout contained expected marker",
               "payload_kind": "stdout",
               "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
               "payload_size": 2510,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffinfo-subifd-chain/safe/timed-05/stderr.bin",
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffinfo-subifd-chain/safe/timed-05/stderr.bin",
               "output_path": null
             }
           ],
-          "median_seconds": 0.002114689094014466
+          "median_seconds": 0.0013078319607302547
         }
       },
-      "slowdown_ratio": 0.9533609927234027,
+      "slowdown_ratio": 0.9313051828730965,
       "passed": true,
       "workload_threshold": 2.0
     },
@@ -484,18 +484,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.005196243990212679,
+              "duration_seconds": 0.0038715300615876913,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
               "payload_size": 590478,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -507,18 +507,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.006650620023719966,
+              "duration_seconds": 0.0037108720280230045,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
               "payload_size": 590478,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-01/output.tiff"
             },
             {
               "implementation": "original",
@@ -527,18 +527,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.005506159970536828,
+              "duration_seconds": 0.0039021490374580026,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
               "payload_size": 590478,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-02/output.tiff"
             },
             {
               "implementation": "original",
@@ -547,18 +547,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.004822104936465621,
+              "duration_seconds": 0.0037974349688738585,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
               "payload_size": 590478,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-03/output.tiff"
             },
             {
               "implementation": "original",
@@ -567,18 +567,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.006036976003088057,
+              "duration_seconds": 0.003999312059022486,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
               "payload_size": 590478,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-04/output.tiff"
             },
             {
               "implementation": "original",
@@ -587,21 +587,21 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.005817653960548341,
+              "duration_seconds": 0.004042822984047234,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
               "payload_size": 590478,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/original/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/original/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.005817653960548341
+          "median_seconds": 0.0039021490374580026
         },
         "safe": {
           "warmups": [
@@ -612,18 +612,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.004659031983464956,
+              "duration_seconds": 0.00349828798789531,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
               "payload_size": 590632,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -635,18 +635,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.004988886066712439,
+              "duration_seconds": 0.0033771569142118096,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
               "payload_size": 590632,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-01/output.tiff"
             },
             {
               "implementation": "safe",
@@ -655,18 +655,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.004169160034507513,
+              "duration_seconds": 0.003271745052188635,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
               "payload_size": 590632,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-02/output.tiff"
             },
             {
               "implementation": "safe",
@@ -675,18 +675,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.0041675090324133635,
+              "duration_seconds": 0.003421484027057886,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
               "payload_size": 590632,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-03/output.tiff"
             },
             {
               "implementation": "safe",
@@ -695,18 +695,18 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.0049466839991509914,
+              "duration_seconds": 0.0034049079986289144,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
               "payload_size": 590632,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-04/output.tiff"
             },
             {
               "implementation": "safe",
@@ -715,24 +715,24 @@
                 "-c",
                 "none",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.005761137930676341,
+              "duration_seconds": 0.003339021001011133,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
               "payload_size": 590632,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-quad-lzw-compat/safe/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-quad-lzw-compat/safe/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.0049466839991509914
+          "median_seconds": 0.0033771569142118096
         }
       },
-      "slowdown_ratio": 0.8502884552254708,
+      "slowdown_ratio": 0.8654607709222221,
       "passed": true,
       "workload_threshold": 2.0
     },
@@ -749,18 +749,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.011765314033254981,
+              "duration_seconds": 0.009891715017147362,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
               "payload_size": 106326,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -772,18 +772,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.013935541035607457,
+              "duration_seconds": 0.009794312994927168,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
               "payload_size": 106326,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-01/output.tiff"
             },
             {
               "implementation": "original",
@@ -792,18 +792,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.012852377025410533,
+              "duration_seconds": 0.00976200494915247,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
               "payload_size": 106326,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-02/output.tiff"
             },
             {
               "implementation": "original",
@@ -812,18 +812,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.016126047004945576,
+              "duration_seconds": 0.009941995027475059,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
               "payload_size": 106326,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-03/output.tiff"
             },
             {
               "implementation": "original",
@@ -832,18 +832,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.012655518017709255,
+              "duration_seconds": 0.009799285908229649,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
               "payload_size": 106326,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-04/output.tiff"
             },
             {
               "implementation": "original",
@@ -852,21 +852,21 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.012692122953012586,
+              "duration_seconds": 0.009814065997488797,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
               "payload_size": 106326,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/original/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/original/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.012852377025410533
+          "median_seconds": 0.009799285908229649
         },
         "safe": {
           "warmups": [
@@ -877,18 +877,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.01861459796782583,
+              "duration_seconds": 0.01507361198309809,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
               "payload_size": 106384,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -900,18 +900,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.019326528068631887,
+              "duration_seconds": 0.014732375042513013,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
               "payload_size": 106384,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-01/output.tiff"
             },
             {
               "implementation": "safe",
@@ -920,18 +920,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.017954202950932086,
+              "duration_seconds": 0.014556470909155905,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
               "payload_size": 106384,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-02/output.tiff"
             },
             {
               "implementation": "safe",
@@ -940,18 +940,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.01840761909261346,
+              "duration_seconds": 0.014439977006986737,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
               "payload_size": 106384,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-03/output.tiff"
             },
             {
               "implementation": "safe",
@@ -960,18 +960,18 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.01844748400617391,
+              "duration_seconds": 0.014867317979224026,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
               "payload_size": 106384,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-04/output.tiff"
             },
             {
               "implementation": "safe",
@@ -980,24 +980,24 @@
                 "-c",
                 "lzw",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.01706082304008305,
+              "duration_seconds": 0.014376578037627041,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
               "payload_size": 106384,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcp-testfax4/safe/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcp-testfax4/safe/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.01840761909261346
+          "median_seconds": 0.014556470909155905
         }
       },
-      "slowdown_ratio": 1.43223460191213,
+      "slowdown_ratio": 1.48546241486138,
       "passed": true,
       "workload_threshold": 2.0
     },
@@ -1012,18 +1012,18 @@
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.003173982026055455,
+              "duration_seconds": 0.001933285966515541,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
               "payload_size": 95992,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -1033,93 +1033,93 @@
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.0031651658937335014,
+              "duration_seconds": 0.0020237580174580216,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
               "payload_size": 95992,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-01/output.tiff"
             },
             {
               "implementation": "original",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.0028734819497913122,
+              "duration_seconds": 0.0018001389689743519,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
               "payload_size": 95992,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-02/output.tiff"
             },
             {
               "implementation": "original",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.002842162037268281,
+              "duration_seconds": 0.001895776018500328,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
               "payload_size": 95992,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-03/output.tiff"
             },
             {
               "implementation": "original",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.003190658986568451,
+              "duration_seconds": 0.0018003591103479266,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
               "payload_size": 95992,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-04/output.tiff"
             },
             {
               "implementation": "original",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.0030626540537923574,
+              "duration_seconds": 0.0018112710677087307,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
               "payload_size": 95992,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/original/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/original/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.0030626540537923574
+          "median_seconds": 0.0018112710677087307
         },
         "safe": {
           "warmups": [
@@ -1128,18 +1128,18 @@
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.0032702600583434105,
+              "duration_seconds": 0.0017841230146586895,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
               "payload_size": 95896,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -1149,96 +1149,96 @@
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.002880059997551143,
+              "duration_seconds": 0.0018374660285189748,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
               "payload_size": 95896,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-01/output.tiff"
             },
             {
               "implementation": "safe",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.002968683955259621,
+              "duration_seconds": 0.0018424349837005138,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
               "payload_size": 95896,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-02/output.tiff"
             },
             {
               "implementation": "safe",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.003024391015060246,
+              "duration_seconds": 0.0017351589631289244,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
               "payload_size": 95896,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-03/output.tiff"
             },
             {
               "implementation": "safe",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.0029089639429003,
+              "duration_seconds": 0.001788653084076941,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
               "payload_size": 95896,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-04/output.tiff"
             },
             {
               "implementation": "safe",
               "command": [
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.0029179819393903017,
+              "duration_seconds": 0.0017285000067204237,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
               "payload_size": 95896,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2rgba-rgb-3c-16b/safe/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2rgba-rgb-3c-16b/safe/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.0029179819393903017
+          "median_seconds": 0.001788653084076941
         }
       },
-      "slowdown_ratio": 0.9527625021105749,
+      "slowdown_ratio": 0.9875126456580563,
       "passed": true,
       "workload_threshold": 2.0
     },
@@ -1254,18 +1254,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.0057943949941545725,
+              "duration_seconds": 0.0037672159960493445,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
               "payload_size": 82646,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -1276,18 +1276,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.0059987870045006275,
+              "duration_seconds": 0.003956008004024625,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
               "payload_size": 82646,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-01/output.tiff"
             },
             {
               "implementation": "original",
@@ -1295,18 +1295,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.006019011954776943,
+              "duration_seconds": 0.003856798051856458,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
               "payload_size": 82646,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-02/output.tiff"
             },
             {
               "implementation": "original",
@@ -1314,18 +1314,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.0058259060606360435,
+              "duration_seconds": 0.0038156959926709533,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
               "payload_size": 82646,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-03/output.tiff"
             },
             {
               "implementation": "original",
@@ -1333,18 +1333,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.005749993026256561,
+              "duration_seconds": 0.003759184037335217,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
               "payload_size": 82646,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-04/output.tiff"
             },
             {
               "implementation": "original",
@@ -1352,21 +1352,21 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.005575399962253869,
+              "duration_seconds": 0.0037278550444170833,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
               "payload_size": 82646,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/original/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/original/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.0058259060606360435
+          "median_seconds": 0.0038156959926709533
         },
         "safe": {
           "warmups": [
@@ -1376,18 +1376,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/warmup-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/warmup-01/output.tiff"
               ],
-              "duration_seconds": 0.00814150704536587,
+              "duration_seconds": 0.004918084945529699,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
               "payload_size": 590084,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/warmup-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/warmup-01/output.tiff"
             }
           ],
           "warmups_valid": true,
@@ -1398,18 +1398,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-01/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-01/output.tiff"
               ],
-              "duration_seconds": 0.007399742025882006,
+              "duration_seconds": 0.005080041009932756,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
               "payload_size": 590084,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-01/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-01/output.tiff"
             },
             {
               "implementation": "safe",
@@ -1417,18 +1417,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-02/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-02/output.tiff"
               ],
-              "duration_seconds": 0.0073690880089998245,
+              "duration_seconds": 0.004920146078802645,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
               "payload_size": 590084,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-02/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-02/output.tiff"
             },
             {
               "implementation": "safe",
@@ -1436,18 +1436,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-03/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-03/output.tiff"
               ],
-              "duration_seconds": 0.007235398981720209,
+              "duration_seconds": 0.004951887996867299,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
               "payload_size": 590084,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-03/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-03/output.tiff"
             },
             {
               "implementation": "safe",
@@ -1455,18 +1455,18 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-04/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-04/output.tiff"
               ],
-              "duration_seconds": 0.007875627023167908,
+              "duration_seconds": 0.004945625085383654,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
               "payload_size": 590084,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-04/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-04/output.tiff"
             },
             {
               "implementation": "safe",
@@ -1474,24 +1474,24 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
                 "-R90",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
-                "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-05/output.tiff"
+                "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-05/output.tiff"
               ],
-              "duration_seconds": 0.008102932944893837,
+              "duration_seconds": 0.004875647951848805,
               "returncode": 0,
               "valid": true,
               "validation_message": "original tiffinfo -D accepted the output",
               "payload_kind": "file",
               "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
               "payload_size": 590084,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiffcrop-quad-tile-r90/safe/timed-05/output.tiff"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiffcrop-quad-tile-r90/safe/timed-05/output.tiff"
             }
           ],
-          "median_seconds": 0.007399742025882006
+          "median_seconds": 0.004945625085383654
         }
       },
-      "slowdown_ratio": 1.2701444116787113,
+      "slowdown_ratio": 1.296126603084477,
       "passed": true,
       "workload_threshold": 2.0
     },
@@ -1507,16 +1507,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002654426032677293,
+              "duration_seconds": 0.0017154120141640306,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/warmup-01/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/warmup-01/output.pdf"
             }
           ],
           "warmups_valid": true,
@@ -1527,16 +1527,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002905053086578846,
+              "duration_seconds": 0.0015077469870448112,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-01/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-01/output.pdf"
             },
             {
               "implementation": "original",
@@ -1544,16 +1544,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0036179639864712954,
+              "duration_seconds": 0.0014863279648125172,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-02/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-02/output.pdf"
             },
             {
               "implementation": "original",
@@ -1561,16 +1561,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0027430240297690034,
+              "duration_seconds": 0.0015707439742982388,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-03/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-03/output.pdf"
             },
             {
               "implementation": "original",
@@ -1578,16 +1578,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0028571499278768897,
+              "duration_seconds": 0.0013212640769779682,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-04/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-04/output.pdf"
             },
             {
               "implementation": "original",
@@ -1595,19 +1595,19 @@
                 "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002898306935094297,
+              "duration_seconds": 0.0014437770005315542,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/original/timed-05/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/original/timed-05/output.pdf"
             }
           ],
-          "median_seconds": 0.002898306935094297
+          "median_seconds": 0.0014863279648125172
         },
         "safe": {
           "warmups": [
@@ -1617,16 +1617,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0031026119831949472,
+              "duration_seconds": 0.0015802200650796294,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/warmup-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/warmup-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/warmup-01/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/warmup-01/output.pdf"
             }
           ],
           "warmups_valid": true,
@@ -1637,16 +1637,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002792126964777708,
+              "duration_seconds": 0.0016455560689792037,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-01/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-01/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-01/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-01/output.pdf"
             },
             {
               "implementation": "safe",
@@ -1654,16 +1654,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002882384927943349,
+              "duration_seconds": 0.001652890001423657,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-02/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-02/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-02/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-02/output.pdf"
             },
             {
               "implementation": "safe",
@@ -1671,16 +1671,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0036675630835816264,
+              "duration_seconds": 0.0014200500445440412,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-03/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-03/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-03/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-03/output.pdf"
             },
             {
               "implementation": "safe",
@@ -1688,16 +1688,16 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.002850163960829377,
+              "duration_seconds": 0.0012712720781564713,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-04/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-04/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-04/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-04/output.pdf"
             },
             {
               "implementation": "safe",
@@ -1705,22 +1705,22 @@
                 "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
                 "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
               ],
-              "duration_seconds": 0.0028709740145131946,
+              "duration_seconds": 0.001333150896243751,
               "returncode": 0,
               "valid": true,
               "validation_message": "qpdf --check accepted the output",
               "payload_kind": "file",
-              "payload_sha256": "3faddfd99c731b712f5b2b72efd2c68057abde13f5264d9f9b80a80877e315e0",
+              "payload_sha256": "033cc042b574134afadad937495094bd93fd4fe8652c2453c22a620b73894bcc",
               "payload_size": 72309,
-              "stdout_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-05/stdout.bin",
-              "stderr_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-05/stderr.bin",
-              "output_path": "/tmp/libtiff-perf-zsgd7w1m/tiff2pdf-rgb-3c-8b/safe/timed-05/output.pdf"
+              "stdout_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hldn1fk7/tiff2pdf-rgb-3c-8b/safe/timed-05/output.pdf"
             }
           ],
-          "median_seconds": 0.0028709740145131946
+          "median_seconds": 0.0014200500445440412
         }
       },
-      "slowdown_ratio": 0.9905693492120726,
+      "slowdown_ratio": 0.9554082801120974,
       "passed": true,
       "workload_threshold": 2.0
     }

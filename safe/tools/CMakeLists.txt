@@ -110,27 +110,49 @@ add_executable(tiffsplit ../placeholder.h)
 target_sources(tiffsplit PRIVATE tiffsplit.c ${MSVC_RESSOURCE_FILE})
 target_link_libraries(tiffsplit PRIVATE tiff tiff_port)
 
+set(_safe_installed_tools
+    fax2ps
+    fax2tiff
+    pal2rgb
+    ppm2tiff
+    raw2tiff
+    tiff2bw
+    tiff2pdf
+    tiff2ps
+    tiff2rgba
+    tiffcmp
+    tiffcp
+    tiffcrop
+    tiffdither
+    tiffdump
+    tiffinfo
+    tiffmedian
+    tiffset
+    tiffsplit)
+
+set(_safe_tool_manpages)
+foreach(_tool IN LISTS _safe_installed_tools)
+  set(_page "${CMAKE_CURRENT_BINARY_DIR}/${_tool}.1")
+  file(
+    WRITE
+    "${_page}"
+    ".TH ${_tool} 1 \"libtiff-safe\" \"libtiff-safe\" \"TIFF Tools\"\n"
+    ".SH NAME\n"
+    "${_tool} \\- compatibility-installed libtiff tool\n"
+    ".SH SYNOPSIS\n"
+    ".B ${_tool}\n"
+    "[options]\n"
+    ".SH DESCRIPTION\n"
+    "Compatibility-installed command-line tool shipped by libtiff-safe.\n")
+  list(APPEND _safe_tool_manpages "${_page}")
+endforeach()
+
 # rgb2ycbcr and thumbnail are intended to *NOT* be installed. They are for
 # testing purposes only.
-install(TARGETS fax2ps
-                fax2tiff
-                pal2rgb
-                ppm2tiff
-                raw2tiff
-                tiff2bw
-                tiff2pdf
-                tiff2ps
-                tiff2rgba
-                tiffcmp
-                tiffcp
-                tiffcrop
-                tiffdither
-                tiffdump
-                tiffinfo
-                tiffmedian
-                tiffset
-                tiffsplit
+install(TARGETS ${_safe_installed_tools}
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(FILES ${_safe_tool_manpages}
+        DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 
 if(OPENGL_SUPPORT)
   add_executable(tiffgt ../placeholder.h)

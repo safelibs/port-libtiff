@@ -1,0 +1,4 @@
+/libtiff*.deb
+/libtiff*.ddeb
+/tiff_*.buildinfo
+/tiff_*.changes

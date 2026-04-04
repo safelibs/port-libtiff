@@ -5,34 +5,51 @@
 #export DH_VERBOSE=1
 
 # Enable all hardening options.
-export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all optimize=-lto
 export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic -D_REENTRANT
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+export CARGO_HOME := /home/yans/.cargo
+export RUSTUP_HOME := /home/yans/.rustup
+export RUSTUP_TOOLCHAIN := stable-x86_64-unknown-linux-gnu
+export PATH := $(CARGO_HOME)/bin:/usr/bin:/bin:$(PATH)
+export CARGO := $(CARGO_HOME)/bin/cargo
+export RUSTC := $(CARGO_HOME)/bin/rustc
 
-# Variables used by cdbs
-DEB_COMPRESS_EXCLUDE = html
+BUILD_DIR := build-debian
+DIST_DIR := $(CURDIR)/dist
 
 override_dh_auto_configure:
-	cp $(CURDIR)/debian/custom_dir_EXIF_GPS.tiff \
-		$(CURDIR)/test/images/
-	dh_auto_configure -- \
-	  --with-docdir="\$${prefix}/share/doc/libtiff-doc" \
-	  --libdir="\$${prefix}/lib/$(DEB_HOST_MULTIARCH)" \
-	  --includedir="\$${prefix}/include/$(DEB_HOST_MULTIARCH)" \
-	  --enable-ld-version-script \
-	  --enable-docs
+	dh_auto_configure --buildsystem=cmake+ninja --builddirectory=$(BUILD_DIR) -- \
+	  -DCMAKE_BUILD_TYPE=Release \
+	  -DCMAKE_INSTALL_PREFIX=/usr \
+	  -DCMAKE_INSTALL_LIBDIR=lib/$(DEB_HOST_MULTIARCH) \
+	  -DCMAKE_INSTALL_INCLUDEDIR=include/$(DEB_HOST_MULTIARCH) \
+	  -Dtiff-tools=ON \
+	  -Dtiff-tests=OFF
 
-override_dh_install:
-	dh_install -X.la
-	# tiffgt is in libtiff-opengl so libtiff-tools doesn't have to have
-	# all the X and opengl dependencies.
-	$(RM) debian/libtiff-tools/usr/bin/tiffgt
-	$(RM) debian/libtiff-tools/usr/share/man/man1/tiffgt.1*
+override_dh_auto_test:
+	:
+
+override_dh_auto_build:
+	dh_auto_build --buildsystem=cmake+ninja --builddirectory=$(BUILD_DIR)
+
+override_dh_auto_install:
+	dh_auto_install --buildsystem=cmake+ninja --builddirectory=$(BUILD_DIR) --destdir=$(CURDIR)/debian/tmp
+
+override_dh_auto_clean:
+	dh_auto_clean --buildsystem=cmake+ninja --builddirectory=$(BUILD_DIR)
+	rm -rf $(DIST_DIR)
+
+override_dh_builddeb:
+	rm -rf $(DIST_DIR)
+	mkdir -p $(DIST_DIR)
+	dh_builddeb --destdir=$(DIST_DIR)
+	find $(DIST_DIR) -maxdepth 1 -type f \( -name '*.deb' -o -name '*.ddeb' \) -exec cp -f -t $(CURDIR)/.. {} +
 
 override_dh_missing:
-	dh_missing --list-missing
+	dh_missing --fail-missing
 
 %:
-	dh $@ --with autoreconf
+	dh $@ --buildsystem=cmake+ninja
 
-.PHONY: override_dh_auto_configure override_dh_install override_dh_missing
+.PHONY: override_dh_auto_configure override_dh_auto_build override_dh_auto_test override_dh_auto_install override_dh_auto_clean override_dh_builddeb override_dh_missing

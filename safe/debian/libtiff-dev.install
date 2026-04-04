@@ -1,6 +1,5 @@
 debian/tmp/usr/include
-debian/tmp/usr/lib/*/lib*.a
-debian/tmp/usr/lib/*/lib*.la
-debian/tmp/usr/lib/*/lib*.so
-debian/tmp/usr/lib/*/pkgconfig
-debian/tmp/usr/share/man/man3
+debian/tmp/usr/lib/*/libtiff.so
+debian/tmp/usr/lib/*/libtiffxx.so
+debian/tmp/usr/lib/*/pkgconfig/libtiff-4.pc
+debian/tmp/usr/lib/*/cmake/tiff

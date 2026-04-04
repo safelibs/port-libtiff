@@ -2,3 +2,15 @@ libtiffxx.so.6 libtiffxx6 #MINVER#
  LIBTIFFXX_4.0@LIBTIFFXX_4.0 4.0
  (c++)"TIFFStreamOpen(char const*, std::basic_istream<char, std::char_traits<char> >*)@LIBTIFFXX_4.0" 4.0
  (c++)"TIFFStreamOpen(char const*, std::basic_ostream<char, std::char_traits<char> >*)@LIBTIFFXX_4.0" 4.0
+ _ZN11tiffis_dataC1Ev@LIBTIFFXX_4.0 4.0
+ _ZN11tiffis_dataC2Ev@LIBTIFFXX_4.0 4.0
+ _ZN11tiffos_dataC1Ev@LIBTIFFXX_4.0 4.0
+ _ZN11tiffos_dataC2Ev@LIBTIFFXX_4.0 4.0
+ _ZNKSt4fposI11__mbstate_tEcvlEv@LIBTIFFXX_4.0 4.0
+ _ZNKSt4fposI11__mbstate_tEmiERKS1_@LIBTIFFXX_4.0 4.0
+ _ZNSt4fposI11__mbstate_tEC1El@LIBTIFFXX_4.0 4.0
+ _ZNSt4fposI11__mbstate_tEC1Ev@LIBTIFFXX_4.0 4.0
+ _ZNSt4fposI11__mbstate_tEC2El@LIBTIFFXX_4.0 4.0
+ _ZNSt4fposI11__mbstate_tEC2Ev@LIBTIFFXX_4.0 4.0
+ _ZStanSt12_Ios_IostateS_@LIBTIFFXX_4.0 4.0
+ _ZStcoSt12_Ios_Iostate@LIBTIFFXX_4.0 4.0
