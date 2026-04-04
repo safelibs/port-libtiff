@@ -883,6 +883,11 @@ unsafe fn make_handle(
 ) -> *mut TIFF {
     let module = MODULE_TIFF_CLIENT_OPEN_EXT;
     let name = c_name(name_ptr);
+    let name_bytes = if name_ptr.is_null() {
+        b"<null>".as_slice()
+    } else {
+        CStr::from_ptr(name_ptr).to_bytes()
+    };
     let mode = if mode_ptr.is_null() {
         Vec::new()
     } else {
@@ -894,7 +899,7 @@ unsafe fn make_handle(
         None => return ptr::null_mut(),
     };
 
-    let alloc_size = (mem::size_of::<TIFF>() + name.len() + 1) as Tmsize;
+    let alloc_size = (mem::size_of::<TIFF>() + name_bytes.len() + 1) as Tmsize;
     if !opts.is_null()
         && (*opts).max_single_mem_alloc > 0
         && alloc_size > (*opts).max_single_mem_alloc
@@ -911,7 +916,7 @@ unsafe fn make_handle(
         return ptr::null_mut();
     }
 
-    let Some(size_to_alloc) = mem::size_of::<TIFF>().checked_add(name.len() + 1) else {
+    let Some(size_to_alloc) = mem::size_of::<TIFF>().checked_add(name_bytes.len() + 1) else {
         emit_early_tiff_structure_oom(opts, clientdata, name_ptr);
         return ptr::null_mut();
     };
@@ -921,8 +926,8 @@ unsafe fn make_handle(
         return ptr::null_mut();
     }
     let name_owner = tif.cast::<u8>().add(mem::size_of::<TIFF>()).cast::<c_char>();
-    ptr::copy_nonoverlapping(name.as_bytes().as_ptr(), name_owner.cast::<u8>(), name.len());
-    *name_owner.add(name.len()) = 0;
+    ptr::copy_nonoverlapping(name_bytes.as_ptr(), name_owner.cast::<u8>(), name_bytes.len());
+    *name_owner.add(name_bytes.len()) = 0;
 
     ptr::write(tif, TIFF {
         tif_name: name_owner,

@@ -211,6 +211,18 @@ static TIFF *open_client_read(const char *path, const char *mode,
                           NULL, NULL);
 }
 
+static TIFF *open_client_read_named(const char *path, const char *name,
+                                    const char *mode, ClientFile *client)
+{
+    client->fd = open(path, O_RDONLY);
+    client->close_called = 0;
+    if (client->fd < 0)
+        fail("client named open failed");
+    return TIFFClientOpen(name, mode, (thandle_t)client, client_read,
+                          client_write, client_seek, client_close, client_size,
+                          NULL, NULL);
+}
+
 static TIFF *open_client_rw(const char *path, const char *mode,
                             ClientFile *client)
 {
@@ -247,6 +259,9 @@ int main(void)
     char read_path[] = "api_open_mode_readXXXXXX";
     char big_read_path[] = "api_open_mode_big_readXXXXXX";
     char invalid_path[] = "api_open_mode_invalidXXXXXX";
+    static const char non_utf8_name[] = {'a', 'p', 'i', '_', 'o', 'p', 'e',
+                                         'n', '_', (char)0xff, '_', 'n', 'a',
+                                         'm', 'e', '\0'};
     char stderr_path[] = "api_open_mode_stderrXXXXXX";
     char stderr_buffer[512];
     TIFF *tif;
@@ -432,6 +447,21 @@ int main(void)
     expect(TIFFIsBigTIFF(tif), "BigTIFF rh should preserve BigTIFF state");
     expect((tif->tif_flags & TIFF_HEADERONLY) != 0,
            "BigTIFF rh should enable header-only mode");
+    TIFFClose(tif);
+
+    fd = open(read_path, O_RDONLY);
+    if (fd < 0)
+        fail("open non-UTF-8 fd failed");
+    tif = TIFFFdOpen(fd, non_utf8_name, "rh");
+    expect(tif != NULL, "TIFFFdOpen(non-UTF-8 rh) failed");
+    expect(memcmp(TIFFFileName(tif), non_utf8_name, sizeof(non_utf8_name)) == 0,
+           "TIFFFdOpen should preserve non-UTF-8 tif_name bytes");
+    TIFFClose(tif);
+
+    tif = open_client_read_named(read_path, non_utf8_name, "rh", &client);
+    expect(tif != NULL, "TIFFClientOpen(non-UTF-8 rh) failed");
+    expect(memcmp(TIFFFileName(tif), non_utf8_name, sizeof(non_utf8_name)) == 0,
+           "TIFFClientOpen should preserve non-UTF-8 tif_name bytes");
     TIFFClose(tif);
 
     g_warning_count = 0;
