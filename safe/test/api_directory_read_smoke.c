@@ -57,6 +57,8 @@ int main(void)
     void *subifd_ptr = NULL;
     uint64_t *subifd_offsets = NULL;
     uint64_t first_subifd_offset = 0;
+    tdir_t saved_main_dir = 0;
+    toff_t saved_main_offset = 0;
     toff_t exif_offset = 0;
     toff_t gps_offset = 0;
     char *date_time_original = NULL;
@@ -88,6 +90,26 @@ int main(void)
     expect_contains(print_buffer, "PageName: 1 th. IFD",
                     "missing printed second-directory PageName");
     expect_contains(print_buffer, "SubIFD:", "missing printed SubIFD line");
+    saved_main_dir = TIFFCurrentDirectory(tif);
+    saved_main_offset = TIFFCurrentDirOffset(tif);
+    expect(TIFFNumberOfDirectories(tif) == 5,
+           "unexpected directory count for loop-subifd image");
+    expect(TIFFCurrentDirectory(tif) == saved_main_dir,
+           "TIFFNumberOfDirectories changed current directory");
+    expect(TIFFCurrentDirOffset(tif) == saved_main_offset,
+           "TIFFNumberOfDirectories changed current directory offset");
+    expect(TIFFGetField(tif, TIFFTAG_PAGENAME, &page_name) == 1,
+           "PageName should remain readable after TIFFNumberOfDirectories");
+    expect(strcmp(page_name, "1 th. IFD") == 0,
+           "unexpected PageName after TIFFNumberOfDirectories");
+
+    TIFFFreeDirectory(tif);
+    expect(TIFFCurrentDirectory(tif) == saved_main_dir,
+           "TIFFFreeDirectory changed current directory");
+    expect(TIFFCurrentDirOffset(tif) == saved_main_offset,
+           "TIFFFreeDirectory changed current directory offset");
+    expect(TIFFSetDirectory(tif, saved_main_dir) == 1,
+           "failed to reload current directory after TIFFFreeDirectory");
 
     expect(TIFFSetSubDirectory(tif, first_subifd_offset) == 1,
            "TIFFSetSubDirectory failed");

@@ -3,8 +3,8 @@ use super::{reset_default_directory, reset_field_registry_with_array};
 use crate::abi::{TIFFDataType, TIFFFieldArray};
 use crate::{
     emit_error_message, emit_warning_message, parse_u16, parse_u32, parse_u64, read_from_proc,
-    seek_in_proc, tif_inner, TIFF, TIFF_BIGENDIAN, TIFF_ISTILED, TIFF_NON_EXISTENT_DIR_NUMBER,
-    TIFF_VERSION_BIG, TIFF_VERSION_CLASSIC,
+    seek_in_proc, tif_inner, TIFF, TIFF_BIGENDIAN, TIFF_ISTILED, TIFF_VERSION_BIG,
+    TIFF_VERSION_CLASSIC,
 };
 use libc::{c_int, c_void};
 use std::collections::HashSet;
@@ -950,6 +950,72 @@ unsafe fn load_directory(
     })
 }
 
+unsafe fn read_directory_next_offset(tif: *mut TIFF, offset: u64, module_name: &str) -> Option<u64> {
+    if offset == 0 {
+        return Some(0);
+    }
+
+    let inner = tif_inner(tif);
+    let big_endian = (*inner).header_magic == TIFF_BIGENDIAN;
+    let (count_size, entry_size, next_size) = if (*inner).header_version == TIFF_VERSION_CLASSIC {
+        (2usize, 12usize, 4usize)
+    } else if (*inner).header_version == TIFF_VERSION_BIG {
+        (8usize, 20usize, 8usize)
+    } else {
+        emit_error_message(tif, module_name, "TIFF header is not initialized");
+        return None;
+    };
+
+    let mut count_bytes = [0u8; 8];
+    if !read_exact_at(tif, offset, &mut count_bytes[..count_size]) {
+        emit_error_message(
+            tif,
+            module_name,
+            format!("Cannot read TIFF directory at offset {}", offset),
+        );
+        return None;
+    }
+    let entry_count = if count_size == 2 {
+        parse_u16(&count_bytes[..2], big_endian) as u64
+    } else {
+        parse_u64(&count_bytes[..8], big_endian)
+    };
+    let Some(entries_len_u64) = entry_count.checked_mul(entry_size as u64) else {
+        emit_error_message(
+            tif,
+            module_name,
+            format!("Directory at offset {} is too large", offset),
+        );
+        return None;
+    };
+
+    let entries_offset = offset + count_size as u64;
+    let Some(next_offset_offset) = entries_offset.checked_add(entries_len_u64) else {
+        emit_error_message(
+            tif,
+            module_name,
+            format!("Directory at offset {} overflows file addressing", offset),
+        );
+        return None;
+    };
+
+    let mut next_bytes = [0u8; 8];
+    if !read_exact_at(tif, next_offset_offset, &mut next_bytes[..next_size]) {
+        emit_error_message(
+            tif,
+            module_name,
+            format!("Cannot read next IFD offset for directory {}", offset),
+        );
+        return None;
+    }
+
+    Some(if next_size == 4 {
+        parse_u32(&next_bytes[..4], big_endian) as u64
+    } else {
+        parse_u64(&next_bytes[..8], big_endian)
+    })
+}
+
 unsafe fn ensure_main_chain_initialized(tif: *mut TIFF) {
     let state = directory_state_mut(tif);
     if state.first_ifd_offset == 0 {
@@ -979,9 +1045,8 @@ unsafe fn load_main_directory_at_index(
         {
             *next
         } else {
-            match load_directory(tif, current_offset, DirectoryKind::Main, module_name) {
-                Some(current) => {
-                    let next = current.next_offset;
+            match read_directory_next_offset(tif, current_offset, module_name) {
+                Some(next) => {
                     state.main_next_offsets.push(next);
                     next
                 }
@@ -1169,14 +1234,41 @@ pub(crate) unsafe fn number_of_directories(tif: *mut TIFF) -> u32 {
         return 0;
     }
     ensure_main_chain_initialized(tif);
-    if directory_state(tif).first_ifd_offset == 0 {
+    let state = directory_state_mut(tif);
+    if state.first_ifd_offset == 0 {
         return 0;
     }
-    let mut index = directory_state(tif).main_offsets.len();
-    while load_main_directory_at_index(tif, index, "TIFFNumberOfDirectories") {
-        index += 1;
+    if state.main_offsets.is_empty() {
+        state.main_offsets.push(state.first_ifd_offset);
     }
-    directory_state(tif).main_offsets.len() as u32
+
+    let mut seen: HashSet<u64> = state.main_offsets.iter().copied().collect();
+    while !state.main_complete {
+        let current_index = state.main_offsets.len().saturating_sub(1);
+        let current_offset = state.main_offsets[current_index];
+        let current_next = if let Some(next) = state.main_next_offsets.get(current_index) {
+            *next
+        } else {
+            match read_directory_next_offset(tif, current_offset, "TIFFNumberOfDirectories") {
+                Some(next) => {
+                    state.main_next_offsets.push(next);
+                    next
+                }
+                None => {
+                    state.main_complete = true;
+                    0
+                }
+            }
+        };
+
+        if current_next == 0 || !seen.insert(current_next) {
+            state.main_complete = true;
+            break;
+        }
+        state.main_offsets.push(current_next);
+    }
+
+    state.main_offsets.len() as u32
 }
 
 pub(crate) unsafe fn last_directory(tif: *mut TIFF) -> bool {
@@ -1211,20 +1303,14 @@ pub(crate) unsafe fn free_directory_state(tif: *mut TIFF) {
     if tif.is_null() {
         return;
     }
-    let first_ifd = directory_state(tif).first_ifd_offset;
     let state = directory_state_mut(tif);
-    state.main_offsets.clear();
-    state.main_next_offsets.clear();
-    state.main_complete = false;
-    state.subifd_seed_offsets.clear();
-    state.current = None;
-    state.active_chain = ActiveChain::None;
     state.default_cache = DefaultCache::default();
-    state.first_ifd_offset = first_ifd;
-    let _ = reset_default_directory(tif);
-    (*tif_inner(tif)).current_diroff = 0;
-    (*tif_inner(tif)).next_diroff = first_ifd;
-    (*tif).tif_curdir = TIFF_NON_EXISTENT_DIR_NUMBER;
+    if let Some(current) = state.current.as_mut() {
+        current.tags.clear();
+        if matches!(current.kind, DirectoryKind::Main) {
+            state.subifd_seed_offsets.clear();
+        }
+    }
 }
 
 pub(crate) unsafe fn current_tag_count(tif: *mut TIFF) -> u32 {

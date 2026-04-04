@@ -2198,9 +2198,7 @@
           "demangled_name": "TIFFFreeDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFFreeDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -2208,7 +2206,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "safe/build/libtiff/libtiff.so.6"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -2223,7 +2223,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
@@ -4112,9 +4112,7 @@
           "demangled_name": "TIFFReadCustomDirectory",
           "linux_excluded": false,
           "linux_required": true,
-          "mismatch_flags": [
-            "missing_from_original_linux_dso"
-          ],
+          "mismatch_flags": [],
           "name": "TIFFReadCustomDirectory",
           "notes": [],
           "owning_library": "libtiff.so.6",
@@ -4122,7 +4120,9 @@
             "debian_symbols": [
               "original/debian/libtiff6.symbols"
             ],
-            "observed_export": [],
+            "observed_export": [
+              "safe/build/libtiff/libtiff.so.6"
+            ],
             "public_header": [
               "original/libtiff/tiffio.h",
               "original/libtiff/tiffio.hxx"
@@ -4137,7 +4137,7 @@
           "required_version_node": "LIBTIFF_4.0",
           "source_provenance": {
             "debian_symbols": true,
-            "observed_export": false,
+            "observed_export": true,
             "public_header": true,
             "safe_version_script": true,
             "upstream_version_script": true
