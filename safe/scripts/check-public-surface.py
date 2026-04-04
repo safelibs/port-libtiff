@@ -38,22 +38,15 @@ HEADER_REGEX = (
     r")\s*\("
 )
 
-PUBLIC_HEADER_TARGETS = [
-    {
-        "language": "c",
-        "compiler": CC,
-        "source": SAFE_ROOT / "include" / "tiffio.h",
-        "include_dir": SAFE_ROOT / "include",
-    },
-    {
-        "language": "c++",
-        "compiler": CXX,
-        "source": SAFE_ROOT / "include" / "tiffio.hxx",
-        "include_dir": SAFE_ROOT / "include",
-    },
+DEFAULT_C_HEADERS = [
+    SAFE_ROOT / "include" / "tiffio.h",
 ]
 
-CONFIG_HEADERS = [
+DEFAULT_CXX_HEADERS = [
+    SAFE_ROOT / "include" / "tiffio.hxx",
+]
+
+DEFAULT_CONFIG_HEADERS = [
     SAFE_ROOT / "include" / "tif_config.h",
     SAFE_ROOT / "include" / "tiffconf.h",
     SAFE_ROOT / "include" / "tiff.h",
@@ -73,7 +66,7 @@ LINUX_EXCLUDED_SYMBOLS = {
     },
 }
 
-LIBRARIES = [
+DEFAULT_LIBRARY_CONFIGS = [
     {
         "name": "libtiff",
         "soname": "libtiff.so.6",
@@ -140,6 +133,75 @@ def write_if_changed(path: Path, text: str) -> None:
         path.write_text(text)
 
 
+def make_header_targets(c_headers: List[Path], cxx_headers: List[Path]) -> List[Dict[str, object]]:
+    targets = []
+    for source in c_headers:
+        targets.append(
+            {
+                "language": "c",
+                "compiler": CC,
+                "source": source,
+                "include_dir": source.parent,
+            }
+        )
+    for source in cxx_headers:
+        targets.append(
+            {
+                "language": "c++",
+                "compiler": CXX,
+                "source": source,
+                "include_dir": source.parent,
+            }
+        )
+    return targets
+
+
+def default_source_config() -> Dict[str, object]:
+    return {
+        "c_headers": list(DEFAULT_C_HEADERS),
+        "cxx_headers": list(DEFAULT_CXX_HEADERS),
+        "config_headers": list(DEFAULT_CONFIG_HEADERS),
+        "libraries": [dict(item) for item in DEFAULT_LIBRARY_CONFIGS],
+    }
+
+
+def library_key_for_path(path: Path) -> str:
+    name = path.name
+    if "tiffxx" in name:
+        return "libtiffxx.so.6"
+    return "libtiff.so.6"
+
+
+def apply_source_overrides(args: argparse.Namespace) -> Dict[str, object]:
+    config = default_source_config()
+    by_soname = {item["soname"]: item for item in config["libraries"]}
+
+    if args.c_headers:
+        config["c_headers"] = [Path(path) for path in args.c_headers]
+    if args.cxx_headers:
+        config["cxx_headers"] = [Path(path) for path in args.cxx_headers]
+    if args.config_headers:
+        config["config_headers"] = [Path(path) for path in args.config_headers]
+
+    for map_path_str in args.maps:
+        map_path = Path(map_path_str)
+        library = by_soname[library_key_for_path(map_path)]
+        field = "safe_map" if map_path.name.endswith("-safe.map") else "upstream_map"
+        library[field] = map_path
+
+    for symbols_path_str in args.debian_symbols:
+        symbols_path = Path(symbols_path_str)
+        library = by_soname[library_key_for_path(symbols_path)]
+        library["debian_symbols"] = symbols_path
+
+    for library_path_str in args.libraries:
+        library_path = Path(library_path_str)
+        library = by_soname[library_key_for_path(library_path)]
+        library["observed_dso"] = library_path
+
+    return config
+
+
 def diff_text(name: str, expected: str, actual: str) -> str:
     diff = difflib.unified_diff(
         actual.splitlines(),
@@ -184,12 +246,12 @@ def preprocess_header(target: Dict[str, object]) -> Tuple[str, List[Path], List[
     return preprocessed, unique_deps, preprocess_args
 
 
-def parse_header_symbols() -> Tuple[Dict[str, Dict[str, object]], Dict[str, object]]:
+def parse_header_symbols(public_header_targets: List[Dict[str, object]]) -> Tuple[Dict[str, Dict[str, object]], Dict[str, object]]:
     pattern = re.compile(HEADER_REGEX, re.S)
     symbols: Dict[str, Dict[str, object]] = {}
     commands = []
     consumed_paths = []
-    for target in PUBLIC_HEADER_TARGETS:
+    for target in public_header_targets:
         text, deps, command = preprocess_header(target)
         commands.append(
             {
@@ -522,19 +584,20 @@ def build_libtiffxx_symbol_records(
     return records
 
 
-def collect_inventory() -> Tuple[Dict[str, object], Dict[str, object], List[str]]:
-    header_symbols, header_metadata = parse_header_symbols()
+def collect_inventory(source_config: Dict[str, object]) -> Tuple[Dict[str, object], Dict[str, object], List[str]]:
+    header_targets = make_header_targets(source_config["c_headers"], source_config["cxx_headers"])
+    header_symbols, header_metadata = parse_header_symbols(header_targets)
 
     config_snapshots = {
         repo_relative(path): parse_config_header(path)
-        for path in CONFIG_HEADERS
+        for path in source_config["config_headers"]
     }
 
     library_records = []
     consumed_source_paths = set(header_metadata["consumed_paths"])
-    consumed_source_paths.update(repo_relative(path) for path in CONFIG_HEADERS)
+    consumed_source_paths.update(repo_relative(path) for path in source_config["config_headers"])
 
-    for library in LIBRARIES:
+    for library in source_config["libraries"]:
         safe_map = parse_version_script(Path(library["safe_map"]))
         upstream_map = parse_version_script(Path(library["upstream_map"]))
         debian_symbols = parse_debian_symbols(Path(library["debian_symbols"]))
@@ -623,14 +686,14 @@ def collect_inventory() -> Tuple[Dict[str, object], Dict[str, object], List[str]
             "header_passes": header_metadata["commands"],
             "linux_excluded_symbols": sorted(LINUX_EXCLUDED_SYMBOLS.keys()),
             "version_script_inputs": sorted(
-                repo_relative(Path(library["safe_map"])) for library in LIBRARIES
+                repo_relative(Path(library["safe_map"])) for library in source_config["libraries"]
             )
-            + sorted(repo_relative(Path(library["upstream_map"])) for library in LIBRARIES),
+            + sorted(repo_relative(Path(library["upstream_map"])) for library in source_config["libraries"]),
             "debian_symbol_inputs": sorted(
-                repo_relative(Path(library["debian_symbols"])) for library in LIBRARIES
+                repo_relative(Path(library["debian_symbols"])) for library in source_config["libraries"]
             ),
             "observed_export_inputs": sorted(
-                repo_relative(Path(library["observed_dso"])) for library in LIBRARIES
+                repo_relative(Path(library["observed_dso"])) for library in source_config["libraries"]
             ),
         },
         "sources": [
@@ -675,6 +738,75 @@ def validate_outputs(
     return 0
 
 
+def load_json(path: Path) -> Dict[str, object]:
+    return json.loads(path.read_text())
+
+
+def parse_symbol_version_assertion(raw_value: str) -> Tuple[str, str]:
+    for separator in ("=", ":", "@"):
+        if separator in raw_value:
+            symbol, version = raw_value.split(separator, 1)
+            return symbol, version
+    raise ValueError(f"expected SYMBOL=VERSION for --must-record-version, got: {raw_value}")
+
+
+def inventory_matches_symbol(symbol: Dict[str, object], requested_name: str) -> bool:
+    return symbol["name"] == requested_name or symbol.get("base_name") == requested_name
+
+
+def run_assertions(
+    inventory_data: Dict[str, object],
+    linux_exclusions_path: Path,
+    must_contain: List[str],
+    must_record_version: List[str],
+    must_record_linux_exclusion: List[str],
+) -> int:
+    failures = []
+    symbols = [
+        symbol
+        for library in inventory_data.get("libraries", [])
+        for symbol in library.get("symbols", [])
+    ]
+    linux_exclusions = set()
+    if linux_exclusions_path.exists():
+        linux_exclusions = {
+            line.strip()
+            for line in linux_exclusions_path.read_text().splitlines()
+            if line.strip()
+        }
+
+    for requested_name in must_contain:
+        if not any(inventory_matches_symbol(symbol, requested_name) for symbol in symbols):
+            failures.append(f"missing required inventory entry: {requested_name}")
+
+    for raw_assertion in must_record_version:
+        requested_name, requested_version = parse_symbol_version_assertion(raw_assertion)
+        if not any(
+            inventory_matches_symbol(symbol, requested_name)
+            and symbol.get("required_version_node") == requested_version
+            for symbol in symbols
+        ):
+            failures.append(
+                f"inventory does not record {requested_name} with version node {requested_version}"
+            )
+
+    for requested_name in must_record_linux_exclusion:
+        if not any(
+            inventory_matches_symbol(symbol, requested_name)
+            and symbol.get("linux_excluded")
+            for symbol in symbols
+        ) or requested_name not in linux_exclusions:
+            failures.append(
+                f"inventory does not record Linux exclusion for {requested_name}"
+            )
+
+    if failures:
+        for failure in failures:
+            print(failure, file=sys.stderr)
+        return 1
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -687,6 +819,11 @@ def main() -> int:
         "--validate",
         action="store_true",
         help="Check the checked-in inventory and manifest without mutating them.",
+    )
+    parser.add_argument(
+        "--validate-existing-inventory",
+        action="store_true",
+        help="Verifier alias for non-mutating validation mode.",
     )
     parser.add_argument(
         "--check",
@@ -712,14 +849,77 @@ def main() -> int:
     parser.add_argument(
         "--platform-excluded",
         "--platform-excluded-linux",
+        "--linux-exclusions",
         "--platform-excluded-path",
         dest="platform_excluded_path",
         default=str(LINUX_EXCLUDED_PATH),
         help="Path to the Linux platform exclusion text file.",
     )
+    parser.add_argument(
+        "--c-header",
+        dest="c_headers",
+        action="append",
+        default=[],
+        help="Override the C public headers used for collection.",
+    )
+    parser.add_argument(
+        "--cxx-header",
+        "--cpp-header",
+        dest="cxx_headers",
+        action="append",
+        default=[],
+        help="Override the C++ public headers used for collection.",
+    )
+    parser.add_argument(
+        "--config-header",
+        dest="config_headers",
+        action="append",
+        default=[],
+        help="Override generated config headers used for collection.",
+    )
+    parser.add_argument(
+        "--map",
+        dest="maps",
+        action="append",
+        default=[],
+        help="Override a safe or upstream version-script input.",
+    )
+    parser.add_argument(
+        "--library",
+        dest="libraries",
+        action="append",
+        default=[],
+        help="Override an observed shared-library input.",
+    )
+    parser.add_argument(
+        "--debian-symbols",
+        dest="debian_symbols",
+        action="append",
+        default=[],
+        help="Override a Debian symbols input file.",
+    )
+    parser.add_argument(
+        "--must-contain",
+        action="append",
+        default=[],
+        help="Assert that the inventory contains the specified symbol name or base name.",
+    )
+    parser.add_argument(
+        "--must-record-version",
+        action="append",
+        default=[],
+        help="Assert that SYMBOL=VERSION is recorded in the inventory.",
+    )
+    parser.add_argument(
+        "--must-record-linux-exclusion",
+        action="append",
+        default=[],
+        help="Assert that the inventory and Linux exclusions file record the specified symbol.",
+    )
     args = parser.parse_args()
 
-    inventory, manifest, platform_excluded_lines = collect_inventory()
+    source_config = apply_source_overrides(args)
+    inventory, manifest, platform_excluded_lines = collect_inventory(source_config)
 
     inventory_text = json.dumps(inventory, indent=2, sort_keys=True) + "\n"
     manifest_text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
@@ -730,8 +930,9 @@ def main() -> int:
     exclusions_path = Path(args.platform_excluded_path)
 
     validate_mode = args.validate or args.check or args.mode in {"validate", "check"}
+    validate_mode = validate_mode or args.validate_existing_inventory
     if validate_mode:
-        return validate_outputs(
+        result = validate_outputs(
             inventory_text,
             manifest_text,
             excluded_text,
@@ -739,11 +940,27 @@ def main() -> int:
             inputs_path,
             exclusions_path,
         )
+        if result != 0:
+            return result
+        inventory_data = load_json(inventory_path)
+        return run_assertions(
+            inventory_data,
+            exclusions_path,
+            args.must_contain,
+            args.must_record_version,
+            args.must_record_linux_exclusion,
+        )
 
     write_if_changed(inventory_path, inventory_text)
     write_if_changed(inputs_path, manifest_text)
     write_if_changed(exclusions_path, excluded_text)
-    return 0
+    return run_assertions(
+        inventory,
+        exclusions_path,
+        args.must_contain,
+        args.must_record_version,
+        args.must_record_linux_exclusion,
+    )
 
 
 if __name__ == "__main__":
