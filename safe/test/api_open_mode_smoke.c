@@ -87,6 +87,19 @@ static void write_empty_classic_tiff(const char *path)
     close(fd);
 }
 
+static void write_empty_big_tiff(const char *path)
+{
+    static const unsigned char big_le[] = {
+        'I', 'I', 43, 0, 8, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0,
+        0,   0,   0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0,
+    };
+    int fd = open(path, O_WRONLY | O_TRUNC);
+    if (fd < 0)
+        fail("open for BigTIFF write failed");
+    write_full(fd, big_le, sizeof(big_le));
+    close(fd);
+}
+
 static void capture_warning(const char *module, const char *fmt, va_list ap)
 {
     (void)module;
@@ -162,6 +175,7 @@ int main(void)
                                            0,   0,   0,  0, 0, 0, 0, 0};
     char path[] = "api_open_mode_smokeXXXXXX";
     char read_path[] = "api_open_mode_readXXXXXX";
+    char big_read_path[] = "api_open_mode_big_readXXXXXX";
     TIFF *tif;
     int fd;
     ClientFile client;
@@ -177,6 +191,12 @@ int main(void)
         fail("mkstemp read path failed");
     close(fd);
     write_empty_classic_tiff(read_path);
+
+    fd = mkstemp(big_read_path);
+    if (fd < 0)
+        fail("mkstemp big read path failed");
+    close(fd);
+    write_empty_big_tiff(big_read_path);
 
     tif = TIFFOpen(path, "wb");
     expect(tif != NULL, "TIFFOpen(wb) failed");
@@ -289,6 +309,13 @@ int main(void)
            "rh should skip the first directory");
     TIFFClose(tif);
 
+    tif = TIFFOpen(big_read_path, "rh");
+    expect(tif != NULL, "TIFFOpen(BigTIFF rh) failed");
+    expect(TIFFIsBigTIFF(tif), "BigTIFF rh should preserve BigTIFF state");
+    expect((tif->tif_flags & TIFF_HEADERONLY) != 0,
+           "BigTIFF rh should enable header-only mode");
+    TIFFClose(tif);
+
     g_warning_count = 0;
     g_warning_buffer[0] = '\0';
     previous_warning_handler = TIFFSetWarningHandler(capture_warning);
@@ -308,5 +335,6 @@ int main(void)
 
     unlink(path);
     unlink(read_path);
+    unlink(big_read_path);
     return 0;
 }

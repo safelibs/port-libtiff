@@ -4,14 +4,27 @@ project(libtiff_safe VERSION 4.5.1 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 
-option(SAFE_BUILD_UPSTREAM_TOOLS "Build copied upstream tools" OFF)
-option(SAFE_BUILD_UPSTREAM_TESTS "Build copied upstream tests" OFF)
+set(_safe_default_tools OFF)
+set(_safe_default_tests OFF)
+if(DEFINED SAFE_BUILD_UPSTREAM_TOOLS)
+  set(_safe_default_tools "${SAFE_BUILD_UPSTREAM_TOOLS}")
+endif()
+if(DEFINED SAFE_BUILD_UPSTREAM_TESTS)
+  set(_safe_default_tests "${SAFE_BUILD_UPSTREAM_TESTS}")
+endif()
+
+set(tiff-tools "${_safe_default_tools}" CACHE BOOL "Build copied upstream tools")
+set(tiff-tests "${_safe_default_tests}" CACHE BOOL "Build copied upstream tests")
+set(SAFE_BUILD_UPSTREAM_TOOLS "${tiff-tools}" CACHE BOOL "Build copied upstream tools" FORCE)
+set(SAFE_BUILD_UPSTREAM_TESTS "${tiff-tests}" CACHE BOOL "Build copied upstream tests" FORCE)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+enable_testing()
 
 set(LIBTIFF_SONAME_VERSION 6)
 set(LIBTIFF_SHARED_VERSION 6.0.1)
@@ -22,7 +35,6 @@ set(OJPEG_SUPPORT OFF)
 set(OPENGL_SUPPORT OFF)
 set(WEBP_SUPPORT OFF)
 set(EMSCRIPTEN OFF)
-set(tiff-tools ${SAFE_BUILD_UPSTREAM_TOOLS})
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
 
@@ -132,10 +144,10 @@ install(
     PATTERN "*.h"
     PATTERN "*.hxx")
 
-if(SAFE_BUILD_UPSTREAM_TOOLS)
+if(tiff-tools)
   add_subdirectory(tools)
 endif()
 
-if(SAFE_BUILD_UPSTREAM_TESTS)
+if(tiff-tests)
   add_subdirectory(test)
 endif()

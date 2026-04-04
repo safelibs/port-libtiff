@@ -968,11 +968,25 @@ def main() -> int:
         help="Assert that the inventory contains the specified symbol names or base names.",
     )
     parser.add_argument(
+        "--must-export",
+        action="append",
+        nargs="+",
+        default=[],
+        help="Verifier compatibility alias for --must-contain.",
+    )
+    parser.add_argument(
         "--must-record-version",
         action="append",
         nargs="+",
         default=[],
         help="Assert that the listed SYMBOL=VERSION assertions are recorded in the inventory.",
+    )
+    parser.add_argument(
+        "--must-export-version",
+        action="append",
+        nargs="+",
+        default=[],
+        help="Verifier compatibility alias for --must-record-version.",
     )
     parser.add_argument(
         "--must-record-linux-exclusion",
@@ -981,11 +995,24 @@ def main() -> int:
         default=[],
         help="Assert that the inventory and Linux exclusions file record the listed symbols.",
     )
+    parser.add_argument(
+        "--must-export-linux-exclusion",
+        action="append",
+        nargs="+",
+        default=[],
+        help="Verifier compatibility alias for --must-record-linux-exclusion.",
+    )
     args = parser.parse_args()
 
-    must_contain = flatten_cli_values(args.must_contain)
-    must_record_version = flatten_cli_values(args.must_record_version)
-    must_record_linux_exclusion = flatten_cli_values(args.must_record_linux_exclusion)
+    must_contain = flatten_cli_values(args.must_contain) + flatten_cli_values(
+        args.must_export
+    )
+    must_record_version = flatten_cli_values(
+        args.must_record_version
+    ) + flatten_cli_values(args.must_export_version)
+    must_record_linux_exclusion = flatten_cli_values(
+        args.must_record_linux_exclusion
+    ) + flatten_cli_values(args.must_export_linux_exclusion)
 
     source_config = apply_source_overrides(args)
     inventory, manifest, platform_excluded_lines = collect_inventory(source_config)

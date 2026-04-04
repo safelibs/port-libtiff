@@ -654,8 +654,8 @@ unsafe fn read_existing_header(tif: *mut TIFF, module_name: &str) -> bool {
                 emit_error_message(tif, module_name, "Cannot read TIFF header");
                 return false;
             }
-            let offsetsize = parse_u16(&extra[0..2], file_big_endian);
-            let unused = parse_u16(&extra[2..4], file_big_endian);
+            let offsetsize = parse_u16(&header[4..6], file_big_endian);
+            let unused = parse_u16(&header[6..8], file_big_endian);
             if offsetsize != 8 {
                 emit_error_message(
                     tif,
@@ -681,7 +681,7 @@ unsafe fn read_existing_header(tif: *mut TIFF, module_name: &str) -> bool {
             (*tif).header_version = TIFF_VERSION_BIG;
             (*tif).header_size = 16;
             (*tif).tif_flags |= TIFF_BIGTIFF;
-            (*tif).next_diroff = parse_u64(&extra[4..12], file_big_endian);
+            (*tif).next_diroff = parse_u64(&extra[0..8], file_big_endian);
         }
         _ => {
             emit_error_message(

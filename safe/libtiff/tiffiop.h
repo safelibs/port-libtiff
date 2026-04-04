@@ -32,6 +32,8 @@
 #endif
 
 #define TIFF_NON_EXISTENT_DIR_NUMBER UINT_MAX
+#define streq(a, b) (strcmp((a), (b)) == 0)
+#define strneq(a, b, n) (strncmp((a), (b), (n)) == 0)
 
 typedef unsigned char tidataval_t;
 typedef tidataval_t *tidata_t;
