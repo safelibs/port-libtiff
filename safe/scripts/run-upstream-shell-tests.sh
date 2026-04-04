@@ -7,12 +7,12 @@ SAFE_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 SAFE_TEST_DIR="${SAFE_ROOT}/test"
 SAFE_BUILD_DIR="${SAFE_ROOT}/build"
 
-tests_filter=""
+declare -a tests_filters=()
 include_regex=""
 
 usage() {
   cat <<'EOF'
-Usage: run-upstream-shell-tests.sh [--build-dir dir] [--test-dir dir] [--tests test1.sh,test2.sh] [--include-regex regex]
+Usage: run-upstream-shell-tests.sh [--build-dir dir] [--test-dir dir] [--tests test1.sh [test2.sh ...]] [--include-regex regex]
 EOF
 }
 
@@ -40,8 +40,11 @@ discover_tests() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --tests)
-      tests_filter="${2:-}"
-      shift 2
+      shift
+      while [[ $# -gt 0 && "$1" != --* ]]; do
+        tests_filters+=("$1")
+        shift
+      done
       ;;
     --build-dir)
       SAFE_BUILD_DIR=$(cd "${2:-}" && pwd)
@@ -79,16 +82,20 @@ if [[ ${#discovered_tests[@]} -eq 0 ]]; then
 fi
 
 declare -A requested=()
-if [[ -n "${tests_filter}" ]]; then
-  IFS=',' read -r -a requested_list <<<"${tests_filter}"
-  for test_name in "${requested_list[@]}"; do
-    requested["${test_name}"]=1
+if [[ ${#tests_filters[@]} -gt 0 ]]; then
+  for filter_value in "${tests_filters[@]}"; do
+    IFS=',' read -r -a requested_list <<<"${filter_value}"
+    for test_name in "${requested_list[@]}"; do
+      if [[ -n "${test_name}" ]]; then
+        requested["${test_name}"]=1
+      fi
+    done
   done
 fi
 
 selected_tests=()
 for test_name in "${discovered_tests[@]}"; do
-  if [[ -n "${tests_filter}" && -z "${requested[${test_name}]:-}" ]]; then
+  if [[ ${#tests_filters[@]} -gt 0 && -z "${requested[${test_name}]:-}" ]]; then
     continue
   fi
   if [[ -n "${include_regex}" && ! "${test_name}" =~ ${include_regex} ]]; then
@@ -102,7 +109,7 @@ if [[ ${#selected_tests[@]} -eq 0 ]]; then
   exit 1
 fi
 
-if [[ -n "${tests_filter}" ]]; then
+if [[ ${#tests_filters[@]} -gt 0 ]]; then
   for requested_name in "${!requested[@]}"; do
     if [[ ! " ${discovered_tests[*]} " =~ [[:space:]]${requested_name}[[:space:]] ]]; then
       echo "unknown upstream shell test: ${requested_name}" >&2
