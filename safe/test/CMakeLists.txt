@@ -216,13 +216,18 @@ target_link_libraries(api_strile_smoke PRIVATE tiff tiff_port)
 list(APPEND simple_tests api_strile_smoke)
 
 add_executable(public_abi_layout_smoke ../placeholder.h)
-target_sources(public_abi_layout_smoke PRIVATE public_abi_layout_smoke.c abi_layout_probe_bridge.c)
+target_sources(
+  public_abi_layout_smoke
+  PRIVATE
+    public_abi_layout_smoke.c
+    abi_layout_probe_bridge.c
+    ../capi/jpeg_helper.c)
 target_include_directories(
   public_abi_layout_smoke
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../libtiff)
-target_link_libraries(public_abi_layout_smoke PRIVATE tiff_safe_core)
+target_link_libraries(public_abi_layout_smoke PRIVATE tiff_safe_core JPEG::JPEG CMath::CMath)
 list(APPEND simple_tests public_abi_layout_smoke)
 
 add_executable(test_open_options ../placeholder.h)

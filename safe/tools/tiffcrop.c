@@ -537,6 +537,8 @@ static int computeInputPixelOffsets(struct crop_mask *, struct image_data *,
 static int computeOutputPixelOffsets(struct crop_mask *, struct image_data *,
                                      struct pagedef *, struct pageseg *,
                                      struct dump_opts *);
+static int loadImageByRGBA(TIFF *, struct image_data *, struct dump_opts *,
+                           unsigned char **);
 static int loadImage(TIFF *, struct image_data *, struct dump_opts *,
                      unsigned char **);
 static int correct_orientation(struct image_data *, unsigned char **);
@@ -6814,6 +6816,137 @@ static int computeOutputPixelOffsets(struct crop_mask *crop,
     return (0);
 } /* end computeOutputPixelOffsets */
 
+static int uses_safe_output_encoder(uint16_t compression_tag)
+{
+    switch (compression_tag)
+    {
+        case COMPRESSION_NONE:
+        case COMPRESSION_CCITTRLE:
+        case COMPRESSION_CCITTFAX3:
+        case COMPRESSION_CCITTFAX4:
+        case COMPRESSION_LZW:
+        case COMPRESSION_NEXT:
+        case COMPRESSION_PACKBITS:
+        case COMPRESSION_THUNDERSCAN:
+        case COMPRESSION_ADOBE_DEFLATE:
+        case COMPRESSION_DEFLATE:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static uint16_t select_default_output_compression(uint16_t input_compression)
+{
+    if (uses_safe_output_encoder(input_compression))
+        return input_compression;
+    return COMPRESSION_PACKBITS;
+}
+
+static int loadImageByRGBA(TIFF *in, struct image_data *image,
+                           struct dump_opts *dump, unsigned char **read_ptr)
+{
+    uint32_t width = image->width;
+    uint32_t length = image->length;
+    size_t pixel_count;
+    size_t buffsize;
+    uint32_t *rgba = NULL;
+    unsigned char *read_buff = NULL;
+    uint32_t row;
+
+    pixel_count = (size_t)width * (size_t)length;
+    if (width == 0 || length == 0 ||
+        pixel_count / (size_t)width != (size_t)length)
+    {
+        TIFFError("loadImage", "Invalid image dimensions for RGBA fallback");
+        return (-1);
+    }
+    if (pixel_count > (size_t)TIFF_TMSIZE_T_MAX / sizeof(uint32_t))
+    {
+        TIFFError("loadImage", "RGBA fallback raster would overflow");
+        return (-1);
+    }
+    buffsize = pixel_count * 3;
+    if (buffsize > (size_t)(0xFFFFFFFFU - NUM_BUFF_OVERSIZE_BYTES))
+    {
+        TIFFError("loadImage", "RGBA fallback buffer size too large");
+        return (-1);
+    }
+
+    if (*read_ptr)
+    {
+        _TIFFfree(*read_ptr);
+        *read_ptr = NULL;
+    }
+
+    rgba = (uint32_t *)limitMalloc((tmsize_t)(pixel_count * sizeof(uint32_t)));
+    if (rgba == NULL)
+    {
+        TIFFError("loadImage", "Unable to allocate RGBA fallback raster");
+        return (-1);
+    }
+
+    read_buff = (unsigned char *)limitMalloc(
+        (tmsize_t)buffsize + NUM_BUFF_OVERSIZE_BYTES);
+    if (read_buff == NULL)
+    {
+        _TIFFfree(rgba);
+        TIFFError("loadImage", "Unable to allocate RGBA fallback buffer");
+        return (-1);
+    }
+
+    if (!TIFFReadRGBAImageOriented(in, width, length, rgba, ORIENTATION_TOPLEFT,
+                                   0))
+    {
+        _TIFFfree(rgba);
+        _TIFFfree(read_buff);
+        TIFFError("loadImage", "Unable to read image through RGBA fallback");
+        return (-1);
+    }
+
+    for (row = 0; row < length; row++)
+    {
+        uint32_t col;
+
+        for (col = 0; col < width; col++)
+        {
+            uint32_t pixel = rgba[(size_t)row * width + col];
+            size_t offset = ((size_t)row * width + col) * 3;
+            read_buff[offset + 0] = (unsigned char)TIFFGetR(pixel);
+            read_buff[offset + 1] = (unsigned char)TIFFGetG(pixel);
+            read_buff[offset + 2] = (unsigned char)TIFFGetB(pixel);
+        }
+    }
+
+    _TIFFfree(rgba);
+    read_buff[buffsize] = 0;
+    read_buff[buffsize + 1] = 0;
+    read_buff[buffsize + 2] = 0;
+    check_buffsize = (tmsize_t)buffsize + NUM_BUFF_OVERSIZE_BYTES;
+    *read_ptr = read_buff;
+
+    image->bps = 8;
+    image->spp = 3;
+    image->planar = PLANARCONFIG_CONTIG;
+    image->photometric = PHOTOMETRIC_RGB;
+    image->orientation = ORIENTATION_TOPLEFT;
+    image->compression = COMPRESSION_NONE;
+    image->adjustments = 0;
+
+    if ((dump->infile != NULL) && (dump->level == 2))
+    {
+        dump_info(dump->infile, dump->format, "loadImage",
+                  "RGBA fallback buffer, image width %" PRIu32
+                  ", length %" PRIu32 ", %4" TIFF_SIZE_FORMAT " bytes",
+                  width, length, buffsize);
+        for (row = 0; row < length; row++)
+            dump_buffer(dump->infile, dump->format, 1, width * 3, row,
+                        read_buff + (size_t)row * width * 3);
+    }
+
+    return (0);
+}
+
 static int loadImage(TIFF *in, struct image_data *image, struct dump_opts *dump,
                      unsigned char **read_ptr)
 {
@@ -7019,6 +7152,18 @@ static int loadImage(TIFF *in, struct image_data *image, struct dump_opts *dump,
                   ") or bits per sample (%" PRIu16 ")",
                   spp, bps);
         return (-1);
+    }
+
+    TIFFGetFieldDefaulted(in, TIFFTAG_YCBCRSUBSAMPLING, &subsampling_horiz,
+                          &subsampling_vert);
+    if (input_compression == COMPRESSION_JPEG ||
+        input_compression == COMPRESSION_OJPEG ||
+        input_photometric == PHOTOMETRIC_LOGL ||
+        input_photometric == PHOTOMETRIC_LOGLUV ||
+        (input_photometric == PHOTOMETRIC_YCBCR &&
+         (subsampling_horiz != 1 || subsampling_vert != 1)))
+    {
+        return loadImageByRGBA(in, image, dump, read_ptr);
     }
 
     if (TIFFIsTiled(in))
@@ -8257,15 +8402,9 @@ static int writeSingleSection(TIFF *in, TIFF *out, struct image_data *image,
     if (compression != (uint16_t)-1)
         TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
     else
-    { /* OJPEG is no longer supported for writing so upgrade to JPEG */
-        if (input_compression == COMPRESSION_OJPEG)
-        {
-            compression = COMPRESSION_JPEG;
-            jpegcolormode = JPEGCOLORMODE_RAW;
-            TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_JPEG);
-        }
-        else /* Use the compression from the input file */
-            CopyField(TIFFTAG_COMPRESSION, compression);
+    {
+        compression = select_default_output_compression(input_compression);
+        TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
     }
 
     if (compression == COMPRESSION_JPEG)
@@ -9024,14 +9163,8 @@ static int writeCroppedImage(TIFF *in, TIFF *out, struct image_data *image,
         TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
     else
     {
-        if (input_compression == COMPRESSION_OJPEG)
-        {
-            compression = COMPRESSION_JPEG;
-            jpegcolormode = JPEGCOLORMODE_RAW;
-            TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_JPEG);
-        }
-        else
-            CopyField(TIFFTAG_COMPRESSION, compression);
+        compression = select_default_output_compression(input_compression);
+        TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
     }
 
     if (compression == COMPRESSION_JPEG)

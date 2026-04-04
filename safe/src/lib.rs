@@ -1,10 +1,12 @@
 mod abi;
 mod core;
+mod rgba;
 mod strile;
 
 pub use abi::{
-    TIFFCodec, TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldArrayType,
-    TIFFFieldInfo, TIFFInitMethod, TIFFSetGetFieldType, TIFFTagMethods,
+    TIFFCIELabToRGB, TIFFCodec, TIFFDataType, TIFFDisplay, TIFFExtendProc, TIFFField,
+    TIFFFieldArray, TIFFFieldArrayType, TIFFFieldInfo, TIFFInitMethod, TIFFRGBAImage,
+    TIFFRGBValue, TIFFSetGetFieldType, TIFFTagMethods, TIFFYCbCrToRGB,
 };
 
 use crate::core::{

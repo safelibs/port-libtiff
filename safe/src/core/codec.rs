@@ -3,6 +3,11 @@ use crate::strile::{
     TIFFSwabArrayOfDouble, TIFFSwabArrayOfLong, TIFFSwabArrayOfLong8, TIFFSwabArrayOfShort,
     TIFFSwabArrayOfTriples,
 };
+use super::{
+    jpeg_decode_bytes, jpeg_default_quality, jpeg_encode_bytes, reset_jpeg_state,
+    set_jpeg_color_mode, unset_jpeg_pseudo_tag, COMPRESSION_JPEG, COMPRESSION_OJPEG,
+    JPEGCOLORMODE_RGB, TAG_JPEGCOLORMODE, TAG_JPEGQUALITY,
+};
 use crate::{
     stub_bool_method, stub_decoderow_method, stub_predecode_method, stub_void_method, TIFF,
 };
@@ -122,6 +127,8 @@ pub(crate) struct CodecState {
     pub(crate) fax_mode: c_int,
     pub(crate) zip_quality: c_int,
     pub(crate) deflate_subcodec: c_int,
+    pub(crate) jpeg_quality: c_int,
+    pub(crate) jpeg_colormode: c_int,
     pub(crate) pending_striles: BTreeMap<u32, PendingStrileWrite>,
     pub(crate) decoded_cache: Option<DecodedStrileCache>,
     raw_fax_decoder: Option<RawFaxDecoderState>,
@@ -169,6 +176,7 @@ pub(crate) unsafe fn safe_tiff_codec_reset_for_current_directory(tif: *mut TIFF,
     (*inner).codec_state.zip_quality = 0;
     (*inner).codec_state.deflate_subcodec = DEFLATE_SUBCODEC_ZLIB;
     (*inner).codec_state.raw_fax_decoder = None;
+    reset_jpeg_state(tif);
 }
 
 pub(crate) unsafe fn safe_tiff_codec_set_scheme(tif: *mut TIFF, scheme: c_int) -> c_int {
@@ -188,7 +196,10 @@ pub(crate) unsafe fn safe_tiff_codec_set_scheme(tif: *mut TIFF, scheme: c_int) -
 }
 
 fn is_pseudo_tag(tag: u32) -> bool {
-    matches!(tag, TAG_FAXMODE | TAG_ZIPQUALITY | TAG_DEFLATE_SUBCODEC)
+    matches!(
+        tag,
+        TAG_FAXMODE | TAG_JPEGQUALITY | TAG_JPEGCOLORMODE | TAG_ZIPQUALITY | TAG_DEFLATE_SUBCODEC
+    )
 }
 
 pub(crate) unsafe fn safe_tiff_codec_default_tag_value(
@@ -227,6 +238,16 @@ pub(crate) unsafe fn safe_tiff_codec_get_tag_value(
             *out_data = (&state.zip_quality as *const c_int).cast();
             1
         }
+        TAG_JPEGQUALITY => {
+            *out_type = TIFFDataType::TIFF_SLONG;
+            *out_data = (&state.jpeg_quality as *const c_int).cast();
+            1
+        }
+        TAG_JPEGCOLORMODE => {
+            *out_type = TIFFDataType::TIFF_SLONG;
+            *out_data = (&state.jpeg_colormode as *const c_int).cast();
+            1
+        }
         TAG_DEFLATE_SUBCODEC => {
             *out_type = TIFFDataType::TIFF_SLONG;
             *out_data = (&state.deflate_subcodec as *const c_int).cast();
@@ -255,6 +276,8 @@ pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
     };
     match tag {
         TAG_FAXMODE => state.fax_mode = value,
+        TAG_JPEGQUALITY => state.jpeg_quality = value,
+        TAG_JPEGCOLORMODE => set_jpeg_color_mode(tif, value),
         TAG_ZIPQUALITY => state.zip_quality = value,
         TAG_DEFLATE_SUBCODEC => state.deflate_subcodec = value,
         _ => return 0,
@@ -316,6 +339,7 @@ pub(crate) unsafe fn safe_tiff_codec_unset_field(tif: *mut TIFF, tag: u32) -> c_
     let state = &mut (*(*tif).inner).codec_state;
     match tag {
         TAG_FAXMODE => state.fax_mode = FAXMODE_CLASSIC,
+        TAG_JPEGQUALITY | TAG_JPEGCOLORMODE => return unset_jpeg_pseudo_tag(tif, tag),
         TAG_ZIPQUALITY => state.zip_quality = 0,
         TAG_DEFLATE_SUBCODEC => state.deflate_subcodec = DEFLATE_SUBCODEC_ZLIB,
         _ => return 0,
@@ -1471,6 +1495,8 @@ unsafe fn encode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -
 pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
     tif: *mut TIFF,
     input: &[u8],
+    is_tile: bool,
+    strile: u32,
     geometry: CodecGeometry,
     expected_size: usize,
 ) -> Option<Vec<u8>> {
@@ -1485,6 +1511,9 @@ pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
         COMPRESSION_CCITTFAX4 => decode_group4(tif, input, geometry)?,
         COMPRESSION_NEXT => decode_next(input, geometry)?,
         COMPRESSION_THUNDERSCAN => decode_thunderscan(input, geometry)?,
+        COMPRESSION_JPEG | COMPRESSION_OJPEG => {
+            jpeg_decode_bytes(tif, input, is_tile, strile, geometry, expected_size)?
+        }
         _ => return None,
     };
     if active_scheme(tif) != COMPRESSION_CCITTRLE
@@ -1520,6 +1549,7 @@ pub(crate) unsafe fn safe_tiff_codec_encode_bytes(
             encode_group3_1d(tif, input, geometry)
         }
         COMPRESSION_CCITTFAX4 => encode_group4(tif, input, geometry),
+        COMPRESSION_JPEG | COMPRESSION_OJPEG => jpeg_encode_bytes(tif, input, geometry),
         _ => None,
     }
 }
@@ -1714,6 +1744,13 @@ unsafe extern "C" fn init_not_configured(_: *mut TIFF, _: c_int) -> c_int {
     1
 }
 
+unsafe extern "C" fn init_jpeg_codec(tif: *mut TIFF, _: c_int) -> c_int {
+    if !tif.is_null() {
+        reset_jpeg_state(tif);
+    }
+    1
+}
+
 fn is_configured_init(init: TIFFInitMethod) -> bool {
     init.is_some()
 }
@@ -1732,6 +1769,8 @@ fn builtin_codec_configured(scheme: u16) -> bool {
             | COMPRESSION_CCITTFAX4
             | COMPRESSION_DEFLATE
             | COMPRESSION_ADOBE_DEFLATE
+            | COMPRESSION_JPEG
+            | COMPRESSION_OJPEG
     )
 }
 
@@ -1763,13 +1802,13 @@ static BUILTIN_CODECS: [TIFFCodec; 14] = [
     },
     TIFFCodec {
         name: NAME_JPEG.as_ptr() as *mut c_char,
-        scheme: 7,
-        init: Some(init_not_configured),
+        scheme: COMPRESSION_JPEG,
+        init: Some(init_jpeg_codec),
     },
     TIFFCodec {
         name: NAME_OJPEG.as_ptr() as *mut c_char,
-        scheme: 6,
-        init: Some(init_not_configured),
+        scheme: COMPRESSION_OJPEG,
+        init: Some(init_jpeg_codec),
     },
     TIFFCodec {
         name: NAME_CCITT_RLE.as_ptr() as *mut c_char,

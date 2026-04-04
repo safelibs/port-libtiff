@@ -22,6 +22,47 @@ extern int safe_tiff_set_field_marshaled(TIFF *tif, uint32_t tag,
                                          TIFFDataType storage_type,
                                          uint64_t count, const void *data);
 extern int safe_tiff_unset_field(TIFF *tif, uint32_t tag);
+extern int safe_tiff_read_rgba_image(TIFF *tif, uint32_t width, uint32_t height,
+                                     uint32_t *raster, int stop_on_error);
+extern int safe_tiff_read_rgba_image_oriented(TIFF *tif, uint32_t width,
+                                              uint32_t height, uint32_t *raster,
+                                              int orientation,
+                                              int stop_on_error);
+extern int safe_tiff_read_rgba_strip(TIFF *tif, uint32_t row,
+                                     uint32_t *raster);
+extern int safe_tiff_read_rgba_tile(TIFF *tif, uint32_t x, uint32_t y,
+                                    uint32_t *raster);
+extern int safe_tiff_rgba_image_ok(TIFF *tif, char emsg[1024]);
+extern int safe_tiff_rgba_image_begin(TIFFRGBAImage *img, TIFF *tif,
+                                      int stoponerr, char emsg[1024]);
+extern int safe_tiff_rgba_image_get(TIFFRGBAImage *img, uint32_t *raster,
+                                    uint32_t width, uint32_t height);
+extern void safe_tiff_rgba_image_end(TIFFRGBAImage *img);
+extern int safe_tiff_cielab_to_rgb_init(TIFFCIELabToRGB *cielab,
+                                        const TIFFDisplay *display,
+                                        float *ref_white);
+extern void safe_tiff_cielab_to_xyz(TIFFCIELabToRGB *cielab, uint32_t l,
+                                    int32_t a, int32_t b, float *x, float *y,
+                                    float *z);
+extern void safe_tiff_xyz_to_rgb(TIFFCIELabToRGB *cielab, float x, float y,
+                                 float z, uint32_t *r, uint32_t *g,
+                                 uint32_t *b);
+extern int safe_tiff_ycbcr_to_rgb_init(TIFFYCbCrToRGB *ycbcr, float *luma,
+                                       float *ref_black_white);
+extern void safe_tiff_ycbcr_to_rgb(TIFFYCbCrToRGB *ycbcr, uint32_t y,
+                                   int32_t cb, int32_t cr, uint32_t *r,
+                                   uint32_t *g, uint32_t *b);
+extern double safe_tiff_logl16_to_y(int p16);
+extern double safe_tiff_logl10_to_y(int p10);
+extern int safe_tiff_logl16_from_y(double y, int method);
+extern int safe_tiff_logl10_from_y(double y, int method);
+extern int safe_tiff_uv_encode(double u, double v, int method);
+extern int safe_tiff_uv_decode(double *u, double *v, int code);
+extern void safe_tiff_logluv24_to_xyz(uint32_t p, float *xyz);
+extern uint32_t safe_tiff_logluv24_from_xyz(float *xyz, int method);
+extern void safe_tiff_logluv32_to_xyz(uint32_t p, float *xyz);
+extern uint32_t safe_tiff_logluv32_from_xyz(float *xyz, int method);
+extern void safe_tiff_xyz_to_rgb24(float *xyz, uint8_t *rgb);
 
 static void unix_error_handler(const char *module, const char *fmt, va_list ap)
 {
@@ -1209,42 +1250,25 @@ int TIFFReadCustomDirectory(TIFF *tif, toff_t diroff,
 int TIFFReadRGBAImage(TIFF *tif, uint32_t width, uint32_t height,
                       uint32_t *raster, int stop_on_error)
 {
-    (void)tif;
-    (void)width;
-    (void)height;
-    (void)raster;
-    (void)stop_on_error;
-    return 0;
+    return safe_tiff_read_rgba_image(tif, width, height, raster, stop_on_error);
 }
 
 int TIFFReadRGBAImageOriented(TIFF *tif, uint32_t width, uint32_t height,
                               uint32_t *raster, int orientation,
                               int stop_on_error)
 {
-    (void)tif;
-    (void)width;
-    (void)height;
-    (void)raster;
-    (void)orientation;
-    (void)stop_on_error;
-    return 0;
+    return safe_tiff_read_rgba_image_oriented(tif, width, height, raster,
+                                              orientation, stop_on_error);
 }
 
 int TIFFReadRGBAStrip(TIFF *tif, uint32_t row, uint32_t *raster)
 {
-    (void)tif;
-    (void)row;
-    (void)raster;
-    return 0;
+    return safe_tiff_read_rgba_strip(tif, row, raster);
 }
 
 int TIFFReadRGBATile(TIFF *tif, uint32_t x, uint32_t y, uint32_t *raster)
 {
-    (void)tif;
-    (void)x;
-    (void)y;
-    (void)raster;
-    return 0;
+    return safe_tiff_read_rgba_tile(tif, x, y, raster);
 }
 
 int TIFFReadRGBAStripExt(TIFF *tif, uint32_t row, uint32_t *raster,
@@ -1259,6 +1283,107 @@ int TIFFReadRGBATileExt(TIFF *tif, uint32_t x, uint32_t y, uint32_t *raster,
 {
     (void)stop_on_error;
     return TIFFReadRGBATile(tif, x, y, raster);
+}
+
+int TIFFRGBAImageOK(TIFF *tif, char emsg[1024])
+{
+    return safe_tiff_rgba_image_ok(tif, emsg);
+}
+
+int TIFFRGBAImageBegin(TIFFRGBAImage *img, TIFF *tif, int stoponerr,
+                       char emsg[1024])
+{
+    return safe_tiff_rgba_image_begin(img, tif, stoponerr, emsg);
+}
+
+int TIFFRGBAImageGet(TIFFRGBAImage *img, uint32_t *raster, uint32_t width,
+                     uint32_t height)
+{
+    return safe_tiff_rgba_image_get(img, raster, width, height);
+}
+
+void TIFFRGBAImageEnd(TIFFRGBAImage *img)
+{
+    safe_tiff_rgba_image_end(img);
+}
+
+int TIFFCIELabToRGBInit(TIFFCIELabToRGB *cielab, const TIFFDisplay *display,
+                        float *ref_white)
+{
+    return safe_tiff_cielab_to_rgb_init(cielab, display, ref_white);
+}
+
+void TIFFCIELabToXYZ(TIFFCIELabToRGB *cielab, uint32_t l, int32_t a, int32_t b,
+                     float *x, float *y, float *z)
+{
+    safe_tiff_cielab_to_xyz(cielab, l, a, b, x, y, z);
+}
+
+void TIFFXYZToRGB(TIFFCIELabToRGB *cielab, float x, float y, float z,
+                  uint32_t *r, uint32_t *g, uint32_t *b)
+{
+    safe_tiff_xyz_to_rgb(cielab, x, y, z, r, g, b);
+}
+
+int TIFFYCbCrToRGBInit(TIFFYCbCrToRGB *ycbcr, float *luma,
+                       float *ref_black_white)
+{
+    return safe_tiff_ycbcr_to_rgb_init(ycbcr, luma, ref_black_white);
+}
+
+void TIFFYCbCrtoRGB(TIFFYCbCrToRGB *ycbcr, uint32_t y, int32_t cb, int32_t cr,
+                    uint32_t *r, uint32_t *g, uint32_t *b)
+{
+    safe_tiff_ycbcr_to_rgb(ycbcr, y, cb, cr, r, g, b);
+}
+
+double LogL16toY(int p16) { return safe_tiff_logl16_to_y(p16); }
+
+double LogL10toY(int p10) { return safe_tiff_logl10_to_y(p10); }
+
+int LogL16fromY(double y, int method)
+{
+    return safe_tiff_logl16_from_y(y, method);
+}
+
+int LogL10fromY(double y, int method)
+{
+    return safe_tiff_logl10_from_y(y, method);
+}
+
+int uv_encode(double u, double v, int method)
+{
+    return safe_tiff_uv_encode(u, v, method);
+}
+
+int uv_decode(double *u, double *v, int code)
+{
+    return safe_tiff_uv_decode(u, v, code);
+}
+
+void LogLuv24toXYZ(uint32_t p, float *xyz)
+{
+    safe_tiff_logluv24_to_xyz(p, xyz);
+}
+
+uint32_t LogLuv24fromXYZ(float *xyz, int method)
+{
+    return safe_tiff_logluv24_from_xyz(xyz, method);
+}
+
+void LogLuv32toXYZ(uint32_t p, float *xyz)
+{
+    safe_tiff_logluv32_to_xyz(p, xyz);
+}
+
+uint32_t LogLuv32fromXYZ(float *xyz, int method)
+{
+    return safe_tiff_logluv32_from_xyz(xyz, method);
+}
+
+void XYZtoRGB24(float *xyz, uint8_t *rgb)
+{
+    safe_tiff_xyz_to_rgb24(xyz, rgb);
 }
 
 static int safe_is_printed_in_summary(uint32_t tag)

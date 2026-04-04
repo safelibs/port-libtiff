@@ -1146,6 +1146,10 @@ unsafe fn expected_strip_size_for_index(tif: *mut TIFF, strip: u32) -> Option<u6
     vstrip_size64_internal(tif, strip_size_rows_internal(tif, strip, true)?, true)
 }
 
+unsafe fn expected_tile_size(tif: *mut TIFF) -> Option<usize> {
+    usize::try_from(TIFFTileSize64(tif)).ok()
+}
+
 unsafe fn codec_geometry_for_strip(tif: *mut TIFF, strip: u32) -> Option<CodecGeometry> {
     let row_size = usize::try_from(TIFFScanlineSize64(tif)).ok()?;
     let rows = usize::try_from(strip_size_rows_internal(tif, strip, true)?).ok()?;
@@ -1208,7 +1212,9 @@ unsafe fn load_decoded_strile_cache(
         emit_error_message(tif, module, "Failed to read strile payload");
         return false;
     }
-    let Some(decoded) = safe_tiff_codec_decode_bytes(tif, &raw, geometry, expected_size) else {
+    let Some(decoded) =
+        safe_tiff_codec_decode_bytes(tif, &raw, is_tile, strile, geometry, expected_size)
+    else {
         emit_error_message(tif, module, "Codec decode failed");
         return false;
     };
@@ -2138,7 +2144,7 @@ pub unsafe extern "C" fn TIFFReadEncodedTile(
         emit_error_message(tif, module, "Failed to compute tile geometry");
         return -1;
     };
-    let Some(tile_size) = geometry.row_size.checked_mul(geometry.rows) else {
+    let Some(tile_size) = expected_tile_size(tif) else {
         emit_error_message(tif, module, "Tile decode size is too large");
         return -1;
     };
@@ -2344,7 +2350,8 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
         emit_error_message(tif, module, "File not open for reading");
         return 0;
     }
-    let (geometry, expected_size) = if is_tiled_image(tif) {
+    let is_tile = is_tiled_image(tif);
+    let (geometry, expected_size) = if is_tile {
         let mut err = 0;
         let _ = TIFFGetStrileByteCountWithErr(tif, strile, &mut err);
         if err != 0 {
@@ -2355,7 +2362,7 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
             emit_error_message(tif, module, "Failed to compute tile geometry");
             return 0;
         };
-        let Some(expected_size) = geometry.row_size.checked_mul(geometry.rows) else {
+        let Some(expected_size) = expected_tile_size(tif) else {
             emit_error_message(tif, module, "Tile decode size is too large");
             return 0;
         };
@@ -2383,7 +2390,14 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
     };
     let input = slice::from_raw_parts(inbuf.cast::<u8>(), input_size);
     let output = slice::from_raw_parts_mut(outbuf.cast::<u8>(), output_size);
-    let Some(decoded) = safe_tiff_codec_decode_bytes(tif, input, geometry, expected_size as usize)
+    let Some(decoded) = safe_tiff_codec_decode_bytes(
+        tif,
+        input,
+        is_tile,
+        strile,
+        geometry,
+        expected_size as usize,
+    )
     else {
         emit_error_message(tif, module, "Codec decode failed");
         return 0;

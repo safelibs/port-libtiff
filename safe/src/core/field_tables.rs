@@ -26,7 +26,7 @@ macro_rules! field {
     };
 }
 
-pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 160] = [
+pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 170] = [
     field!(254, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 5, 1, 0, "SubfileType", std::ptr::null_mut()),
     field!(255, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 0, 1, 0, "OldSubfileType", std::ptr::null_mut()),
     field!(256, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 1, 0, 0, "ImageWidth", std::ptr::null_mut()),
@@ -115,6 +115,7 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 160] = [
     field!(34377, -3, -3, TIFF_BYTE, 0, TIFF_SETGET_C32_UINT8, TIFF_SETGET_UNDEFINED, 65, 1, 1, "Photoshop", std::ptr::null_mut()),
     field!(34665, 1, 1, TIFF_IFD8, 0, TIFF_SETGET_IFD8, TIFF_SETGET_UNDEFINED, 65, 1, 0, "EXIFIFDOffset", array_ptr!(TIFF_FIELD_ARRAY_EXIF)),
     field!(34675, -3, -3, TIFF_UNDEFINED, 0, TIFF_SETGET_C32_UINT8, TIFF_SETGET_UNDEFINED, 65, 1, 1, "ICC Profile", std::ptr::null_mut()),
+    field!(347, -3, -3, TIFF_UNDEFINED, 0, TIFF_SETGET_C32_UINT8, TIFF_SETGET_UNDEFINED, 65, 1, 1, "JPEGTables", std::ptr::null_mut()),
     field!(34853, 1, 1, TIFF_IFD8, 0, TIFF_SETGET_IFD8, TIFF_SETGET_UNDEFINED, 65, 1, 0, "GPSIFDOffset", array_ptr!(TIFF_FIELD_ARRAY_GPS)),
     field!(34908, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UINT32, 65, 1, 0, "FaxRecvParams", std::ptr::null_mut()),
     field!(34909, -1, -1, TIFF_ASCII, 0, TIFF_SETGET_ASCII, TIFF_SETGET_ASCII, 65, 1, 0, "FaxSubAddress", std::ptr::null_mut()),
@@ -185,7 +186,16 @@ pub(crate) static TIFF_FIELDS_IMAGE: [TIFFField; 160] = [
     field!(433, -1, -1, TIFF_SRATIONAL, 0, TIFF_SETGET_C16_FLOAT, TIFF_SETGET_UNDEFINED, 65, 1, 1, "Decode", std::ptr::null_mut()),
     field!(434, -1, -1, TIFF_SHORT, 0, TIFF_SETGET_C16_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 1, "ImageBaseColor", std::ptr::null_mut()),
     field!(435, 1, 1, TIFF_LONG, 0, TIFF_SETGET_UINT32, TIFF_SETGET_UNDEFINED, 65, 1, 0, "T82Options", std::ptr::null_mut()),
+    field!(512, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGProc", std::ptr::null_mut()),
+    field!(513, 1, 1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGInterchangeFormat", std::ptr::null_mut()),
+    field!(514, 1, 1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGInterchangeFormatLength", std::ptr::null_mut()),
+    field!(515, 1, 1, TIFF_SHORT, 0, TIFF_SETGET_UINT16, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGRestartInterval", std::ptr::null_mut()),
+    field!(519, -1, -1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGQTables", std::ptr::null_mut()),
+    field!(520, -1, -1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGDCTables", std::ptr::null_mut()),
+    field!(521, -1, -1, TIFF_LONG8, 0, TIFF_SETGET_UNDEFINED, TIFF_SETGET_UNDEFINED, 65, 1, 0, "JPEGACTables", std::ptr::null_mut()),
     field!(559, -1, -1, TIFF_LONG, 0, TIFF_SETGET_C16_UINT32, TIFF_SETGET_UNDEFINED, 65, 1, 1, "StripRowCounts", std::ptr::null_mut()),
+    field!(65537, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 75, 1, 0, "JPEGQuality", std::ptr::null_mut()),
+    field!(65538, 0, 0, TIFF_NOTYPE, 0, TIFF_SETGET_INT, TIFF_SETGET_UNDEFINED, 76, 1, 0, "JPEGColorMode", std::ptr::null_mut()),
     field!(34732, 2, 2, TIFF_LONG, 0, TIFF_SETGET_C0_UINT32, TIFF_SETGET_UNDEFINED, 65, 1, 0, "ImageLayer", std::ptr::null_mut()),
 ];
 

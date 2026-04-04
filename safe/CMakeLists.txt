@@ -30,11 +30,13 @@ set(LIBTIFF_SONAME_VERSION 6)
 set(LIBTIFF_SHARED_VERSION 6.0.1)
 
 set(HAVE_GETOPT TRUE CACHE BOOL "Use the host getopt implementation" FORCE)
-set(JPEG_SUPPORT OFF)
-set(OJPEG_SUPPORT OFF)
+set(JPEG_SUPPORT ON)
+set(OJPEG_SUPPORT ON)
 set(OPENGL_SUPPORT OFF)
 set(WEBP_SUPPORT OFF)
 set(EMSCRIPTEN OFF)
+
+find_package(JPEG REQUIRED)
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
 
@@ -63,13 +65,16 @@ set(SAFE_RUST_STATICLIB
 
 set(SAFE_RUST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lib.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rgba.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/strile.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/abi/mod.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/mod.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/color.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/codec.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/directory.rs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_registry.rs
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_tables.rs)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/field_tables.rs
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/jpeg.rs)
 
 add_custom_command(
   OUTPUT "${SAFE_RUST_STATICLIB}"
@@ -121,14 +126,14 @@ function(safe_mirror_shared_library_for_verifier target)
   endif()
 endfunction()
 
-add_library(tiff SHARED capi/tiff_placeholder.c)
+add_library(tiff SHARED capi/tiff_placeholder.c capi/jpeg_helper.c)
 target_include_directories(
   tiff
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libtiff>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_link_libraries(tiff PRIVATE tiff_safe_core)
+target_link_libraries(tiff PRIVATE tiff_safe_core JPEG::JPEG CMath::CMath)
 set_target_properties(
   tiff
   PROPERTIES

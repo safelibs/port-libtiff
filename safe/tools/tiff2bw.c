@@ -52,6 +52,7 @@ int BLUE = PCT(11);  /* 11% */
 
 static void usage(int code);
 static int processCompressOptions(char *);
+static int compress_rgba_image(TIFF *in, TIFF *out, uint32_t w, uint32_t h);
 
 static void compresscontig(unsigned char *out, unsigned char *rgb, uint32_t n)
 {
@@ -101,6 +102,66 @@ static void compresspalette(unsigned char *out, unsigned char *data, uint32_t n,
     }
 }
 
+static int compress_rgba_image(TIFF *in, TIFF *out, uint32_t w, uint32_t h)
+{
+    uint32_t *raster = NULL;
+    unsigned char *outbuf = NULL;
+    size_t pixel_count;
+    uint32_t row;
+    int ok = 0;
+
+    pixel_count = (size_t)w * (size_t)h;
+    if (w == 0 || h == 0 || pixel_count / (size_t)w != (size_t)h)
+    {
+        TIFFError(TIFFFileName(in),
+                  "Malformed input image dimensions for RGBA conversion");
+        return 0;
+    }
+
+    raster = (uint32_t *)_TIFFCheckMalloc(in, pixel_count, sizeof(uint32_t),
+                                          "RGBA raster");
+    if (raster == NULL)
+        return 0;
+
+    outbuf = (unsigned char *)_TIFFmalloc(TIFFScanlineSize(out));
+    if (outbuf == NULL)
+    {
+        TIFFError(TIFFFileName(in), "Out of memory");
+        goto done;
+    }
+
+    if (!TIFFReadRGBAImageOriented(in, w, h, raster, ORIENTATION_TOPLEFT, 0))
+    {
+        TIFFError(TIFFFileName(in),
+                  "TIFFReadRGBAImageOriented() failed during grayscale conversion");
+        goto done;
+    }
+
+    for (row = 0; row < h; row++)
+    {
+        uint32_t col;
+        uint32_t *src = raster + (size_t)row * w;
+        for (col = 0; col < w; col++)
+        {
+            int v = RED * (int)TIFFGetR(src[col]);
+            v += GREEN * (int)TIFFGetG(src[col]);
+            v += BLUE * (int)TIFFGetB(src[col]);
+            outbuf[col] = (unsigned char)(v >> 8);
+        }
+        if (TIFFWriteScanline(out, outbuf, row, 0) < 0)
+            goto done;
+    }
+
+    ok = 1;
+
+done:
+    if (outbuf)
+        _TIFFfree(outbuf);
+    if (raster)
+        _TIFFfree(raster);
+    return ok;
+}
+
 static uint16_t compression = (uint16_t)-1;
 static uint16_t predictor = 0;
 static int jpegcolormode = JPEGCOLORMODE_RGB;
@@ -126,6 +187,7 @@ int main(int argc, char *argv[])
     unsigned char *inbuf, *outbuf;
     char thing[1024];
     int c;
+    int use_rgba_fallback;
 #if !HAVE_DECL_OPTARG
     extern int optind;
     extern char *optarg;
@@ -171,34 +233,15 @@ int main(int argc, char *argv[])
         return (EXIT_FAILURE);
     photometric = 0;
     TIFFGetField(in, TIFFTAG_PHOTOMETRIC, &photometric);
-    if (photometric != PHOTOMETRIC_RGB && photometric != PHOTOMETRIC_PALETTE)
-    {
-        fprintf(
-            stderr,
-            "%s: Bad photometric; can only handle RGB and Palette images.\n",
-            argv[optind]);
-        goto tiff2bw_error;
-    }
-    TIFFGetField(in, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel);
-    if (samplesperpixel != 1 && samplesperpixel != 3)
-    {
-        fprintf(stderr, "%s: Bad samples/pixel %u.\n", argv[optind],
-                samplesperpixel);
-        goto tiff2bw_error;
-    }
-    if (photometric == PHOTOMETRIC_RGB && samplesperpixel != 3)
-    {
-        fprintf(stderr, "%s: Bad samples/pixel %u for PHOTOMETRIC_RGB.\n",
-                argv[optind], samplesperpixel);
-        goto tiff2bw_error;
-    }
-    TIFFGetField(in, TIFFTAG_BITSPERSAMPLE, &bitspersample);
-    if (bitspersample != 8)
-    {
-        fprintf(stderr, " %s: Sorry, only handle 8-bit samples.\n",
-                argv[optind]);
-        goto tiff2bw_error;
-    }
+    TIFFGetFieldDefaulted(in, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel);
+    TIFFGetFieldDefaulted(in, TIFFTAG_BITSPERSAMPLE, &bitspersample);
+    use_rgba_fallback =
+        (photometric != PHOTOMETRIC_RGB && photometric != PHOTOMETRIC_PALETTE) ||
+        (photometric == PHOTOMETRIC_RGB && samplesperpixel != 3) ||
+        (photometric == PHOTOMETRIC_PALETTE && samplesperpixel != 1) ||
+        (photometric == PHOTOMETRIC_PALETTE && bitspersample > 16) ||
+        (bitspersample != 8) ||
+        (samplesperpixel != 1 && samplesperpixel != 3);
     TIFFGetField(in, TIFFTAG_IMAGEWIDTH, &w);
     TIFFGetField(in, TIFFTAG_IMAGELENGTH, &h);
     TIFFGetField(in, TIFFTAG_PLANARCONFIG, &config);
@@ -235,14 +278,24 @@ int main(int argc, char *argv[])
     snprintf(thing, sizeof(thing), "B&W version of %s", argv[optind]);
     TIFFSetField(out, TIFFTAG_IMAGEDESCRIPTION, thing);
     TIFFSetField(out, TIFFTAG_SOFTWARE, "tiff2bw");
+    TIFFSetField(out, TIFFTAG_ROWSPERSTRIP,
+                 TIFFDefaultStripSize(out, rowsperstrip));
+
+    if (use_rgba_fallback)
+    {
+        if (!compress_rgba_image(in, out, w, h))
+            goto tiff2bw_error;
+        TIFFClose(in);
+        TIFFClose(out);
+        return (EXIT_SUCCESS);
+    }
+
     outbuf = (unsigned char *)_TIFFmalloc(TIFFScanlineSize(out));
     if (!outbuf)
     {
         fprintf(stderr, "Out of memory\n");
         goto tiff2bw_error;
     }
-    TIFFSetField(out, TIFFTAG_ROWSPERSTRIP,
-                 TIFFDefaultStripSize(out, rowsperstrip));
 
 #define pack(a, b) ((a) << 8 | (b))
     switch (pack(photometric, config))
