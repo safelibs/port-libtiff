@@ -12,10 +12,12 @@
           "-dD",
           "-P",
           "-I",
-          "safe/include",
+          "original/libtiff",
+          "-I",
+          "original/build/libtiff",
           "-x",
           "c",
-          "safe/include/tiffio.h"
+          "original/libtiff/tiffio.h"
         ],
         "language": "c"
       },
@@ -26,10 +28,12 @@
           "-dD",
           "-P",
           "-I",
-          "safe/include",
+          "original/libtiff",
+          "-I",
+          "original/build/libtiff",
           "-x",
           "c++",
-          "safe/include/tiffio.hxx"
+          "original/libtiff/tiffio.hxx"
         ],
         "language": "c++"
       }
@@ -61,6 +65,14 @@
       "sha256": "142fd26bb18a1568dfbfa8da76ed05765b5def6c2a13a161ddf7bcd9c2f1d806"
     },
     {
+      "path": "original/build/libtiff/tif_config.h",
+      "sha256": "a47f4576e7b5cafa94bfdb8bccea8b81de15b38401deb2b7bd0a9fc4d3ad51dc"
+    },
+    {
+      "path": "original/build/libtiff/tiffconf.h",
+      "sha256": "bfd4ac2e9861d34ad8b4fa02c8215b3672a6ef73ff343d140d1886507c551be1"
+    },
+    {
       "path": "original/debian/libtiff6.symbols",
       "sha256": "feb1e1e306c1c8612a098426fb9e7319a411edb5c4528a67a97873360d6fef70"
     },
@@ -77,36 +89,28 @@
       "sha256": "ef9fe3c6f69ea55d6a26f2c931e58229130ae9840311e7649da966f36b323a9b"
     },
     {
+      "path": "original/libtiff/tiff.h",
+      "sha256": "ec0904a51c9392cb6a63dc5e9d563e5adb8af64517264176f370b96b6deb5200"
+    },
+    {
+      "path": "original/libtiff/tiffio.h",
+      "sha256": "304e7ebf0b2805db8f96df30ce5f53eae4d86124ec42c587d4e69a9f5f419da3"
+    },
+    {
+      "path": "original/libtiff/tiffio.hxx",
+      "sha256": "cd7ebd22cdba45167415b000e923f7d0ef9301028a3e775e3ace9e8c60d15ece"
+    },
+    {
+      "path": "original/libtiff/tiffvers.h",
+      "sha256": "08a7a8dc12968f77fb4ec7dcb481b590ba2b6e558ca6569d941938915c65a81c"
+    },
+    {
       "path": "safe/capi/libtiff-safe.map",
       "sha256": "91345c3b45202c21566b8303f8bcbce66c018782622c769e6b35d5c5a6053078"
     },
     {
       "path": "safe/capi/libtiffxx-safe.map",
       "sha256": "69f0770560d388adf82592d049e4351e2f946be420b8d81aeb7eac1b31210d09"
-    },
-    {
-      "path": "safe/include/tif_config.h",
-      "sha256": "a47f4576e7b5cafa94bfdb8bccea8b81de15b38401deb2b7bd0a9fc4d3ad51dc"
-    },
-    {
-      "path": "safe/include/tiff.h",
-      "sha256": "ec0904a51c9392cb6a63dc5e9d563e5adb8af64517264176f370b96b6deb5200"
-    },
-    {
-      "path": "safe/include/tiffconf.h",
-      "sha256": "bfd4ac2e9861d34ad8b4fa02c8215b3672a6ef73ff343d140d1886507c551be1"
-    },
-    {
-      "path": "safe/include/tiffio.h",
-      "sha256": "304e7ebf0b2805db8f96df30ce5f53eae4d86124ec42c587d4e69a9f5f419da3"
-    },
-    {
-      "path": "safe/include/tiffio.hxx",
-      "sha256": "cd7ebd22cdba45167415b000e923f7d0ef9301028a3e775e3ace9e8c60d15ece"
-    },
-    {
-      "path": "safe/include/tiffvers.h",
-      "sha256": "08a7a8dc12968f77fb4ec7dcb481b590ba2b6e558ca6569d941938915c65a81c"
     }
   ],
   "target_platform": {

@@ -8,10 +8,12 @@
           "-dD",
           "-P",
           "-I",
-          "safe/include",
+          "original/libtiff",
+          "-I",
+          "original/build/libtiff",
           "-x",
           "c",
-          "safe/include/tiffio.h"
+          "original/libtiff/tiffio.h"
         ],
         "language": "c"
       },
@@ -22,10 +24,12 @@
           "-dD",
           "-P",
           "-I",
-          "safe/include",
+          "original/libtiff",
+          "-I",
+          "original/build/libtiff",
           "-x",
           "c++",
-          "safe/include/tiffio.hxx"
+          "original/libtiff/tiffio.hxx"
         ],
         "language": "c++"
       }
@@ -37,7 +41,7 @@
     ]
   },
   "config_snapshots": {
-    "safe/include/tif_config.h": {
+    "original/build/libtiff/tif_config.h": {
       "CCITT_SUPPORT": "1",
       "CHECK_JPEG_YCBCR_SUBSAMPLING": "1",
       "CXX_SUPPORT": "1",
@@ -69,641 +73,7 @@
       "WEBP_SUPPORT": "1",
       "ZSTD_SUPPORT": "1"
     },
-    "safe/include/tiff.h": {
-      "CLEANFAXDATA_CLEAN": "0               /* no errors detected */",
-      "CLEANFAXDATA_REGENERATED": "1         /* receiver regenerated lines */",
-      "CLEANFAXDATA_UNCLEAN": "2             /* uncorrected errors exist */",
-      "CODINGMETHODS_T42": "(1 << 5)      /* !T.42 JPEG */",
-      "CODINGMETHODS_T43": "(1 << 6)      /* !T.43 colour by layered JBIG */",
-      "CODINGMETHODS_T4_1D": "(1 << 1)    /* !T.4 1D */",
-      "CODINGMETHODS_T4_2D": "(1 << 2)    /* !T.4 2D */",
-      "CODINGMETHODS_T6": "(1 << 3)       /* !T.6 */",
-      "CODINGMETHODS_T85": "(1 << 4)      /* !T.85 JBIG */",
-      "COLORRESPONSEUNIT_100000S": "5        /* hundred-thousandths */",
-      "COLORRESPONSEUNIT_10000S": "4         /* ten-thousandths of a unit */",
-      "COLORRESPONSEUNIT_1000S": "3          /* thousandths of a unit */",
-      "COLORRESPONSEUNIT_100S": "2           /* hundredths of a unit */",
-      "COLORRESPONSEUNIT_10S": "1            /* tenths of a unit */",
-      "COMPRESSION_ADOBE_DEFLATE": "8 /* Deflate compression, as recognized by Adobe */",
-      "COMPRESSION_CCITTFAX3": "3       /* CCITT Group 3 fax encoding */",
-      "COMPRESSION_CCITTFAX4": "4       /* CCITT Group 4 fax encoding */",
-      "COMPRESSION_CCITTRLE": "2        /* CCITT modified Huffman RLE */",
-      "COMPRESSION_CCITTRLEW": "32771   /* #1 w/ word alignment */",
-      "COMPRESSION_CCITT_T4": "3        /* CCITT T.4 (TIFF 6 name) */",
-      "COMPRESSION_CCITT_T6": "4        /* CCITT T.6 (TIFF 6 name) */",
-      "COMPRESSION_DCS": "32947      /* Kodak DCS encoding */",
-      "COMPRESSION_DEFLATE": "32946   /* Deflate compression, legacy tag */",
-      "COMPRESSION_IT8BL": "32898    /* IT8 Binary line art */",
-      "COMPRESSION_IT8CTPAD": "32895 /* IT8 CT w/padding */",
-      "COMPRESSION_IT8LW": "32896    /* IT8 Linework RLE */",
-      "COMPRESSION_IT8MP": "32897    /* IT8 Monochrome picture */",
-      "COMPRESSION_JBIG": "34661     /* ISO JBIG */",
-      "COMPRESSION_JP2000": "34712   /* Leadtools JPEG2000 */",
-      "COMPRESSION_JPEG": "7            /* %JPEG DCT compression */",
-      "COMPRESSION_JXL": "50002              /* JPEGXL: WARNING not registered in Adobe-maintained registry */",
-      "COMPRESSION_LERC": "34887     /* ESRI Lerc codec: https://github.com/Esri/lerc */",
-      "COMPRESSION_LZMA": "34925             /* LZMA2 */",
-      "COMPRESSION_LZW": "5             /* Lempel-Ziv  & Welch */",
-      "COMPRESSION_NEXT": "32766        /* NeXT 2-bit RLE */",
-      "COMPRESSION_NONE": "1            /* dump mode */",
-      "COMPRESSION_OJPEG": "6           /* !6.0 JPEG */",
-      "COMPRESSION_PACKBITS": "32773    /* Macintosh RLE */",
-      "COMPRESSION_PIXARFILM": "32908 /* Pixar companded 10bit LZW */",
-      "COMPRESSION_PIXARLOG": "32909  /* Pixar companded 11bit ZIP */",
-      "COMPRESSION_SGILOG": "34676   /* SGI Log Luminance RLE */",
-      "COMPRESSION_SGILOG24": "34677 /* SGI Log 24-bit packed */",
-      "COMPRESSION_T43": "10            /* !TIFF/FX T.43 colour by layered JBIG compression */",
-      "COMPRESSION_T85": "9             /* !TIFF/FX T.85 JBIG compression */",
-      "COMPRESSION_THUNDERSCAN": "32809 /* ThunderScan RLE */",
-      "COMPRESSION_WEBP": "50001             /* WEBP: WARNING not registered in Adobe-maintained registry */",
-      "COMPRESSION_ZSTD": "50000             /* ZSTD: WARNING not registered in Adobe-maintained registry */",
-      "DCSIMAGERFILTER_CFA": "2           /* color filter array */",
-      "DCSIMAGERFILTER_IR": "0            /* infrared filter */",
-      "DCSIMAGERFILTER_MONO": "1          /* monochrome filter */",
-      "DCSIMAGERFILTER_OTHER": "3         /* other filter */",
-      "DCSIMAGERMODEL_M3": "0             /* M3 chip (1280 x 1024) */",
-      "DCSIMAGERMODEL_M5": "1             /* M5 chip (1536 x 1024) */",
-      "DCSIMAGERMODEL_M6": "2             /* M6 chip (3072 x 2048) */",
-      "DCSINTERPMODE_NORMAL": "0x0        /* whole image, default */",
-      "DCSINTERPMODE_PREVIEW": "0x1       /* preview of image (384x256) */",
-      "DEFLATE_SUBCODEC_LIBDEFLATE": "1",
-      "DEFLATE_SUBCODEC_ZLIB": "0",
-      "EXIFTAG_ACCELERATION": "37892              /* Acceleration (a scalar regardless of direction) as the ambientsituation at the shot in units of mGal (10-5 m/s^2) */",
-      "EXIFTAG_APERTUREVALUE": "37378            /* Aperture */",
-      "EXIFTAG_BODYSERIALNUMBER": "42033 /* serial number of the body of the camera */",
-      "EXIFTAG_BRIGHTNESSVALUE": "37379          /* Brightness */",
-      "EXIFTAG_CAMERAELEVATIONANGLE": "37893",
-      "EXIFTAG_CAMERAOWNERNAME": "42032  /* owner of a camera */",
-      "EXIFTAG_CFAPATTERN": "41730               /* CFA pattern */",
-      "EXIFTAG_COLORSPACE": "40961               /* Color space information */",
-      "EXIFTAG_COMPONENTSCONFIGURATION": "37121  /* Meaning of each component */",
-      "EXIFTAG_COMPOSITEIMAGE": "42080                      /* composite image */",
-      "EXIFTAG_COMPRESSEDBITSPERPIXEL": "37122   /* Image compression mode */",
-      "EXIFTAG_CONTRAST": "41992                 /* Contrast */",
-      "EXIFTAG_CUSTOMRENDERED": "41985           /* Custom image processing */",
-      "EXIFTAG_DATETIMEDIGITIZED": "36868        /* Date and time of digital data generation */",
-      "EXIFTAG_DATETIMEORIGINAL": "36867         /* Date and time of original data generation */",
-      "EXIFTAG_DEVICESETTINGDESCRIPTION": "41995 /* Device settings description */",
-      "EXIFTAG_DIGITALZOOMRATIO": "41988         /* Digital zoom ratio */",
-      "EXIFTAG_EXIFVERSION": "36864              /* Exif version */",
-      "EXIFTAG_EXPOSUREBIASVALUE": "37380        /* Exposure bias */",
-      "EXIFTAG_EXPOSUREINDEX": "41493            /* Exposure index */",
-      "EXIFTAG_EXPOSUREMODE": "41986             /* Exposure mode */",
-      "EXIFTAG_EXPOSUREPROGRAM": "34850          /* Exposure program */",
-      "EXIFTAG_EXPOSURETIME": "33434             /* Exposure time */",
-      "EXIFTAG_FILESOURCE": "41728               /* File source */",
-      "EXIFTAG_FLASH": "37385                    /* Flash */",
-      "EXIFTAG_FLASHENERGY": "41483              /* Flash energy */",
-      "EXIFTAG_FLASHPIXVERSION": "40960          /* Supported Flashpix version */",
-      "EXIFTAG_FNUMBER": "33437                  /* F number */",
-      "EXIFTAG_FOCALLENGTH": "37386              /* Lens focal length */",
-      "EXIFTAG_FOCALLENGTHIN35MMFILM": "41989    /* Focal length in 35 mm film */",
-      "EXIFTAG_FOCALPLANERESOLUTIONUNIT": "41488 /* Focal plane resolution unit */",
-      "EXIFTAG_FOCALPLANEXRESOLUTION": "41486    /* Focal plane X resolution */",
-      "EXIFTAG_FOCALPLANEYRESOLUTION": "41487    /* Focal plane Y resolution */",
-      "EXIFTAG_GAINCONTROL": "41991              /* Gain control */",
-      "EXIFTAG_GAMMA": "42240                               /* value of coefficient gamma */",
-      "EXIFTAG_HUMIDITY": "37889                  /* Humidity as the ambient situation at the shot in percent */",
-      "EXIFTAG_IMAGEUNIQUEID": "42016            /* Unique image ID */",
-      "EXIFTAG_ISOSPEED": "34867                  /* ISO speed value */",
-      "EXIFTAG_ISOSPEEDLATITUDEYYY": "34868       /* ISO speed latitude yyy */",
-      "EXIFTAG_ISOSPEEDLATITUDEZZZ": "34869       /* ISO speed latitude zzz */",
-      "EXIFTAG_ISOSPEEDRATINGS": "34855          /* ISO speed rating */",
-      "EXIFTAG_LENSMAKE": "42035                            /* the lens manufacturer */",
-      "EXIFTAG_LENSMODEL": "42036                           /* the lens model name and model number */",
-      "EXIFTAG_LENSSERIALNUMBER": "42037                    /* the serial number of the interchangeable lens */",
-      "EXIFTAG_LENSSPECIFICATION": "42034",
-      "EXIFTAG_LIGHTSOURCE": "37384              /* Light source */",
-      "EXIFTAG_MAKERNOTE": "37500                /* Manufacturer notes */",
-      "EXIFTAG_MAXAPERTUREVALUE": "37381         /* Maximum lens aperture */",
-      "EXIFTAG_METERINGMODE": "37383             /* Metering mode */",
-      "EXIFTAG_OECF": "34856                     /* Optoelectric conversion factor */",
-      "EXIFTAG_OFFSETTIME": "36880                /* offset from UTC of the time of DateTime tag. */",
-      "EXIFTAG_OFFSETTIMEDIGITIZED": "36882       /* offset from UTC of the time of DateTimeDigitized tag. */",
-      "EXIFTAG_OFFSETTIMEORIGINAL": "36881        /* offset from UTC of the time of DateTimeOriginal tag. */",
-      "EXIFTAG_PHOTOGRAPHICSENSITIVITY": "34855  /* Photographic Sensitivity (new name for tag 34855) */",
-      "EXIFTAG_PIXELXDIMENSION": "40962          /* Valid image width */",
-      "EXIFTAG_PIXELYDIMENSION": "40963          /* Valid image height */",
-      "EXIFTAG_PRESSURE": "37890                  /* Pressure as the ambient situation at the shot hecto-Pascal (hPa) */",
-      "EXIFTAG_RECOMMENDEDEXPOSUREINDEX": "34866  /* recommended exposure index   */",
-      "EXIFTAG_RELATEDSOUNDFILE": "40964         /* Related audio file */",
-      "EXIFTAG_SATURATION": "41993               /* Saturation */",
-      "EXIFTAG_SCENECAPTURETYPE": "41990         /* Scene capture type */",
-      "EXIFTAG_SCENETYPE": "41729                /* Scene type */",
-      "EXIFTAG_SENSINGMETHOD": "41495            /* Sensing method */",
-      "EXIFTAG_SENSITIVITYTYPE": "34864           /* The SensitivityType tag indicates which one of the parameters of ISO12232 is the PhotographicSensitivity tag. */",
-      "EXIFTAG_SHARPNESS": "41994                /* Sharpness */",
-      "EXIFTAG_SHUTTERSPEEDVALUE": "37377        /* Shutter speed */",
-      "EXIFTAG_SOURCEEXPOSURETIMESOFCOMPOSITEIMAGE": "42082 /* source exposure times of composite image */",
-      "EXIFTAG_SOURCEIMAGENUMBEROFCOMPOSITEIMAGE": "42081   /* source image number of composite image */",
-      "EXIFTAG_SPATIALFREQUENCYRESPONSE": "41484 /* Spatial frequency response */",
-      "EXIFTAG_SPECTRALSENSITIVITY": "34852      /* Spectral sensitivity */",
-      "EXIFTAG_STANDARDOUTPUTSENSITIVITY": "34865 /* This tag indicates the standard output sensitivity value of a camera or input device defined in ISO 12232. */",
-      "EXIFTAG_SUBJECTAREA": "37396              /* Subject area */",
-      "EXIFTAG_SUBJECTDISTANCE": "37382          /* Subject distance */",
-      "EXIFTAG_SUBJECTDISTANCERANGE": "41996     /* Subject distance range */",
-      "EXIFTAG_SUBJECTLOCATION": "41492          /* Subject location */",
-      "EXIFTAG_SUBSECTIME": "37520               /* DateTime subseconds */",
-      "EXIFTAG_SUBSECTIMEDIGITIZED": "37522      /* DateTimeDigitized subseconds */",
-      "EXIFTAG_SUBSECTIMEORIGINAL": "37521       /* DateTimeOriginal subseconds */",
-      "EXIFTAG_TEMPERATURE": "37888               /* Temperature as the ambient situation at the shot in dergee Celsius */",
-      "EXIFTAG_USERCOMMENT": "37510              /* User comments */",
-      "EXIFTAG_WATERDEPTH": "37891                /* WaterDepth as the ambient situation at the shot in meter (m) */",
-      "EXIFTAG_WHITEBALANCE": "41987             /* White balance */",
-      "EXTRASAMPLE_ASSOCALPHA": "1           /* !associated alpha data */",
-      "EXTRASAMPLE_UNASSALPHA": "2           /* !unassociated alpha data */",
-      "EXTRASAMPLE_UNSPECIFIED": "0          /* !unspecified data */",
-      "FAXMODE_BYTEALIGN": "0x0004     /* byte align row */",
-      "FAXMODE_CLASSF": "FAXMODE_NORTC /* TIFF Class F */",
-      "FAXMODE_CLASSIC": "0x0000       /* default, include RTC */",
-      "FAXMODE_NOEOL": "0x0002         /* no EOL code at end of row */",
-      "FAXMODE_NORTC": "0x0001         /* no RTC at end of data */",
-      "FAXMODE_WORDALIGN": "0x0008     /* word align row */",
-      "FAXPROFILE_C": "4                  /* !TIFF/FX FAX profile C */",
-      "FAXPROFILE_F": "2                  /* !TIFF/FX FAX profile F */",
-      "FAXPROFILE_J": "3                  /* !TIFF/FX FAX profile J */",
-      "FAXPROFILE_L": "5                  /* !TIFF/FX FAX profile L */",
-      "FAXPROFILE_M": "6                  /* !TIFF/FX FAX profile LM */",
-      "FAXPROFILE_S": "1                  /* !TIFF/FX FAX profile S */",
-      "FILETYPE_MASK": "0x4             /* transparency mask */",
-      "FILETYPE_PAGE": "0x2             /* one page of many */",
-      "FILETYPE_REDUCEDIMAGE": "0x1     /* reduced resolution version */",
-      "FILLORDER_LSB2MSB": "2                /* least significant -> most */",
-      "FILLORDER_MSB2LSB": "1                /* most significant -> least */",
-      "GPSTAG_ALTITUDE": "6              /* Indicates the altitude based on the reference in GPSAltitudeRef. */",
-      "GPSTAG_ALTITUDEREF": "5           /* Indicates the altitude used as the reference altitude. */",
-      "GPSTAG_AREAINFORMATION": "28      /* A character string recording the name of the GPS area. */",
-      "GPSTAG_DATESTAMP": "29            /* A character string recording date and time information relative to UTC (Coordinated Universal Time). */",
-      "GPSTAG_DESTBEARING": "24          /* Indicates the bearing to the destination point. */",
-      "GPSTAG_DESTBEARINGREF": "23       /* Indicates the reference used for giving the bearing to the destination point. */",
-      "GPSTAG_DESTDISTANCE": "26         /* Indicates the distance to the destination point. */",
-      "GPSTAG_DESTDISTANCEREF": "25      /* Indicates the unit used to express the distance to the destination point. */",
-      "GPSTAG_DESTLATITUDE": "20         /* Indicates the latitude of the destination point. */",
-      "GPSTAG_DESTLATITUDEREF": "19      /* Indicates whether the latitude of the destination point is north or south latitude. */",
-      "GPSTAG_DESTLONGITUDE": "22        /* Indicates the longitude of the destination point. */",
-      "GPSTAG_DESTLONGITUDEREF": "21     /* Indicates whether the longitude of the destination point is east or west longitude. */",
-      "GPSTAG_DIFFERENTIAL": "30         /* Indicates whether differential correction is applied to the GPS receiver. */",
-      "GPSTAG_DOP": "11                  /* Indicates the GPS DOP (data degree of precision). */",
-      "GPSTAG_GPSHPOSITIONINGERROR": "31 /* Indicates horizontal positioning errors in meters. */",
-      "GPSTAG_IMGDIRECTION": "17         /* Indicates the direction of the image when it was captured. */",
-      "GPSTAG_IMGDIRECTIONREF": "16      /* Indicates the reference for giving the direction of the image when it is captured. */",
-      "GPSTAG_LATITUDE": "2              /* Indicates the latitude. */",
-      "GPSTAG_LATITUDEREF": "1           /* Indicates whether the latitude is north or south latitude. */",
-      "GPSTAG_LONGITUDE": "4             /* Indicates the longitude. */",
-      "GPSTAG_LONGITUDEREF": "3          /* Indicates whether the longitude is east or west longitude. */",
-      "GPSTAG_MAPDATUM": "18             /* Indicates the geodetic survey data used by the GPS receiver. (e.g. WGS-84) */",
-      "GPSTAG_MEASUREMODE": "10          /* Indicates the GPS measurement mode. */",
-      "GPSTAG_PROCESSINGMETHOD": "27     /* A character string recording the name of the method used for location finding. */",
-      "GPSTAG_SATELLITES": "8            /*Indicates the GPS satellites used for measurements. */",
-      "GPSTAG_SPEED": "13                /* Indicates the speed of GPS receiver movement. */",
-      "GPSTAG_SPEEDREF": "12             /* Indicates the unit used to express the GPS receiver speed of movement. */",
-      "GPSTAG_STATUS": "9                /* Indicates the status of the GPS receiver when the image is  recorded. */",
-      "GPSTAG_TIMESTAMP": "7             /*Indicates the time as UTC (Coordinated Universal Time). */",
-      "GPSTAG_TRACK": "15                /* Indicates the direction of GPS receiver movement. */",
-      "GPSTAG_TRACKREF": "14             /* Indicates the reference for giving the direction of GPS receiver movement. */",
-      "GPSTAG_VERSIONID": "0             /* Indicates the version of GPSInfoIFD. */",
-      "GRAYRESPONSEUNIT_100000S": "5         /* hundred-thousandths */",
-      "GRAYRESPONSEUNIT_10000S": "4          /* ten-thousandths of a unit */",
-      "GRAYRESPONSEUNIT_1000S": "3           /* thousandths of a unit */",
-      "GRAYRESPONSEUNIT_100S": "2            /* hundredths of a unit */",
-      "GRAYRESPONSEUNIT_10S": "1             /* tenths of a unit */",
-      "GROUP3OPT_2DENCODING": "0x1           /* 2-dimensional coding */",
-      "GROUP3OPT_FILLBITS": "0x4             /* fill to byte boundary */",
-      "GROUP3OPT_UNCOMPRESSED": "0x2         /* data not compressed */",
-      "GROUP4OPT_UNCOMPRESSED": "0x2         /* data not compressed */",
-      "INKSET_CMYK": "1                      /* !cyan-magenta-yellow-black color */",
-      "INKSET_MULTIINK": "2                  /* !multi-ink or hi-fi color */",
-      "JPEGCOLORMODE_RAW": "0x0000     /* no conversion (default) */",
-      "JPEGCOLORMODE_RGB": "0x0001     /* do auto conversion */",
-      "JPEGPROC_BASELINE": "1                /* !baseline sequential */",
-      "JPEGPROC_LOSSLESS": "14               /* !Huffman coded lossless */",
-      "JPEGTABLESMODE_HUFF": "0x0002   /* include Huffman tbls */",
-      "JPEGTABLESMODE_QUANT": "0x0001  /* include quantization tbls */",
-      "LERC_ADD_COMPRESSION_DEFLATE": "1",
-      "LERC_ADD_COMPRESSION_NONE": "0",
-      "LERC_ADD_COMPRESSION_ZSTD": "2",
-      "LERC_VERSION_2_4": "4",
-      "MDI_BIGENDIAN": "0x4550",
-      "MDI_LITTLEENDIAN": "0x5045",
-      "OFILETYPE_IMAGE": "1             /* full resolution image data */",
-      "OFILETYPE_PAGE": "3              /* one page of many */",
-      "OFILETYPE_REDUCEDIMAGE": "2      /* reduced size image data */",
-      "ORIENTATION_BOTLEFT": "4              /* row 0 bottom, col 0 lhs */",
-      "ORIENTATION_BOTRIGHT": "3             /* row 0 bottom, col 0 rhs */",
-      "ORIENTATION_LEFTBOT": "8              /* row 0 lhs, col 0 bottom */",
-      "ORIENTATION_LEFTTOP": "5              /* row 0 lhs, col 0 top */",
-      "ORIENTATION_RIGHTBOT": "7             /* row 0 rhs, col 0 bottom */",
-      "ORIENTATION_RIGHTTOP": "6             /* row 0 rhs, col 0 top */",
-      "ORIENTATION_TOPLEFT": "1              /* row 0 top, col 0 lhs */",
-      "ORIENTATION_TOPRIGHT": "2             /* row 0 top, col 0 rhs */",
-      "PERSAMPLE_MERGED": "0             /* present as a single value */",
-      "PERSAMPLE_MULTI": "1              /* present as multiple values */",
-      "PHOTOMETRIC_CFA": "32803              /* color filter array */",
-      "PHOTOMETRIC_CIELAB": "8               /* !1976 CIE L*a*b* */",
-      "PHOTOMETRIC_ICCLAB": "9               /* ICC L*a*b* [Adobe TIFF Technote 4] */",
-      "PHOTOMETRIC_ITULAB": "10              /* ITU L*a*b* */",
-      "PHOTOMETRIC_LOGL": "32844             /* CIE Log2(L) */",
-      "PHOTOMETRIC_LOGLUV": "32845           /* CIE Log2(L) (u',v') */",
-      "PHOTOMETRIC_MASK": "4                 /* $holdout mask */",
-      "PHOTOMETRIC_MINISBLACK": "1           /* min value is black */",
-      "PHOTOMETRIC_MINISWHITE": "0           /* min value is white */",
-      "PHOTOMETRIC_PALETTE": "3              /* color map indexed */",
-      "PHOTOMETRIC_RGB": "2                  /* RGB color model */",
-      "PHOTOMETRIC_SEPARATED": "5            /* !color separations */",
-      "PHOTOMETRIC_YCBCR": "6                /* !CCIR 601 */",
-      "PIXARLOGDATAFMT_11BITLOG": "2    /* 11-bit log-encoded (raw) */",
-      "PIXARLOGDATAFMT_12BITPICIO": "3  /* as per PICIO (1.0==2048) */",
-      "PIXARLOGDATAFMT_16BIT": "4       /* signed short samples */",
-      "PIXARLOGDATAFMT_8BIT": "0        /* regular u_char samples */",
-      "PIXARLOGDATAFMT_8BITABGR": "1    /* ABGR-order u_chars */",
-      "PIXARLOGDATAFMT_FLOAT": "5       /* IEEE float samples */",
-      "PLANARCONFIG_CONTIG": "1              /* single image plane */",
-      "PLANARCONFIG_SEPARATE": "2            /* separate planes of data */",
-      "PREDICTOR_FLOATINGPOINT": "3          /* floating point predictor */",
-      "PREDICTOR_HORIZONTAL": "2             /* horizontal differencing */",
-      "PREDICTOR_NONE": "1                   /* no prediction scheme used */",
-      "PROFILETYPE_G3_FAX": "1            /* ! */",
-      "PROFILETYPE_UNSPECIFIED": "0       /* ! */",
-      "RESUNIT_CENTIMETER": "3               /* metric */",
-      "RESUNIT_INCH": "2                     /* english */",
-      "RESUNIT_NONE": "1                     /* no meaningful units */",
-      "SAMPLEFORMAT_COMPLEXIEEEFP": "6       /* !complex ieee floating */",
-      "SAMPLEFORMAT_COMPLEXINT": "5          /* !complex signed int */",
-      "SAMPLEFORMAT_IEEEFP": "3              /* !IEEE floating point data */",
-      "SAMPLEFORMAT_INT": "2                 /* !signed integer data */",
-      "SAMPLEFORMAT_UINT": "1                /* !unsigned integer data */",
-      "SAMPLEFORMAT_VOID": "4                /* !untyped data */",
-      "SGILOGDATAFMT_16BIT": "1          /* 16-bit samples */",
-      "SGILOGDATAFMT_8BIT": "3           /* 8-bit RGB monitor values */",
-      "SGILOGDATAFMT_FLOAT": "0          /* IEEE float samples */",
-      "SGILOGDATAFMT_RAW": "2            /* uninterpreted data */",
-      "SGILOGENCODE_NODITHER": "0        /* do not dither encoded values*/",
-      "SGILOGENCODE_RANDITHER": "1       /* randomly dither encd values */",
-      "THRESHHOLD_BILEVEL": "1               /* b&w art scan */",
-      "THRESHHOLD_ERRORDIFFUSE": "3          /* usually floyd-steinberg */",
-      "THRESHHOLD_HALFTONE": "2              /* or dithered scan */",
-      "TIFFTAG_ACTIVEAREA": "50829              /* &active (non-masked) pixels of the sensor */",
-      "TIFFTAG_ALIAS_LAYER_METADATA": "50784 /* Alias Sketchbook Pro layer usage description. */",
-      "TIFFTAG_ANALOGBALANCE": "50727        /* &gain applied the stored raw values*/",
-      "TIFFTAG_ANTIALIASSTRENGTH": "50738       /* &relative strength of the camera's anti-alias filter */",
-      "TIFFTAG_ARTIST": "315                 /* creator of image */",
-      "TIFFTAG_ASSHOTICCPROFILE": "50831        /* &these two tags used to */",
-      "TIFFTAG_ASSHOTNEUTRAL": "50728        /* &selected white balance in linear reference space */",
-      "TIFFTAG_ASSHOTPREPROFILEMATRIX": "50832  /* map cameras's color space  into ICC profile space */",
-      "TIFFTAG_ASSHOTPROFILENAME": "50934           /* &as shot profile name (UTF-8) */",
-      "TIFFTAG_ASSHOTWHITEXY": "50729        /* &selected white balance in x-y chromaticity coordinates */",
-      "TIFFTAG_BADFAXLINES": "326            /* lines w/ wrong pixel count */",
-      "TIFFTAG_BASELINEEXPOSURE": "50730     /* &how much to move the zero point */",
-      "TIFFTAG_BASELINEEXPOSUREOFFSET": "51109       /* &baseline exposure offset */",
-      "TIFFTAG_BASELINENOISE": "50731        /* &relative noise level */",
-      "TIFFTAG_BASELINESHARPNESS": "50732    /* &relative amount of sharpening */",
-      "TIFFTAG_BATTERYLEVEL": "33423        /* (alias for TIFFTAG_EP_BATTERYLEVEL) */",
-      "TIFFTAG_BAYERGREENSPLIT": "50733",
-      "TIFFTAG_BESTQUALITYSCALE": "50780        /* &best quality multiplier */",
-      "TIFFTAG_BITSPERSAMPLE": "258     /* bits per channel (sample) */",
-      "TIFFTAG_BLACKLEVEL": "50714           /* &zero light encoding level */",
-      "TIFFTAG_BLACKLEVELDELTAH": "50715     /* &zero light encoding level differences (columns) */",
-      "TIFFTAG_BLACKLEVELDELTAV": "50716     /* &zero light encoding level differences (rows) */",
-      "TIFFTAG_BLACKLEVELREPEATDIM": "50713  /* &repeat pattern size for the BlackLevel tag */",
-      "TIFFTAG_CALIBRATIONILLUMINANT1": "50778  /* &illuminant 1 */",
-      "TIFFTAG_CALIBRATIONILLUMINANT2": "50779  /* &illuminant 2 */",
-      "TIFFTAG_CALIBRATIONILLUMINANT3": "52529 /* &the illuminant used for the third set of color calibration tags */",
-      "TIFFTAG_CAMERACALIBRATION1": "50723   /* &calibration matrix 1 */",
-      "TIFFTAG_CAMERACALIBRATION2": "50724   /* &calibration matrix 2 */",
-      "TIFFTAG_CAMERACALIBRATION3": "52530     /* &matrix to transform reference camera native space values to individual camera native space values under CalibrationIlluminant3 */",
-      "TIFFTAG_CAMERACALIBRATIONSIGNATURE": "50931  /* &camera calibration signature (UTF-8) */",
-      "TIFFTAG_CAMERASERIALNUMBER": "50735      /* &camera's serial number */",
-      "TIFFTAG_CELLLENGTH": "265             /* +dithering matrix height */",
-      "TIFFTAG_CELLWIDTH": "264              /* +dithering matrix width */",
-      "TIFFTAG_CFALAYOUT": "50711            /* &spatial layout of the CFA */",
-      "TIFFTAG_CFAPATTERN": "33422          /* (alias for TIFFTAG_EP_CFAPATTERN) */",
-      "TIFFTAG_CFAPLANECOLOR": "50710        /* &CFAPattern->LinearRaw space mapping */",
-      "TIFFTAG_CFAREPEATPATTERNDIM": "33421 /* (alias for TIFFTAG_EP_CFAREPEATPATTERNDIM)*/",
-      "TIFFTAG_CHROMABLURRADIUS": "50737        /* &chroma blur radius */",
-      "TIFFTAG_CLEANFAXDATA": "327           /* regenerated line info */",
-      "TIFFTAG_CLIPPATH": "343               /* %ClipPath [Adobe TIFF technote 2] */",
-      "TIFFTAG_CODINGMETHODS": "403       /* !TIFF/FX coding methods */",
-      "TIFFTAG_COLORIMETRICREFERENCE": "50879       /* &colorimetric reference */",
-      "TIFFTAG_COLORMAP": "320               /* RGB map for palette image */",
-      "TIFFTAG_COLORMATRIX1": "50721         /* &XYZ->reference color space transformation matrix 1 */",
-      "TIFFTAG_COLORMATRIX2": "50722         /* &XYZ->reference color space transformation matrix 2 */",
-      "TIFFTAG_COLORMATRIX3": "52531           /* &matrix to convert XYZ values to reference camera native color space under CalibrationIlluminant3 */",
-      "TIFFTAG_COLORRESPONSEUNIT": "300      /* $color curve accuracy */",
-      "TIFFTAG_COMPRESSION": "259       /* data compression technique */",
-      "TIFFTAG_CONSECUTIVEBADFAXLINES": "328 /* max consecutive bad lines */",
-      "TIFFTAG_COPYRIGHT": "33432 /* copyright string */",
-      "TIFFTAG_CURRENTICCPROFILE": "50833       /* & */",
-      "TIFFTAG_CURRENTPREPROFILEMATRIX": "50834 /* & */",
-      "TIFFTAG_DATATYPE": "32996   /* $use SampleFormat */",
-      "TIFFTAG_DATETIME": "306               /* creation date and time */",
-      "TIFFTAG_DCSBALANCEARRAY": "65552   /* color balance values */",
-      "TIFFTAG_DCSCALIBRATIONFD": "65556  /* calibration file desc */",
-      "TIFFTAG_DCSCLIPRECTANGLE": "65559 /* area of image to acquire */",
-      "TIFFTAG_DCSCORRECTMATRIX": "65553  /* color correction values */",
-      "TIFFTAG_DCSGAMMA": "65554          /* gamma value */",
-      "TIFFTAG_DCSHUESHIFTVALUES": "65535 /* hue shift correction data */",
-      "TIFFTAG_DCSIMAGERTYPE": "65550     /* imager model & filter */",
-      "TIFFTAG_DCSINTERPMODE": "65551     /* interpolation mode */",
-      "TIFFTAG_DCSTOESHOULDERPTS": "65555 /* toe & shoulder points */",
-      "TIFFTAG_DECODE": "433              /* !TIFF/FX decode */",
-      "TIFFTAG_DEFAULTBLACKRENDER": "51110           /* &black rendering hint */",
-      "TIFFTAG_DEFAULTCROPORIGIN": "50719    /* &origin of the final image area */",
-      "TIFFTAG_DEFAULTCROPSIZE": "50720      /* &size of the final image area */",
-      "TIFFTAG_DEFAULTSCALE": "50718         /* &default scale factors */",
-      "TIFFTAG_DEFAULTUSERCROP": "51125              /* &default user crop rectangle in relative coords */",
-      "TIFFTAG_DEFLATE_SUBCODEC": "65570 /* ZIP codec: to get/set the sub-codec to use. Will default to libdeflate when available */",
-      "TIFFTAG_DEPTHFAR": "51179         /* &distance from the camera represented by the maximum value in the depth map */",
-      "TIFFTAG_DEPTHFORMAT": "51177      /* &encoding of the depth data in the file */",
-      "TIFFTAG_DEPTHMEASURETYPE": "51181 /* &measurement geometry for the depth map */",
-      "TIFFTAG_DEPTHNEAR": "51178        /* &distance from the camera represented by value 0 in the depth map */",
-      "TIFFTAG_DEPTHUNITS": "51180       /* &measurement units for DepthNear and DepthFar */",
-      "TIFFTAG_DNGBACKWARDVERSION": "50707   /* &DNG compatibility version */",
-      "TIFFTAG_DNGPRIVATEDATA": "50740          /* &manufacturer's private data */",
-      "TIFFTAG_DNGVERSION": "50706           /* &DNG version number */",
-      "TIFFTAG_DOCUMENTNAME": "269           /* name of doc. image is from */",
-      "TIFFTAG_DOTRANGE": "336               /* !0% and 100% dot codes */",
-      "TIFFTAG_ENHANCEPARAMS": "51182    /* &a string that documents how the enhanced image data was processed. */",
-      "TIFFTAG_EP_APERTUREVALUE": "37378            /* Aperture */",
-      "TIFFTAG_EP_BATTERYLEVEL": "33423             /* battery level (rational or ASCII) */",
-      "TIFFTAG_EP_BRIGHTNESSVALUE": "37379          /* Brightness */",
-      "TIFFTAG_EP_CFAPATTERN": "33422               /* color filter array pattern */",
-      "TIFFTAG_EP_CFAREPEATPATTERNDIM": "33421      /* dimensions of CFA pattern */",
-      "TIFFTAG_EP_COMPRESSEDBITSPERPIXEL": "37122   /* Image compression mode */",
-      "TIFFTAG_EP_DATETIMEORIGINAL": "36867         /* Date and time of original data generation */",
-      "TIFFTAG_EP_EXPOSUREBIASVALUE": "37380        /* Exposure bias */",
-      "TIFFTAG_EP_EXPOSUREINDEX": "37397            /* Exposure index */",
-      "TIFFTAG_EP_EXPOSUREPROGRAM": "34850          /* Exposure program */",
-      "TIFFTAG_EP_EXPOSURETIME": "33434             /* Exposure time */",
-      "TIFFTAG_EP_FLASH": "37385                    /* Flash */",
-      "TIFFTAG_EP_FLASHENERGY": "37387              /* Flash energy, or range if there is uncertainty */",
-      "TIFFTAG_EP_FNUMBER": "33437                  /* F number */",
-      "TIFFTAG_EP_FOCALLENGTH": "37386              /* Lens focal length */",
-      "TIFFTAG_EP_FOCALPLANERESOLUTIONUNIT": "37392 /* Focal plane resolution unit */",
-      "TIFFTAG_EP_FOCALPLANEXRESOLUTION": "37390    /* Focal plane X resolution */",
-      "TIFFTAG_EP_FOCALPLANEYRESOLUTION": "37391    /* Focal plane Y resolution */",
-      "TIFFTAG_EP_IMAGEHISTORY": "37395             /* Record of what has been done to the image */",
-      "TIFFTAG_EP_IMAGENUMBER": "37393              /* Number of image when several of burst shot stored in same TIFF/EP */",
-      "TIFFTAG_EP_INTERLACE": "34857                /* Number of multi-field images */",
-      "TIFFTAG_EP_IPTC_NAA": "33723                 /* Alias IPTC/NAA Newspaper Association RichTIFF */",
-      "TIFFTAG_EP_ISOSPEEDRATINGS": "34855          /* ISO speed rating */",
-      "TIFFTAG_EP_LIGHTSOURCE": "37384              /* Light source */",
-      "TIFFTAG_EP_MAXAPERTUREVALUE": "37381         /* Maximum lens aperture */",
-      "TIFFTAG_EP_METERINGMODE": "37383             /* Metering mode */",
-      "TIFFTAG_EP_NOISE": "37389                    /* Camera noise measurement values */",
-      "TIFFTAG_EP_OECF": "34856                     /* Optoelectric conversion factor */",
-      "TIFFTAG_EP_SECURITYCLASSIFICATION": "37394   /* Security classification */",
-      "TIFFTAG_EP_SELFTIMERMODE": "34859            /* Number of seconds capture was delayed from button press */",
-      "TIFFTAG_EP_SENSINGMETHOD": "37399            /* Type of image sensor */",
-      "TIFFTAG_EP_SHUTTERSPEEDVALUE": "37377        /* Shutter speed */",
-      "TIFFTAG_EP_SPATIALFREQUENCYRESPONSE": "37388 /* Spatial frequency response */",
-      "TIFFTAG_EP_SPECTRALSENSITIVITY": "34852      /* Spectral sensitivity */",
-      "TIFFTAG_EP_STANDARDID": "37398               /* TIFF/EP standard version, n.n.n.n */",
-      "TIFFTAG_EP_SUBJECTDISTANCE": "37382          /* Subject distance */",
-      "TIFFTAG_EP_SUBJECTLOCATION": "37396          /* Subject location (area) */",
-      "TIFFTAG_EP_TIMEZONEOFFSET": "34858           /* Time zone offset relative to UTC */",
-      "TIFFTAG_EXIFIFD": "34665 /* Pointer to EXIF private directory */",
-      "TIFFTAG_EXTRACAMERAPROFILES": "50933 /* http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/products/photoshop/pdfs/dng_spec_1.4.0.0.pdf */",
-      "TIFFTAG_EXTRASAMPLES": "338           /* !info about extra samples */",
-      "TIFFTAG_FAXDCS": "34911        /* encoded fax ses. params, Table 2/T.30 */",
-      "TIFFTAG_FAXFILLFUNC": "65540     /* G3/G4 fill function */",
-      "TIFFTAG_FAXMODE": "65536        /* Group 3/4 format control */",
-      "TIFFTAG_FAXPROFILE": "402          /* ! */",
-      "TIFFTAG_FAXRECVPARAMS": "34908 /* encoded Class 2 ses. params */",
-      "TIFFTAG_FAXRECVTIME": "34910   /* receive time (secs) */",
-      "TIFFTAG_FAXSUBADDRESS": "34909 /* received SubAddr string */",
-      "TIFFTAG_FEDEX_EDR": "34929                /* unknown use */",
-      "TIFFTAG_FILLORDER": "266              /* data order within a byte */",
-      "TIFFTAG_FORWARDMATRIX1": "50964              /* &matrix for mapping white balanced camera colors to XYZ D50 */",
-      "TIFFTAG_FORWARDMATRIX2": "50965              /* &matrix for mapping white balanced camera colors to XYZ D50 */",
-      "TIFFTAG_FORWARDMATRIX3": "52532         /* &matrix to map white balanced camera colors to XYZ D50 */",
-      "TIFFTAG_FRAMECOUNT": "34232             /* Sequence Frame Count */",
-      "TIFFTAG_FREEBYTECOUNTS": "289         /* +sizes of free blocks */",
-      "TIFFTAG_FREEOFFSETS": "288            /* +byte offset to free block */",
-      "TIFFTAG_GDAL_METADATA": "42112            /* Used by the GDAL library */",
-      "TIFFTAG_GDAL_NODATA": "42113              /* Used by the GDAL library */",
-      "TIFFTAG_GEO_METADATA": "50909        /* https://www.awaresystems.be/imaging/tiff/tifftags/geo_metadata.html */",
-      "TIFFTAG_GLOBALPARAMETERSIFD": "400 /* ! */",
-      "TIFFTAG_GPSIFD": "34853      /* Pointer to EXIF GPS private directory */",
-      "TIFFTAG_GRAYRESPONSECURVE": "291      /* $gray scale response curve */",
-      "TIFFTAG_GRAYRESPONSEUNIT": "290       /* $gray scale curve accuracy */",
-      "TIFFTAG_GROUP3OPTIONS": "292          /* 32 flag bits */",
-      "TIFFTAG_GROUP4OPTIONS": "293          /* 32 flag bits */",
-      "TIFFTAG_HALFTONEHINTS": "321          /* !highlight+shadow info */",
-      "TIFFTAG_HOSTCOMPUTER": "316           /* machine where created */",
-      "TIFFTAG_ICCPROFILE": "34675 /* ICC profile data */",
-      "TIFFTAG_ILLUMINANTDATA1": "52533        /* &data for the first calibration illuminant */",
-      "TIFFTAG_ILLUMINANTDATA2": "52534        /* &data for the second calibration illuminant */",
-      "TIFFTAG_ILLUMINANTDATA3": "53535        /* &data for the third calibration illuminant */",
-      "TIFFTAG_IMAGEBASECOLOR": "434      /* !TIFF/FX image base colour */",
-      "TIFFTAG_IMAGEDEPTH": "32997 /* z depth of image */",
-      "TIFFTAG_IMAGEDESCRIPTION": "270       /* info about image */",
-      "TIFFTAG_IMAGELAYER": "34732 /* !TIFF/FX image layer information */",
-      "TIFFTAG_IMAGELENGTH": "257       /* image height in pixels */",
-      "TIFFTAG_IMAGESOURCEDATA": "37724          /* http://justsolve.archiveteam.org/wiki/PSD, http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/ */",
-      "TIFFTAG_IMAGEWIDTH": "256        /* image width in pixels */",
-      "TIFFTAG_INDEXED": "346                /* %Indexed [Adobe TIFF Technote 3] */",
-      "TIFFTAG_INGR_FLAG_REGISTERS": "33919        /* Intergraph Application specific flags. */",
-      "TIFFTAG_INGR_PACKET_DATA_TAG": "33918       /* Intergraph Application specific storage. */",
-      "TIFFTAG_INKNAMES": "333               /* !ascii names of inks */",
-      "TIFFTAG_INKSET": "332                 /* !inks in separated image */",
-      "TIFFTAG_INTEROPERABILITYIFD": "40965      /* Pointer to EXIF Interoperability private directory */",
-      "TIFFTAG_IRASB_TRANSORMATION_MATRIX": "33920 /* Originally part of Intergraph's GeoTIFF tags, but likely understood by IrasB only. */",
-      "TIFFTAG_IT8BITSPEREXTENDEDRUNLENGTH": "34021 /* # of bits in long run */",
-      "TIFFTAG_IT8BITSPERRUNLENGTH": "34020         /* # of bits in short run */",
-      "TIFFTAG_IT8BKGCOLORINDICATOR": "34024        /* BP/BL bg color switch */",
-      "TIFFTAG_IT8BKGCOLORVALUE": "34026            /* BP/BL bg color value */",
-      "TIFFTAG_IT8CMYKEQUIVALENT": "34032           /* CMYK color equivalents */",
-      "TIFFTAG_IT8COLORCHARACTERIZATION": "34029    /* color character. table */",
-      "TIFFTAG_IT8COLORSEQUENCE": "34017            /* color seq. [RGB,CMYK,etc] */",
-      "TIFFTAG_IT8COLORTABLE": "34022               /* LW colortable */",
-      "TIFFTAG_IT8HCUSAGE": "34030                  /* HC usage indicator */",
-      "TIFFTAG_IT8HEADER": "34018                   /* DDES Header */",
-      "TIFFTAG_IT8IMAGECOLORINDICATOR": "34023      /* BP/BL image color switch */",
-      "TIFFTAG_IT8IMAGECOLORVALUE": "34025          /* BP/BL image color value */",
-      "TIFFTAG_IT8PIXELINTENSITYRANGE": "34027      /* MP pixel intensity value */",
-      "TIFFTAG_IT8RASTERPADDING": "34019            /* raster scanline padding */",
-      "TIFFTAG_IT8SITE": "34016                     /* site name */",
-      "TIFFTAG_IT8TRANSPARENCYINDICATOR": "34028    /* HC transparency switch */",
-      "TIFFTAG_IT8TRAPINDICATOR": "34031            /* Trapping indicator (untrapped=0, trapped=1) */",
-      "TIFFTAG_JBIGOPTIONS": "34750 /* JBIG options */",
-      "TIFFTAG_JPEGACTABLES": "521           /* !AC coefficient offsets */",
-      "TIFFTAG_JPEGCOLORMODE": "65538  /* Auto RGB<=>YCbCr convert? */",
-      "TIFFTAG_JPEGDCTABLES": "520           /* !DCT table offsets */",
-      "TIFFTAG_JPEGIFBYTECOUNT": "514        /* !JFIF stream length */",
-      "TIFFTAG_JPEGIFOFFSET": "513           /* !pointer to SOI marker */",
-      "TIFFTAG_JPEGLOSSLESSPREDICTORS": "517 /* !lossless proc predictor */",
-      "TIFFTAG_JPEGPOINTTRANSFORM": "518     /* !lossless point transform */",
-      "TIFFTAG_JPEGPROC": "512               /* !JPEG processing algorithm */",
-      "TIFFTAG_JPEGQTABLES": "519            /* !Q matrix offsets */",
-      "TIFFTAG_JPEGQUALITY": "65537    /* Compression quality level */",
-      "TIFFTAG_JPEGRESTARTINTERVAL": "515    /* !restart interval length */",
-      "TIFFTAG_JPEGTABLES": "347             /* %JPEG table stream */",
-      "TIFFTAG_JPEGTABLESMODE": "65539 /* What to put in JPEGTables */",
-      "TIFFTAG_LENSINFO": "50736                /* info about the lens */",
-      "TIFFTAG_LERC_ADD_COMPRESSION": "65566 /* LERC additional compression */",
-      "TIFFTAG_LERC_MAXZERROR": "65567   /* LERC maximum error */",
-      "TIFFTAG_LERC_PARAMETERS": "50674 /* Stores LERC version and additional compression method */",
-      "TIFFTAG_LERC_VERSION": "65565     /* LERC version */",
-      "TIFFTAG_LINEARIZATIONTABLE": "50712   /* &lookup table description */",
-      "TIFFTAG_LINEARRESPONSELIMIT": "50734     /* &non-linear encoding range */",
-      "TIFFTAG_LOCALIZEDCAMERAMODEL": "50709 /* &localized camera model name (UTF-8) */",
-      "TIFFTAG_LZMAPRESET": "65562       /* LZMA2 preset (compression level) */",
-      "TIFFTAG_MAKE": "271                   /* scanner manufacturer name */",
-      "TIFFTAG_MAKERNOTESAFETY": "50741         /* &whether the EXIF MakerNote tag is safe to preserve along with the rest of the EXIF data */",
-      "TIFFTAG_MASKEDAREAS": "50830             /* &list of coordinates of fully masked pixels */",
-      "TIFFTAG_MASKSUBAREA": "52536            /* &the crop rectangle of this IFD's mask, relative to the main image */",
-      "TIFFTAG_MATTEING": "32995   /* $use ExtraSamples */",
-      "TIFFTAG_MAXSAMPLEVALUE": "281         /* +maximum sample value */",
-      "TIFFTAG_MD_COLORTABLE": "33447 /* conversion from 16bit to 8bit */",
-      "TIFFTAG_MD_FILETAG": "33445    /* Specifies the pixel data format encoding in the GEL file format. */",
-      "TIFFTAG_MD_FILEUNITS": "33452  /* Units for data in this file, as used in the GEL file format. */",
-      "TIFFTAG_MD_LABNAME": "33448    /* name of the lab that scanned this file. */",
-      "TIFFTAG_MD_PREPDATE": "33450   /* information about the date the sample was prepared YY/MM/DD */",
-      "TIFFTAG_MD_PREPTIME": "33451   /* information about the time the sample was prepared HH:MM*/",
-      "TIFFTAG_MD_SAMPLEINFO": "33449 /* information about the scanned GEL sample */",
-      "TIFFTAG_MD_SCALEPIXEL": "33446 /* scale factor */",
-      "TIFFTAG_MINSAMPLEVALUE": "280         /* +minimum sample value */",
-      "TIFFTAG_MODEL": "272                  /* scanner model name/number */",
-      "TIFFTAG_MODELTIEPOINTTAG": "33922           /* GeoTIFF */",
-      "TIFFTAG_MODELTRANSFORMATIONTAG": "34264 /* Used in interchangeable GeoTIFF files */",
-      "TIFFTAG_MODENUMBER": "405          /* !TIFF/FX mode number */",
-      "TIFFTAG_NEWRAWIMAGEDIGEST": "51111            /* &modified MD5 digest of the raw image data */",
-      "TIFFTAG_NOISEPROFILE": "51041 /* &noise profile */",
-      "TIFFTAG_NOISEREDUCTIONAPPLIED": "50935       /* &amount of applied noise reduction */",
-      "TIFFTAG_NUMBEROFINKS": "334           /* !number of inks */",
-      "TIFFTAG_OCE_APPLICATION_SELECTOR": "50216 /* Used in the Oce scanning process. */",
-      "TIFFTAG_OCE_IDENTIFICATION_NUMBER": "50217",
-      "TIFFTAG_OCE_IMAGELOGIC_CHARACTERISTICS": "50218",
-      "TIFFTAG_OCE_SCANJOB_DESCRIPTION": "50215  /* Used in the Oce scanning process */",
-      "TIFFTAG_OPCODELIST1": "51008  /* &opcodes that should be applied to raw image after reading */",
-      "TIFFTAG_OPCODELIST2": "51009  /* &opcodes that should be applied after mapping to linear reference */",
-      "TIFFTAG_OPCODELIST3": "51022  /* &opcodes that should be applied after demosaicing */",
-      "TIFFTAG_OPIIMAGEID": "32781           /* %OPI ImageID [Adobe TIFF technote] */",
-      "TIFFTAG_OPIPROXY": "351               /* %OPI Proxy [Adobe TIFF technote] */",
-      "TIFFTAG_ORIENTATION": "274            /* +image orientation */",
-      "TIFFTAG_ORIGINALBESTQUALITYFINALSIZE": "51090 /* &best quality final size of larger original file for this proxy */",
-      "TIFFTAG_ORIGINALDEFAULTCROPSIZE": "51091      /* &the default crop size of larger original file for this proxy */",
-      "TIFFTAG_ORIGINALDEFAULTFINALSIZE": "51089     /* &default final size of larger original file for this proxy */",
-      "TIFFTAG_ORIGINALRAWFILEDATA": "50828     /* &contents of the original raw file */",
-      "TIFFTAG_ORIGINALRAWFILEDIGEST": "50973       /* &md5 of the data stored in the OriginalRawFileData tag */",
-      "TIFFTAG_ORIGINALRAWFILENAME": "50827     /* &file name of the original raw file (UTF-8) */",
-      "TIFFTAG_OSUBFILETYPE": "255      /* +kind of data in subfile */",
-      "TIFFTAG_PAGENAME": "285               /* page name image is from */",
-      "TIFFTAG_PAGENUMBER": "297             /* page numbers of multi-page */",
-      "TIFFTAG_PERSAMPLE": "65563        /* interface for per sample tags */",
-      "TIFFTAG_PHOTOMETRIC": "262            /* photometric interpretation */",
-      "TIFFTAG_PHOTOSHOP": "34377",
-      "TIFFTAG_PIXARLOGDATAFMT": "65549 /* PixarLogCodec I/O data sz */",
-      "TIFFTAG_PIXARLOGQUALITY": "65558 /* PixarLog uses same scale */",
-      "TIFFTAG_PIXAR_FOVCOT": "33304        /* cotan(fov) for env. maps */",
-      "TIFFTAG_PIXAR_IMAGEFULLLENGTH": "33301 /* full image size in y */",
-      "TIFFTAG_PIXAR_IMAGEFULLWIDTH": "33300  /* full image size in x */",
-      "TIFFTAG_PIXAR_MATRIX_WORLDTOCAMERA": "33306",
-      "TIFFTAG_PIXAR_MATRIX_WORLDTOSCREEN": "33305",
-      "TIFFTAG_PIXAR_TEXTUREFORMAT": "33302 /* texture map format */",
-      "TIFFTAG_PIXAR_WRAPMODES": "33303     /* s & t wrap modes */",
-      "TIFFTAG_PLANARCONFIG": "284           /* storage organization */",
-      "TIFFTAG_PREDICTOR": "317              /* prediction scheme w/ LZW */",
-      "TIFFTAG_PREVIEWAPPLICATIONNAME": "50966      /* &name of application that created preview (UTF-8) */",
-      "TIFFTAG_PREVIEWAPPLICATIONVERSION": "50967   /* &version of application that created preview (UTF-8) */",
-      "TIFFTAG_PREVIEWCOLORSPACE": "50970           /* &preview color space */",
-      "TIFFTAG_PREVIEWDATETIME": "50971             /* &date/time preview was rendered */",
-      "TIFFTAG_PREVIEWSETTINGSDIGEST": "50969       /* &unique id of conversion settings */",
-      "TIFFTAG_PREVIEWSETTINGSNAME": "50968         /* &name of conversion settings (UTF-8) */",
-      "TIFFTAG_PRIMARYCHROMATICITIES": "319  /* !primary chromaticities */",
-      "TIFFTAG_PROFILECALIBRATIONSIGNATURE": "50932 /* &profile calibration signature (UTF-8) */",
-      "TIFFTAG_PROFILECOPYRIGHT": "50942            /* &profile copyright information (UTF-8) */",
-      "TIFFTAG_PROFILEEMBEDPOLICY": "50941          /* &profile embedding policy */",
-      "TIFFTAG_PROFILEGAINTABLEMAP": "52525    /* &spatially varying gain tables that can be applied as starting point */",
-      "TIFFTAG_PROFILEHUESATMAPDATA1": "50938       /* &first HSV mapping table */",
-      "TIFFTAG_PROFILEHUESATMAPDATA2": "50939       /* &second HSV mapping table */",
-      "TIFFTAG_PROFILEHUESATMAPDATA3": "52537  /* &the data for the third HSV table */",
-      "TIFFTAG_PROFILEHUESATMAPDIMS": "50937        /* &dimensions of HSV mapping */",
-      "TIFFTAG_PROFILEHUESATMAPENCODING": "51107     /* &3D HueSatMap indexing conversion */",
-      "TIFFTAG_PROFILELOOKTABLEDATA": "50982        /* &default \"look\" table for use as starting point */",
-      "TIFFTAG_PROFILELOOKTABLEDIMS": "50981        /* &num of input samples in each dim of default \"look\" table */",
-      "TIFFTAG_PROFILELOOKTABLEENCODING": "51108     /* &3D LookTable indexing conversion */",
-      "TIFFTAG_PROFILENAME": "50936                 /* &camera profile name (UTF-8) */",
-      "TIFFTAG_PROFILETONECURVE": "50940            /* &default tone curve */",
-      "TIFFTAG_PROFILETYPE": "401         /* ! */",
-      "TIFFTAG_RAWDATAUNIQUEID": "50781         /* &unique identifier for the raw image data */",
-      "TIFFTAG_RAWIMAGEDIGEST": "50972              /* &md5 of raw image data */",
-      "TIFFTAG_RAWTOPREVIEWGAIN": "51112             /* &The gain between the main raw FD and the preview IFD containing this tag */",
-      "TIFFTAG_REDUCTIONMATRIX1": "50725     /* &dimensionality reduction matrix 1 */",
-      "TIFFTAG_REDUCTIONMATRIX2": "50726     /* &dimensionality reduction matrix 2 */",
-      "TIFFTAG_REDUCTIONMATRIX3": "52538       /* &dimensionality reduction matrix for use in color conversion to XYZ under CalibrationIlluminant3 */",
-      "TIFFTAG_REFERENCEBLACKWHITE": "532    /* !colorimetry info */",
-      "TIFFTAG_REFPTS": "32953            /* image reference points */",
-      "TIFFTAG_REGIONAFFINE": "32956      /* affine transformation mat */",
-      "TIFFTAG_REGIONTACKPOINT": "32954   /* region-xform tack point */",
-      "TIFFTAG_REGIONWARPCORNERS": "32955 /* warp quadrilateral */",
-      "TIFFTAG_RESOLUTIONUNIT": "296         /* units of resolutions */",
-      "TIFFTAG_RGBTABLES": "52543              /* &color transforms to apply to masked image regions */",
-      "TIFFTAG_RICHTIFFIPTC": "33723",
-      "TIFFTAG_ROWINTERLEAVEFACTOR": "50975         /* &number of interleaved fields */",
-      "TIFFTAG_ROWSPERSTRIP": "278           /* rows per strip of data */",
-      "TIFFTAG_RPCCOEFFICIENT": "50844       /* Define by GDAL for geospatial georeferencing through RPC: http://geotiff.maptools.org/rpc_prop.html */",
-      "TIFFTAG_SAMPLEFORMAT": "339           /* !data sample format */",
-      "TIFFTAG_SAMPLESPERPIXEL": "277        /* samples per pixel */",
-      "TIFFTAG_SEMANTICINSTANCEID": "52528     /* &a string that identifies a specific instance in a semantic mask */",
-      "TIFFTAG_SEMANTICNAME": "52526           /* &a string that identifies the semantic mask */",
-      "TIFFTAG_SGILOGDATAFMT": "65560    /* SGILog user data format */",
-      "TIFFTAG_SGILOGENCODE": "65561     /* SGILog data encoding control*/",
-      "TIFFTAG_SHADOWSCALE": "50739             /* &used by Adobe Camera Raw */",
-      "TIFFTAG_SMAXSAMPLEVALUE": "341        /* !variable MaxSampleValue */",
-      "TIFFTAG_SMINSAMPLEVALUE": "340        /* !variable MinSampleValue */",
-      "TIFFTAG_SOFTWARE": "305               /* name & release */",
-      "TIFFTAG_STONITS": "37439 /* Sample value to Nits */",
-      "TIFFTAG_STRIPBYTECOUNTS": "279        /* bytes counts for strips */",
-      "TIFFTAG_STRIPOFFSETS": "273           /* offsets to data strips */",
-      "TIFFTAG_STRIPROWCOUNTS": "559         /* !TIFF/FX strip row counts */",
-      "TIFFTAG_SUBFILETYPE": "254       /* subfile data descriptor */",
-      "TIFFTAG_SUBIFD": "330                 /* subimage descriptors */",
-      "TIFFTAG_SUBTILEBLOCKSIZE": "50974            /* &subtile block size */",
-      "TIFFTAG_T4OPTIONS": "292              /* TIFF 6.0 proper name alias */",
-      "TIFFTAG_T6OPTIONS": "293              /* TIFF 6.0 proper name */",
-      "TIFFTAG_T82OPTIONS": "435          /* !TIFF/FX T.82 options */",
-      "TIFFTAG_TARGETPRINTER": "337          /* !separation target */",
-      "TIFFTAG_THRESHHOLDING": "263          /* +thresholding used on data */",
-      "TIFFTAG_TIFFANNOTATIONDATA": "32932",
-      "TIFFTAG_TIFF_RSID": "50908           /* https://www.awaresystems.be/imaging/tiff/tifftags/tiff_rsid.html */",
-      "TIFFTAG_TILEBYTECOUNTS": "325         /* !byte counts for tiles */",
-      "TIFFTAG_TILEDEPTH": "32998  /* z depth/data tile */",
-      "TIFFTAG_TILELENGTH": "323             /* !tile height in pixels */",
-      "TIFFTAG_TILEOFFSETS": "324            /* !offsets to data tiles */",
-      "TIFFTAG_TILEWIDTH": "322              /* !tile width in pixels */",
-      "TIFFTAG_TRANSFERFUNCTION": "301       /* !colorimetry info */",
-      "TIFFTAG_UNIQUECAMERAMODEL": "50708    /* &name for the camera model */",
-      "TIFFTAG_VERSIONYEAR": "404         /* !TIFF/FX version year */",
-      "TIFFTAG_WEBP_LEVEL": "65568       /* WebP compression level */",
-      "TIFFTAG_WEBP_LOSSLESS": "65569    /* WebP lossless/lossy */",
-      "TIFFTAG_WEBP_LOSSLESS_EXACT": "65571  /* WebP lossless exact mode. Set-only mode. Default is 1. Can be set to 0 to increase compression rate, but R,G,B in areas where alpha = 0 will not be preserved */",
-      "TIFFTAG_WHITELEVEL": "50717           /* &fully saturated encoding level */",
-      "TIFFTAG_WHITEPOINT": "318             /* image white point */",
-      "TIFFTAG_WRITERSERIALNUMBER": "33405  /* device serial number */",
-      "TIFFTAG_XCLIPPATHUNITS": "344         /* %XClipPathUnits [Adobe TIFF technote 2] */",
-      "TIFFTAG_XMLPACKET": "700              /* %XML packet [Adobe XMP Specification, January 2004 */",
-      "TIFFTAG_XPOSITION": "286              /* x page offset of image lhs */",
-      "TIFFTAG_XRESOLUTION": "282            /* pixels/resolution in x */",
-      "TIFFTAG_YCBCRCOEFFICIENTS": "529      /* !RGB -> YCbCr transform */",
-      "TIFFTAG_YCBCRPOSITIONING": "531       /* !subsample positioning */",
-      "TIFFTAG_YCBCRSUBSAMPLING": "530       /* !YCbCr subsampling factors */",
-      "TIFFTAG_YCLIPPATHUNITS": "345         /* %YClipPathUnits [Adobe TIFF technote 2] */",
-      "TIFFTAG_YPOSITION": "287              /* y page offset of image lhs */",
-      "TIFFTAG_YRESOLUTION": "283            /* pixels/resolution in y */",
-      "TIFFTAG_ZIPQUALITY": "65557      /* compression quality level */",
-      "TIFFTAG_ZSTD_LEVEL": "65564       /* ZSTD compression level */",
-      "TIFF_BIGENDIAN": "0x4d4d",
-      "TIFF_GCC_DEPRECATED": "",
-      "TIFF_LITTLEENDIAN": "0x4949",
-      "TIFF_MSC_DEPRECATED": "",
-      "TIFF_VERSION_BIG": "43",
-      "TIFF_VERSION_CLASSIC": "42",
-      "YCBCRPOSITION_CENTERED": "1           /* !as in PostScript Level 2 */",
-      "YCBCRPOSITION_COSITED": "2            /* !as in CCIR 601-1 */",
-      "_TIFF_": ""
-    },
-    "safe/include/tiffconf.h": {
+    "original/build/libtiff/tiffconf.h": {
       "CCITT_SUPPORT": "1",
       "CHECK_JPEG_YCBCR_SUBSAMPLING": "1",
       "CMYK_SUPPORT": "",
@@ -741,52 +111,6 @@
       "YCBCR_SUPPORT": "",
       "ZIP_SUPPORT": "1",
       "_TIFFCONF_": ""
-    },
-    "safe/include/tiffio.h": {
-      "AVOID_WIN32_FILEIO": "",
-      "CIELABTORGB_TABLE_RANGE": "1500",
-      "D50_X0": "(96.4250F)",
-      "D50_Y0": "(100.0F)",
-      "D50_Z0": "(82.4680F)",
-      "D65_X0": "(95.0470F)",
-      "D65_Y0": "(100.0F)",
-      "D65_Z0": "(108.8827F)",
-      "FIELD_CUSTOM": "65",
-      "LOGLUV_PUBLIC": "1",
-      "TIFFGetA(abgr)": "(((abgr) >> 24) & 0xff)",
-      "TIFFGetB(abgr)": "(((abgr) >> 16) & 0xff)",
-      "TIFFGetG(abgr)": "(((abgr) >> 8) & 0xff)",
-      "TIFFGetR(abgr)": "((abgr)&0xff)",
-      "TIFFPRINT_COLORMAP": "0x4       /* colormap */",
-      "TIFFPRINT_CURVES": "0x2         /* color/gray response curves */",
-      "TIFFPRINT_JPEGACTABLES": "0x200 /* JPEG AC tables */",
-      "TIFFPRINT_JPEGDCTABLES": "0x200 /* JPEG DC tables */",
-      "TIFFPRINT_JPEGQTABLES": "0x100  /* JPEG Q matrices */",
-      "TIFFPRINT_NONE": "0x0           /* no extra info */",
-      "TIFFPRINT_STRIPS": "0x1         /* strips/tiles info */",
-      "TIFF_ANY": "TIFF_NOTYPE /* for field descriptor searching */",
-      "TIFF_ATTRIBUTE(x)": "/*nothing*/",
-      "TIFF_SPP": "-2          /* marker for SamplesPerPixel tags */",
-      "TIFF_TMSIZE_T_MAX": "(tmsize_t)(SIZE_MAX >> 1)",
-      "TIFF_VARIABLE": "-1     /* marker for variable length tags */",
-      "TIFF_VARIABLE2": "-3    /* marker for uint32_t var-length tags */",
-      "UVSCALE": "410.",
-      "U_NEU": "0.210526316",
-      "VC_EXTRALEAN": "",
-      "V_NEU": "0.473684211",
-      "_TIFFIO_": "",
-      "__WIN32__": ""
-    },
-    "safe/include/tiffio.hxx": {
-      "_TIFFIO_HXX_": ""
-    },
-    "safe/include/tiffvers.h": {
-      "TIFFLIB_AT_LEAST(major,": "minor, micro) \\",
-      "TIFFLIB_MAJOR_VERSION": "4",
-      "TIFFLIB_MICRO_VERSION": "1",
-      "TIFFLIB_MINOR_VERSION": "5",
-      "TIFFLIB_VERSION": "20230609",
-      "TIFFLIB_VERSION_STR": "\"LIBTIFF, Version 4.5.1\\nCopyright (c) 1988-1996 Sam Leffler\\nCopyright (c) 1991-1996 Silicon Graphics, Inc.\""
     }
   },
   "libraries": [
@@ -837,8 +161,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -871,8 +195,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -905,8 +229,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -939,8 +263,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -973,8 +297,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1007,8 +331,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1041,8 +365,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1075,8 +399,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1110,8 +434,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1147,8 +471,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1184,8 +508,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1221,8 +545,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1258,8 +582,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1295,8 +619,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1332,8 +656,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1369,8 +693,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1406,8 +730,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1443,8 +767,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1480,8 +804,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1517,8 +841,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1554,8 +878,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1591,8 +915,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1628,8 +952,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1665,8 +989,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1702,8 +1026,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1739,8 +1063,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1776,8 +1100,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1813,8 +1137,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1850,8 +1174,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1887,8 +1211,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1924,8 +1248,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1961,8 +1285,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -1998,8 +1322,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2035,8 +1359,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2072,8 +1396,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2109,8 +1433,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2146,8 +1470,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2183,8 +1507,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2220,8 +1544,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2257,8 +1581,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2294,8 +1618,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2331,8 +1655,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2368,8 +1692,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2405,8 +1729,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2442,8 +1766,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2479,8 +1803,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2516,8 +1840,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2553,8 +1877,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2590,8 +1914,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2627,8 +1951,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2664,8 +1988,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2701,8 +2025,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2738,8 +2062,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2775,8 +2099,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2812,8 +2136,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2849,8 +2173,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2886,8 +2210,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2923,8 +2247,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2960,8 +2284,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -2997,8 +2321,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3034,8 +2358,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3071,8 +2395,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3108,8 +2432,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3145,8 +2469,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3182,8 +2506,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3219,8 +2543,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3256,8 +2580,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3293,8 +2617,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3330,8 +2654,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3367,8 +2691,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3404,8 +2728,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3441,8 +2765,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3478,8 +2802,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3515,8 +2839,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3552,8 +2876,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3589,8 +2913,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3626,8 +2950,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3663,8 +2987,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3700,8 +3024,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3737,8 +3061,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3774,8 +3098,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3811,8 +3135,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3848,8 +3172,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3885,8 +3209,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3922,8 +3246,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3959,8 +3283,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -3996,8 +3320,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4033,8 +3357,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4070,8 +3394,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4107,8 +3431,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4144,8 +3468,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4181,8 +3505,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4218,8 +3542,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4255,8 +3579,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4292,8 +3616,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4329,8 +3653,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4430,8 +3754,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4467,8 +3791,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4504,8 +3828,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4541,8 +3865,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4578,8 +3902,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4615,8 +3939,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4652,8 +3976,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4689,8 +4013,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4726,8 +4050,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4763,8 +4087,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4800,8 +4124,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4837,8 +4161,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4874,8 +4198,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4911,8 +4235,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4948,8 +4272,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -4985,8 +4309,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5022,8 +4346,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5059,8 +4383,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5096,8 +4420,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5133,8 +4457,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5170,8 +4494,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5207,8 +4531,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5244,8 +4568,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5281,8 +4605,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5318,8 +4642,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5355,8 +4679,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5392,8 +4716,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5429,8 +4753,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5466,8 +4790,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5503,8 +4827,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5540,8 +4864,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5577,8 +4901,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5614,8 +4938,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5651,8 +4975,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5724,8 +5048,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5761,8 +5085,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5798,8 +5122,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5835,8 +5159,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5872,8 +5196,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5909,8 +5233,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5946,8 +5270,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -5983,8 +5307,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6020,8 +5344,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6057,8 +5381,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6094,8 +5418,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6131,8 +5455,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6168,8 +5492,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6205,8 +5529,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6242,8 +5566,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6279,8 +5603,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6316,8 +5640,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6353,8 +5677,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6390,8 +5714,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6427,8 +5751,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6464,8 +5788,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6501,8 +5825,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6538,8 +5862,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6575,8 +5899,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6612,8 +5936,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6649,8 +5973,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6686,8 +6010,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6723,8 +6047,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6760,8 +6084,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6797,8 +6121,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6834,8 +6158,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6871,8 +6195,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6908,8 +6232,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6945,8 +6269,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -6982,8 +6306,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7019,8 +6343,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7056,8 +6380,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7093,8 +6417,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7130,8 +6454,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7167,8 +6491,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7204,8 +6528,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7241,8 +6565,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7278,8 +6602,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7315,8 +6639,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7352,8 +6676,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7389,8 +6713,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7426,8 +6750,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7463,8 +6787,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7500,8 +6824,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7537,8 +6861,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7574,8 +6898,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7611,8 +6935,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7648,8 +6972,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7685,8 +7009,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7722,8 +7046,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7759,8 +7083,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -7795,8 +7119,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8117,8 +7441,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8152,8 +7476,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8189,8 +7513,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8226,8 +7550,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8263,8 +7587,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8300,8 +7624,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8337,8 +7661,8 @@
               "original/build/libtiff/libtiff.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8373,8 +7697,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8407,8 +7731,8 @@
             "debian_symbols": [],
             "observed_export": [],
             "public_header": [
-              "safe/include/tiffio.h",
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.h",
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiff-safe.map"
@@ -8476,7 +7800,7 @@
               "original/build/libtiff/libtiffxx.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiffxx-safe.map"
@@ -8512,7 +7836,7 @@
               "original/build/libtiff/libtiffxx.so.6.0.1"
             ],
             "public_header": [
-              "safe/include/tiffio.hxx"
+              "original/libtiff/tiffio.hxx"
             ],
             "safe_version_script": [
               "safe/capi/libtiffxx-safe.map"

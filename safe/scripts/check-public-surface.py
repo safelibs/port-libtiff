@@ -39,20 +39,16 @@ HEADER_REGEX = (
 )
 
 DEFAULT_C_HEADERS = [
-    SAFE_ROOT / "include" / "tiffio.h",
+    ORIGINAL_ROOT / "libtiff" / "tiffio.h",
 ]
 
 DEFAULT_CXX_HEADERS = [
-    SAFE_ROOT / "include" / "tiffio.hxx",
+    ORIGINAL_ROOT / "libtiff" / "tiffio.hxx",
 ]
 
 DEFAULT_CONFIG_HEADERS = [
-    SAFE_ROOT / "include" / "tif_config.h",
-    SAFE_ROOT / "include" / "tiffconf.h",
-    SAFE_ROOT / "include" / "tiff.h",
-    SAFE_ROOT / "include" / "tiffio.h",
-    SAFE_ROOT / "include" / "tiffio.hxx",
-    SAFE_ROOT / "include" / "tiffvers.h",
+    ORIGINAL_ROOT / "build" / "libtiff" / "tif_config.h",
+    ORIGINAL_ROOT / "build" / "libtiff" / "tiffconf.h",
 ]
 
 LINUX_EXCLUDED_SYMBOLS = {
@@ -133,15 +129,24 @@ def write_if_changed(path: Path, text: str) -> None:
         path.write_text(text)
 
 
-def make_header_targets(c_headers: List[Path], cxx_headers: List[Path]) -> List[Dict[str, object]]:
+def make_header_targets(
+    c_headers: List[Path],
+    cxx_headers: List[Path],
+    config_headers: List[Path],
+) -> List[Dict[str, object]]:
     targets = []
+    config_include_dirs = []
+    for header in config_headers:
+        parent = header.parent
+        if parent not in config_include_dirs:
+            config_include_dirs.append(parent)
     for source in c_headers:
         targets.append(
             {
                 "language": "c",
                 "compiler": CC,
                 "source": source,
-                "include_dir": source.parent,
+                "include_dirs": [source.parent, *config_include_dirs],
             }
         )
     for source in cxx_headers:
@@ -150,7 +155,7 @@ def make_header_targets(c_headers: List[Path], cxx_headers: List[Path]) -> List[
                 "language": "c++",
                 "compiler": CXX,
                 "source": source,
-                "include_dir": source.parent,
+                "include_dirs": [source.parent, *config_include_dirs],
             }
         )
     return targets
@@ -218,15 +223,17 @@ def preprocess_header(target: Dict[str, object]) -> Tuple[str, List[Path], List[
     if not compiler:
         raise RuntimeError(f"missing compiler for {target['language']} header pass")
     source = Path(target["source"])
-    include_dir = Path(target["include_dir"])
-    deps_args = [compiler, "-M", "-I", str(include_dir), "-x", str(target["language"]), str(source)]
+    include_dirs = [Path(path) for path in target["include_dirs"]]
+    include_args = []
+    for include_dir in include_dirs:
+        include_args.extend(["-I", str(include_dir)])
+    deps_args = [compiler, "-M", *include_args, "-x", str(target["language"]), str(source)]
     preprocess_args = [
         compiler,
         "-E",
         "-dD",
         "-P",
-        "-I",
-        str(include_dir),
+        *include_args,
         "-x",
         str(target["language"]),
         str(source),
@@ -238,8 +245,9 @@ def preprocess_header(target: Dict[str, object]) -> Tuple[str, List[Path], List[
     for token in tokens[1:]:
         dep = Path(token)
         if dep.is_absolute():
-            continue
-        dep_path = (REPO_ROOT / dep).resolve()
+            dep_path = dep.resolve()
+        else:
+            dep_path = (REPO_ROOT / dep).resolve()
         if dep_path.is_file() and REPO_ROOT in dep_path.parents:
             repo_deps.append(dep_path)
     unique_deps = sorted({dep.resolve() for dep in repo_deps})
@@ -585,7 +593,11 @@ def build_libtiffxx_symbol_records(
 
 
 def collect_inventory(source_config: Dict[str, object]) -> Tuple[Dict[str, object], Dict[str, object], List[str]]:
-    header_targets = make_header_targets(source_config["c_headers"], source_config["cxx_headers"])
+    header_targets = make_header_targets(
+        source_config["c_headers"],
+        source_config["cxx_headers"],
+        source_config["config_headers"],
+    )
     header_symbols, header_metadata = parse_header_symbols(header_targets)
 
     config_snapshots = {
@@ -807,8 +819,26 @@ def run_assertions(
     return 0
 
 
+def platform_matches(requested_platform: str, platform: Dict[str, str]) -> bool:
+    requested = requested_platform.strip().lower()
+    if not requested:
+        return True
+
+    triple = str(platform.get("triple", "")).lower()
+    system = str(platform.get("system", "")).lower()
+    distribution = str(platform.get("distribution_baseline", "")).lower()
+
+    if requested in {triple, system, distribution}:
+        return True
+    if requested == "linux" and "linux" in triple:
+        return True
+    if requested in set(filter(None, re.split(r"[-_]", triple))):
+        return True
+    return False
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument(
         "mode",
         nargs="?",
@@ -856,6 +886,12 @@ def main() -> int:
         help="Path to the Linux platform exclusion text file.",
     )
     parser.add_argument(
+        "--platform",
+        dest="platform",
+        default=None,
+        help="Verifier compatibility flag for the target platform tuple.",
+    )
+    parser.add_argument(
         "--c-header",
         dest="c_headers",
         action="append",
@@ -872,6 +908,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--config-header",
+        "--tif-config",
+        "--tiffconf",
         dest="config_headers",
         action="append",
         default=[],
@@ -885,6 +923,12 @@ def main() -> int:
         help="Override a safe or upstream version-script input.",
     )
     parser.add_argument(
+        "--xx-map",
+        dest="maps",
+        action="append",
+        help="Override the libtiffxx version-script input.",
+    )
+    parser.add_argument(
         "--library",
         dest="libraries",
         action="append",
@@ -892,7 +936,15 @@ def main() -> int:
         help="Override an observed shared-library input.",
     )
     parser.add_argument(
+        "--library-xx",
+        dest="libraries",
+        action="append",
+        help="Override the observed libtiffxx shared-library input.",
+    )
+    parser.add_argument(
         "--debian-symbols",
+        "--symbols",
+        "--xx-symbols",
         dest="debian_symbols",
         action="append",
         default=[],
@@ -924,6 +976,14 @@ def main() -> int:
     inventory_text = json.dumps(inventory, indent=2, sort_keys=True) + "\n"
     manifest_text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
     excluded_text = "".join(f"{name}\n" for name in platform_excluded_lines)
+
+    if args.platform and not platform_matches(args.platform, inventory["platform"]):
+        print(
+            f"requested platform {args.platform!r} does not match collected platform "
+            f"{inventory['platform']['triple']!r}",
+            file=sys.stderr,
+        )
+        return 1
 
     inventory_path = Path(args.inventory_path)
     inputs_path = Path(args.inputs_path)
