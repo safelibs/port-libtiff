@@ -593,30 +593,45 @@ unsafe fn with_rgb_jpeg_mode<T>(
     result
 }
 
-unsafe fn fill_row(
+fn window_dest_row(
+    raster_height: usize,
+    read_height: usize,
+    requested_orientation: u16,
+    window_row: usize,
+) -> usize {
+    let base_row = raster_height.saturating_sub(read_height);
+    let dest_rel_row = if requested_orientation == ORIENTATION_TOPLEFT {
+        window_row
+    } else {
+        read_height.saturating_sub(1).saturating_sub(window_row)
+    };
+    base_row + dest_rel_row
+}
+
+unsafe fn fill_row_window(
     img: *mut TIFFRGBAImage,
     tif: *mut TIFF,
     row_data: &[u8],
     separate_rows: Option<&[Vec<u8>]>,
-    image_row: usize,
+    col_offset: usize,
+    read_width: usize,
+    window_row: usize,
+    read_height: usize,
     raster: &mut [u32],
+    raster_width: usize,
+    raster_height: usize,
     requested_orientation: u16,
     stop_on_error: c_int,
 ) -> bool {
-    let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
-    let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
-    let dest_row = if requested_orientation == ORIENTATION_TOPLEFT {
-        image_row
-    } else {
-        height.saturating_sub(1).saturating_sub(image_row)
-    };
-    for x in 0..width {
-        let pixel = match pixel_rgba_from_row(img, tif, row_data, separate_rows, x) {
+    let dest_row = window_dest_row(raster_height, read_height, requested_orientation, window_row);
+    let dst_offset = dest_row * raster_width;
+    for x in 0..read_width {
+        let pixel = match pixel_rgba_from_row(img, tif, row_data, separate_rows, col_offset + x) {
             Some(pixel) => pixel,
             None if is_stop_on_error(stop_on_error) => return false,
             None => 0,
         };
-        raster[dest_row * width + x] = pixel;
+        raster[dst_offset + x] = pixel;
     }
     true
 }
@@ -624,12 +639,25 @@ unsafe fn fill_row(
 unsafe fn read_rows_into_raster(
     img: *mut TIFFRGBAImage,
     raster: &mut [u32],
+    raster_width: usize,
+    raster_height: usize,
     requested_orientation: u16,
     stop_on_error: c_int,
 ) -> bool {
     let tif = (*img).tif;
     let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
     let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
+    let Some(row_offset) = usize::try_from((*img).row_offset).ok() else {
+        return false;
+    };
+    let Some(col_offset) = usize::try_from((*img).col_offset).ok() else {
+        return false;
+    };
+    if row_offset >= height || col_offset >= width {
+        return false;
+    }
+    let read_width = min(raster_width, width - col_offset);
+    let read_height = min(raster_height, height - row_offset);
     let bits = tag_u16(tif, TAG_BITSPERSAMPLE, true, 1);
     let spp = usize::from(tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1).max(1));
     let photometric = tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK);
@@ -646,7 +674,8 @@ unsafe fn read_rows_into_raster(
         } else {
             None
         };
-        for row in 0..height {
+        for rel_row in 0..read_height {
+            let row = row_offset + rel_row;
             if let Some(planes) = separate.as_mut() {
                 for sample in 0..spp {
                     if TIFFReadScanline(
@@ -662,13 +691,18 @@ unsafe fn read_rows_into_raster(
                         planes[sample].fill(0);
                     }
                 }
-                if !fill_row(
+                if !fill_row_window(
                     img,
                     tif,
                     &[],
                     Some(planes),
-                    row,
+                    col_offset,
+                    read_width,
+                    rel_row,
+                    read_height,
                     raster,
+                    raster_width,
+                    raster_height,
                     requested_orientation,
                     stop_on_error,
                 ) {
@@ -687,13 +721,18 @@ unsafe fn read_rows_into_raster(
                     }
                     row_data.fill(0);
                 }
-                if !fill_row(
+                if !fill_row_window(
                     img,
                     tif,
                     &row_data,
                     None,
-                    row,
+                    col_offset,
+                    read_width,
+                    rel_row,
+                    read_height,
                     raster,
+                    raster_width,
+                    raster_height,
                     requested_orientation,
                     stop_on_error,
                 ) {
@@ -856,12 +895,25 @@ unsafe fn read_tile_region_rgba(
 unsafe fn read_tiled_into_raster(
     img: *mut TIFFRGBAImage,
     raster: &mut [u32],
+    raster_width: usize,
+    raster_height: usize,
     requested_orientation: u16,
     stop_on_error: c_int,
 ) -> bool {
     let tif = (*img).tif;
     let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
     let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
+    let Some(row_offset) = usize::try_from((*img).row_offset).ok() else {
+        return false;
+    };
+    let Some(col_offset) = usize::try_from((*img).col_offset).ok() else {
+        return false;
+    };
+    if row_offset >= height || col_offset >= width {
+        return false;
+    }
+    let read_width = min(raster_width, width - col_offset);
+    let read_height = min(raster_height, height - row_offset);
     let tile_width = tag_u32(tif, TAG_TILEWIDTH, false, 0) as usize;
     let tile_length = tag_u32(tif, TAG_TILELENGTH, false, 0) as usize;
     if tile_width == 0 || tile_length == 0 {
@@ -871,27 +923,34 @@ unsafe fn read_tiled_into_raster(
         return false;
     };
     let mut tile_raster = vec![0u32; tile_size];
-    let mut y = 0usize;
-    while y < height {
-        let mut x = 0usize;
-        while x < width {
+    let tile_y_start = (row_offset / tile_length) * tile_length;
+    let tile_y_end = row_offset.saturating_add(read_height);
+    let tile_x_start = (col_offset / tile_width) * tile_width;
+    let tile_x_end = col_offset.saturating_add(read_width);
+    let mut y = tile_y_start;
+    while y < tile_y_end {
+        let mut x = tile_x_start;
+        while x < tile_x_end {
             tile_raster.fill(0);
             if !read_tile_region_rgba(img, x as u32, y as u32, &mut tile_raster, stop_on_error) {
                 return false;
             }
-            let copy_width = min(tile_width, width - x);
-            let copy_rows = min(tile_length, height - y);
-            for row in 0..copy_rows {
-                let src_row = tile_length - 1 - row;
-                let dest_row = if requested_orientation == ORIENTATION_TOPLEFT {
-                    y + row
-                } else {
-                    height - 1 - (y + row)
-                };
-                let dst_offset = dest_row * width + x;
-                let src_offset = src_row * tile_width;
-                raster[dst_offset..dst_offset + copy_width]
-                    .copy_from_slice(&tile_raster[src_offset..src_offset + copy_width]);
+            let copy_x0 = col_offset.max(x);
+            let copy_x1 = tile_x_end.min(x + tile_width).min(width);
+            let copy_y0 = row_offset.max(y);
+            let copy_y1 = tile_y_end.min(y + tile_length).min(height);
+            for image_row in copy_y0..copy_y1 {
+                let window_row = image_row - row_offset;
+                let dest_row =
+                    window_dest_row(raster_height, read_height, requested_orientation, window_row);
+                let dst_col = copy_x0 - col_offset;
+                let src_col = copy_x0 - x;
+                let count = copy_x1 - copy_x0;
+                let src_row = tile_length - 1 - (image_row - y);
+                let src_offset = src_row * tile_width + src_col;
+                let dst_offset = dest_row * raster_width + dst_col;
+                raster[dst_offset..dst_offset + count]
+                    .copy_from_slice(&tile_raster[src_offset..src_offset + count]);
             }
             x += tile_width;
         }
@@ -1042,16 +1101,31 @@ unsafe fn decode_logluv_row_rgba(
     }
 }
 
-unsafe fn read_logluv_full_image_top_left(
-    tif: *mut TIFF,
+unsafe fn read_logluv_into_raster(
+    img: *mut TIFFRGBAImage,
     raster: &mut [u32],
+    raster_width: usize,
+    raster_height: usize,
+    requested_orientation: u16,
     stop_on_error: c_int,
 ) -> bool {
+    let tif = (*img).tif;
     let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
     let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
+    let Some(row_offset) = usize::try_from((*img).row_offset).ok() else {
+        return false;
+    };
+    let Some(col_offset) = usize::try_from((*img).col_offset).ok() else {
+        return false;
+    };
+    if row_offset >= height || col_offset >= width {
+        return false;
+    }
+    let read_width = min(raster_width, width - col_offset);
+    let read_height = min(raster_height, height - row_offset);
     let compression = tag_u16(tif, TAG_COMPRESSION, true, 1);
     let photometric = tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_LOGLUV);
-    let Some(expected_pixels) = width.checked_mul(height) else {
+    let Some(expected_pixels) = raster_width.checked_mul(raster_height) else {
         return false;
     };
     if raster.len() < expected_pixels {
@@ -1108,9 +1182,24 @@ unsafe fn read_logluv_full_image_top_left(
                     if image_row >= height {
                         continue;
                     }
-                    let dst_offset = image_row * width + x;
-                    raster[dst_offset..dst_offset + copy_width]
-                        .copy_from_slice(&row_rgba[..copy_width]);
+                    if image_row < row_offset || image_row >= row_offset + read_height {
+                        continue;
+                    }
+                    let copy_x0 = col_offset.max(x);
+                    let copy_x1 = (x + copy_width).min(col_offset + read_width);
+                    if copy_x0 >= copy_x1 {
+                        continue;
+                    }
+                    let dest_row = window_dest_row(
+                        raster_height,
+                        read_height,
+                        requested_orientation,
+                        image_row - row_offset,
+                    );
+                    let dst_offset = dest_row * raster_width + (copy_x0 - col_offset);
+                    let src_offset = copy_x0 - x;
+                    raster[dst_offset..dst_offset + (copy_x1 - copy_x0)]
+                        .copy_from_slice(&row_rgba[src_offset..src_offset + (copy_x1 - copy_x0)]);
                 }
                 x += tile_width;
             }
@@ -1156,31 +1245,21 @@ unsafe fn read_logluv_full_image_top_left(
                     break;
                 };
                 consumed += used;
-                let dst_offset = (start_row + rel_row) * width;
-                raster[dst_offset..dst_offset + width].copy_from_slice(&row_rgba);
+                let image_row = start_row + rel_row;
+                if image_row < row_offset || image_row >= row_offset + read_height {
+                    continue;
+                }
+                let dest_row = window_dest_row(
+                    raster_height,
+                    read_height,
+                    requested_orientation,
+                    image_row - row_offset,
+                );
+                let dst_offset = dest_row * raster_width;
+                raster[dst_offset..dst_offset + read_width]
+                    .copy_from_slice(&row_rgba[col_offset..col_offset + read_width]);
             }
         }
-    }
-    true
-}
-
-unsafe fn orient_full_raster(
-    tif: *mut TIFF,
-    source: &[u32],
-    raster: &mut [u32],
-    requested_orientation: u16,
-) -> bool {
-    let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
-    let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
-    for row in 0..height {
-        let dest_row = if requested_orientation == ORIENTATION_TOPLEFT {
-            row
-        } else {
-            height.saturating_sub(1).saturating_sub(row)
-        };
-        let src_offset = row * width;
-        let dst_offset = dest_row * width;
-        raster[dst_offset..dst_offset + width].copy_from_slice(&source[src_offset..src_offset + width]);
     }
     true
 }
@@ -1188,6 +1267,8 @@ unsafe fn orient_full_raster(
 unsafe fn read_rgba_image_impl(
     img: *mut TIFFRGBAImage,
     raster: &mut [u32],
+    raster_width: usize,
+    raster_height: usize,
     requested_orientation: u16,
     stop_on_error: c_int,
 ) -> bool {
@@ -1195,24 +1276,48 @@ unsafe fn read_rgba_image_impl(
     let photometric = tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK);
     let compression = tag_u16(tif, TAG_COMPRESSION, true, 1);
     if matches!(photometric, PHOTOMETRIC_LOGL | PHOTOMETRIC_LOGLUV) {
-        let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
-        let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
-        let Some(count) = width.checked_mul(height) else {
-            return false;
-        };
-        let mut top_left = vec![0u32; count];
-        if !read_logluv_full_image_top_left(tif, &mut top_left, stop_on_error) {
-            return false;
-        }
-        return orient_full_raster(tif, &top_left, raster, requested_orientation);
+        return read_logluv_into_raster(
+            img,
+            raster,
+            raster_width,
+            raster_height,
+            requested_orientation,
+            stop_on_error,
+        );
     }
     if compression == COMPRESSION_OJPEG {
+        let full_image = (*img).row_offset == 0
+            && (*img).col_offset == 0
+            && raster_width == (*img).width as usize
+            && raster_height == (*img).height as usize;
+        if !full_image {
+            emit_error_message(
+                tif,
+                "TIFFRGBAImageGet",
+                "Windowed OJPEG RGBA reads are not supported",
+            );
+            return false;
+        }
         return read_ojpeg_full_into_raster(tif, raster, requested_orientation, stop_on_error);
     }
     if TIFFIsTiled(tif) != 0 {
-        read_tiled_into_raster(img, raster, requested_orientation, stop_on_error)
+        read_tiled_into_raster(
+            img,
+            raster,
+            raster_width,
+            raster_height,
+            requested_orientation,
+            stop_on_error,
+        )
     } else {
-        read_rows_into_raster(img, raster, requested_orientation, stop_on_error)
+        read_rows_into_raster(
+            img,
+            raster,
+            raster_width,
+            raster_height,
+            requested_orientation,
+            stop_on_error,
+        )
     }
 }
 
@@ -1615,43 +1720,6 @@ unsafe fn initialize_rgba_image(
     true
 }
 
-unsafe fn copy_rgba_window_from_top_left(
-    tif: *mut TIFF,
-    source: &[u32],
-    row_offset: usize,
-    col_offset: usize,
-    raster: &mut [u32],
-    raster_width: usize,
-    raster_height: usize,
-    requested_orientation: u16,
-) -> bool {
-    let actual_width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0) as usize;
-    let actual_height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
-    if row_offset >= actual_height || col_offset >= actual_width {
-        return false;
-    }
-    let read_width = min(raster_width, actual_width - col_offset);
-    let read_height = min(raster_height, actual_height - row_offset);
-    if read_width == 0 || read_height == 0 {
-        return false;
-    }
-    let base_row = raster_height - read_height;
-    for src_rel_row in 0..read_height {
-        let src_row = row_offset + src_rel_row;
-        let dst_rel_row = if requested_orientation == ORIENTATION_TOPLEFT {
-            src_rel_row
-        } else {
-            read_height - 1 - src_rel_row
-        };
-        let dst_row = base_row + dst_rel_row;
-        let src_offset = src_row * actual_width + col_offset;
-        let dst_offset = dst_row * raster_width;
-        raster[dst_offset..dst_offset + read_width]
-            .copy_from_slice(&source[src_offset..src_offset + read_width]);
-    }
-    true
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn safe_tiff_rgba_image_ok(tif: *mut TIFF, emsg: *mut c_char) -> c_int {
     if tif.is_null() {
@@ -1728,37 +1796,14 @@ pub unsafe extern "C" fn safe_tiff_rgba_image_get(
         return 0;
     }
     let raster = slice::from_raw_parts_mut(raster, count);
-    if row_offset == 0
-        && col_offset == 0
-        && raster_width == actual_width
-        && raster_height == actual_height
-    {
-        if !read_rgba_image_impl(img, raster, (*img).req_orientation, (*img).stoponerr) {
-            return 0;
-        }
-        return 1;
-    }
-
     raster.fill(0);
-    let Some(full_count) = usize::try_from((*img).width)
-        .ok()
-        .and_then(|w| usize::try_from((*img).height).ok().and_then(|h| w.checked_mul(h)))
-    else {
-        return 0;
-    };
-    let mut full = vec![0u32; full_count];
-    if !read_rgba_image_impl(img, &mut full, ORIENTATION_TOPLEFT, (*img).stoponerr) {
-        return 0;
-    }
-    copy_rgba_window_from_top_left(
-        tif,
-        &full,
-        row_offset,
-        col_offset,
+    read_rgba_image_impl(
+        img,
         raster,
         raster_width,
         raster_height,
         (*img).req_orientation,
+        (*img).stoponerr,
     ) as c_int
 }
 

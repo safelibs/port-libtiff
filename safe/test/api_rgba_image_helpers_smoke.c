@@ -38,6 +38,7 @@ static const char float_filename[] = "api_rgba_image_helpers_float.tif";
 static const char ycbcr_filename[] = "api_rgba_image_helpers_ycbcr.tif";
 static const char cmyk_filename[] = "api_rgba_image_helpers_cmyk.tif";
 static const char lab16_filename[] = "api_rgba_image_helpers_lab16.tif";
+static const char window_filename[] = "api_rgba_image_helpers_window.tif";
 
 static const TIFFDisplay srgb_display = {
     {{3.2410f, -1.5374f, -0.4986f},
@@ -93,6 +94,39 @@ static int write_rgb_image(void)
         TIFFWriteScanline(tif, (void *)row, 0, 0) == -1)
     {
         fprintf(stderr, "Unable to write %s.\n", rgb_filename);
+        TIFFClose(tif);
+        return 1;
+    }
+
+    TIFFClose(tif);
+    return 0;
+}
+
+static int write_window_image(void)
+{
+    static const unsigned char row0[] = {255, 0,   0,   0,   255,
+                                         0,   0,   0,   255};
+    static const unsigned char row1[] = {255, 255, 0,   255, 0,
+                                         255, 0,   255, 255};
+    TIFF *tif = TIFFOpen(window_filename, "w");
+
+    if (!tif)
+    {
+        fprintf(stderr, "Unable to create %s.\n", window_filename);
+        return 1;
+    }
+
+    if (!TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, 3U) ||
+        !TIFFSetField(tif, TIFFTAG_IMAGELENGTH, 2U) ||
+        !TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8) ||
+        !TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3) ||
+        !TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1U) ||
+        !TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG) ||
+        !TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB) ||
+        TIFFWriteScanline(tif, (void *)row0, 0, 0) == -1 ||
+        TIFFWriteScanline(tif, (void *)row1, 1, 0) == -1)
+    {
+        fprintf(stderr, "Unable to write %s.\n", window_filename);
         TIFFClose(tif);
         return 1;
     }
@@ -327,6 +361,50 @@ static int check_rgb_helper_state(void)
     return 0;
 }
 
+static int check_windowed_get(void)
+{
+    TIFF *tif = TIFFOpen(window_filename, "r");
+    TIFFRGBAImage img;
+    uint32_t raster[2];
+    char emsg[1024];
+
+    if (!tif)
+    {
+        fprintf(stderr, "Unable to reopen %s.\n", window_filename);
+        return 1;
+    }
+
+    memset(emsg, 0, sizeof(emsg));
+    memset(&img, 0, sizeof(img));
+    if (!TIFFRGBAImageBegin(&img, tif, 1, emsg))
+    {
+        fprintf(stderr, "TIFFRGBAImageBegin() failed for windowed RGB input: %s\n",
+                emsg);
+        TIFFClose(tif);
+        return 1;
+    }
+
+    img.req_orientation = ORIENTATION_TOPLEFT;
+    img.row_offset = 1;
+    img.col_offset = 1;
+    memset(raster, 0, sizeof(raster));
+    if (!TIFFRGBAImageGet(&img, raster, 2U, 1U))
+    {
+        fprintf(stderr, "TIFFRGBAImageGet() failed for windowed RGB input.\n");
+        TIFFRGBAImageEnd(&img);
+        TIFFClose(tif);
+        return 1;
+    }
+
+    TIFFRGBAImageEnd(&img);
+    TIFFClose(tif);
+
+    if (expect_channels("Window[0]", raster[0], 255, 0, 255, 255) != 0 ||
+        expect_channels("Window[1]", raster[1], 0, 255, 255, 255) != 0)
+        return 1;
+    return 0;
+}
+
 static int check_float_rejection(void)
 {
     TIFF *tif = TIFFOpen(float_filename, "r");
@@ -517,15 +595,16 @@ int main(void)
     unlink(ycbcr_filename);
     unlink(cmyk_filename);
     unlink(lab16_filename);
+    unlink(window_filename);
 
     if (write_rgb_image() != 0 || write_float_image() != 0 ||
         write_ycbcr_image() != 0 || write_separate_cmyk_image() != 0 ||
-        write_cielab16_image() != 0)
+        write_cielab16_image() != 0 || write_window_image() != 0)
         goto cleanup;
 
     if (check_rgb_helper_state() != 0 || check_float_rejection() != 0 ||
         check_ycbcr_read() != 0 || check_cmyk_read() != 0 ||
-        check_cielab16_read() != 0)
+        check_cielab16_read() != 0 || check_windowed_get() != 0)
         goto cleanup;
 
     ret = 0;
@@ -538,6 +617,7 @@ cleanup:
         unlink(ycbcr_filename);
         unlink(cmyk_filename);
         unlink(lab16_filename);
+        unlink(window_filename);
     }
     return ret;
 }
