@@ -33,6 +33,91 @@ static int host_is_big_endian(void)
     return ((const unsigned char *)&value)[0] == 0x01;
 }
 
+static uint16_t read_u16_value(const unsigned char *bytes, int big_endian)
+{
+    if (big_endian)
+        return (uint16_t)(((uint16_t)bytes[0] << 8) | bytes[1]);
+    return (uint16_t)(((uint16_t)bytes[1] << 8) | bytes[0]);
+}
+
+static uint32_t read_u32_value(const unsigned char *bytes, int big_endian)
+{
+    if (big_endian)
+    {
+        return ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16) |
+               ((uint32_t)bytes[2] << 8) | bytes[3];
+    }
+    return ((uint32_t)bytes[3] << 24) | ((uint32_t)bytes[2] << 16) |
+           ((uint32_t)bytes[1] << 8) | bytes[0];
+}
+
+static uint64_t read_first_ifd_offset(FILE *file, int *big_endian)
+{
+    unsigned char header[8];
+
+    expect(fseek(file, 0, SEEK_SET) == 0, "failed to seek TIFF header");
+    expect(fread(header, 1, sizeof(header), file) == sizeof(header),
+           "failed to read TIFF header");
+    expect((header[0] == 'I' && header[1] == 'I') ||
+               (header[0] == 'M' && header[1] == 'M'),
+           "invalid TIFF byte order");
+
+    *big_endian = header[0] == 'M';
+    expect(read_u16_value(header + 2, *big_endian) == 42,
+           "expected a Classic TIFF fixture");
+    return read_u32_value(header + 4, *big_endian);
+}
+
+static int find_classic_ifd_entry(FILE *file, uint64_t ifd_offset, uint16_t tag,
+                                  int big_endian, uint16_t *type,
+                                  uint32_t *count, uint32_t *value)
+{
+    unsigned char count_bytes[2];
+    uint16_t entry_count = 0;
+
+    expect(fseek(file, (long)ifd_offset, SEEK_SET) == 0,
+           "failed to seek classic IFD");
+    expect(fread(count_bytes, 1, sizeof(count_bytes), file) == sizeof(count_bytes),
+           "failed to read classic IFD entry count");
+    entry_count = read_u16_value(count_bytes, big_endian);
+    for (uint16_t i = 0; i < entry_count; ++i)
+    {
+        unsigned char entry[12];
+
+        expect(fread(entry, 1, sizeof(entry), file) == sizeof(entry),
+               "failed to read classic IFD entry");
+        if (read_u16_value(entry, big_endian) != tag)
+            continue;
+
+        *type = read_u16_value(entry + 2, big_endian);
+        *count = read_u32_value(entry + 4, big_endian);
+        *value = read_u32_value(entry + 8, big_endian);
+        return 1;
+    }
+
+    return 0;
+}
+
+static void set_basic_strip_fields(TIFF *tif, uint32_t height)
+{
+    expect(TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE) == 1,
+           "failed to set Compression");
+    expect(TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)1) == 1,
+           "failed to set ImageWidth");
+    expect(TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height) == 1,
+           "failed to set ImageLength");
+    expect(TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8) == 1,
+           "failed to set BitsPerSample");
+    expect(TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1) == 1,
+           "failed to set SamplesPerPixel");
+    expect(TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG) == 1,
+           "failed to set PlanarConfiguration");
+    expect(TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK) == 1,
+           "failed to set Photometric");
+    expect(TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, (uint32_t)1) == 1,
+           "failed to set RowsPerStrip");
+}
+
 static void write_fixture(const char *path, const char *mode, uint16_t bits_per_sample,
                           uint16_t fill_order, uint16_t sample_format,
                           const void *tile_data, size_t tile_size)
@@ -205,6 +290,122 @@ static void run_byteswap_regression(void)
     unlink(path);
 }
 
+static void run_deferred_flush_regression(void)
+{
+    char path[] = "strile_deferXXXXXX";
+    unsigned char strips[2] = {17, 99};
+    FILE *raw_file = NULL;
+    TIFF *tif = NULL;
+    uint64_t ifd_offset = 0;
+    uint64_t dir_offset = 0;
+    uint16_t type = 0;
+    uint32_t count = 0;
+    uint32_t value = 0;
+    unsigned char decoded = 0;
+    int big_endian = 0;
+    int fd;
+
+    fd = mkstemp(path);
+    if (fd < 0)
+        fail("mkstemp failed for deferred strile regression");
+    close(fd);
+    unlink(path);
+
+    tif = TIFFOpen(path, "w+");
+    expect(tif != NULL, "failed to open deferred strile regression fixture");
+
+    set_basic_strip_fields(tif, 2);
+    expect(TIFFDeferStrileArrayWriting(tif) == 1,
+           "TIFFDeferStrileArrayWriting failed for first directory");
+    expect(TIFFWriteCheck(tif, 0, "strile_regressions") == 1,
+           "TIFFWriteCheck failed for deferred first directory");
+    expect(TIFFWriteDirectory(tif) == 1,
+           "TIFFWriteDirectory failed for deferred first directory");
+
+    set_basic_strip_fields(tif, 1);
+    expect(TIFFSetField(tif, TIFFTAG_SUBFILETYPE, FILETYPE_PAGE) == 1,
+           "failed to set SubFileType on second directory");
+    expect(TIFFDeferStrileArrayWriting(tif) == 1,
+           "TIFFDeferStrileArrayWriting failed for second directory");
+    expect(TIFFWriteCheck(tif, 0, "strile_regressions") == 1,
+           "TIFFWriteCheck failed for deferred second directory");
+    expect(TIFFWriteDirectory(tif) == 1,
+           "TIFFWriteDirectory failed for deferred second directory");
+
+    raw_file = fopen(path, "rb");
+    expect(raw_file != NULL, "failed to open deferred fixture raw bytes");
+    ifd_offset = read_first_ifd_offset(raw_file, &big_endian);
+    expect(find_classic_ifd_entry(raw_file, ifd_offset, TIFFTAG_STRIPOFFSETS,
+                                  big_endian, &type, &count, &value) == 1,
+           "missing StripOffsets entry in deferred directory");
+    expect(type == 0 && count == 0 && value == 0,
+           "deferred StripOffsets entry was not written as a dummy");
+    expect(find_classic_ifd_entry(raw_file, ifd_offset, TIFFTAG_STRIPBYTECOUNTS,
+                                  big_endian, &type, &count, &value) == 1,
+           "missing StripByteCounts entry in deferred directory");
+    expect(type == 0 && count == 0 && value == 0,
+           "deferred StripByteCounts entry was not written as a dummy");
+    fclose(raw_file);
+    raw_file = NULL;
+
+    expect(TIFFSetDirectory(tif, 0) == 1,
+           "failed to reload first deferred directory");
+    dir_offset = TIFFCurrentDirOffset(tif);
+    expect(dir_offset != 0, "first deferred directory has no on-disk offset");
+    expect(TIFFForceStrileArrayWriting(tif) == 1,
+           "TIFFForceStrileArrayWriting failed for first directory");
+    expect(TIFFCurrentDirOffset(tif) == dir_offset,
+           "TIFFForceStrileArrayWriting rewrote the whole first directory");
+
+    raw_file = fopen(path, "rb");
+    expect(raw_file != NULL, "failed to reopen deferred fixture raw bytes");
+    ifd_offset = read_first_ifd_offset(raw_file, &big_endian);
+    expect(find_classic_ifd_entry(raw_file, ifd_offset, TIFFTAG_STRIPOFFSETS,
+                                  big_endian, &type, &count, &value) == 1,
+           "missing rewritten StripOffsets entry");
+    expect(type != 0 && count == 2,
+           "TIFFForceStrileArrayWriting did not patch StripOffsets in place");
+    expect(find_classic_ifd_entry(raw_file, ifd_offset, TIFFTAG_STRIPBYTECOUNTS,
+                                  big_endian, &type, &count, &value) == 1,
+           "missing rewritten StripByteCounts entry");
+    expect(type != 0 && count == 2,
+           "TIFFForceStrileArrayWriting did not patch StripByteCounts in place");
+    fclose(raw_file);
+    raw_file = NULL;
+
+    expect(TIFFSetDirectory(tif, 1) == 1,
+           "failed to reload second deferred directory");
+    dir_offset = TIFFCurrentDirOffset(tif);
+    expect(dir_offset != 0, "second deferred directory has no on-disk offset");
+    expect(TIFFForceStrileArrayWriting(tif) == 1,
+           "TIFFForceStrileArrayWriting failed for second directory");
+    expect(TIFFCurrentDirOffset(tif) == dir_offset,
+           "TIFFForceStrileArrayWriting rewrote the whole second directory");
+
+    expect(TIFFSetDirectory(tif, 0) == 1,
+           "failed to return to first deferred directory");
+    expect(TIFFWriteEncodedStrip(tif, 0, &strips[0], 1) == 1,
+           "TIFFWriteEncodedStrip failed for strip 0");
+    expect(TIFFWriteEncodedStrip(tif, 1, &strips[1], 1) == 1,
+           "TIFFWriteEncodedStrip failed for strip 1");
+    dir_offset = TIFFCurrentDirOffset(tif);
+    expect(TIFFFlush(tif) == 1, "TIFFFlush failed for deferred strip update");
+    expect(TIFFCurrentDirOffset(tif) == dir_offset,
+           "TIFFFlush rewrote the directory instead of forcing strile arrays");
+    TIFFClose(tif);
+
+    tif = TIFFOpen(path, "r");
+    expect(tif != NULL, "failed to reopen deferred fixture for verification");
+    expect(TIFFReadEncodedStrip(tif, 0, &decoded, 1) == 1,
+           "failed to read first deferred strip");
+    expect(decoded == strips[0], "first deferred strip has wrong value");
+    expect(TIFFReadEncodedStrip(tif, 1, &decoded, 1) == 1,
+           "failed to read second deferred strip");
+    expect(decoded == strips[1], "second deferred strip has wrong value");
+    TIFFClose(tif);
+    unlink(path);
+}
+
 int main(void)
 {
     char path[] = "strile_regressionsXXXXXX";
@@ -279,5 +480,6 @@ int main(void)
 
     run_fillorder_regression();
     run_byteswap_regression();
+    run_deferred_flush_regression();
     return 0;
 }

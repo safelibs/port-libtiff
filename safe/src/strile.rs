@@ -1,8 +1,11 @@
 use crate::abi::TIFFDataType;
-use crate::core::{get_tag_value, safe_tiff_set_field_marshaled, TIFFRewriteDirectory, TIFFWriteDirectory};
+use crate::core::{
+    _TIFFRewriteField, get_tag_value, safe_tiff_directory_entry_is_dummy,
+    safe_tiff_set_field_marshaled, safe_tiff_set_field_marshaled_nondirty, TIFFRewriteDirectory,
+};
 use crate::{
-    emit_error_message, read_from_proc, seek_in_proc, tif_inner, write_to_proc, _TIFFcallocExt,
-    _TIFFfree, _TIFFmallocExt, TIFF, Tmsize,
+    _TIFFcallocExt, _TIFFfree, _TIFFmallocExt, emit_error_message, read_from_proc, seek_in_proc,
+    tif_inner, write_to_proc, Tmsize, TIFF,
 };
 use libc::{c_int, c_void};
 use std::cmp::{max, min};
@@ -112,7 +115,10 @@ unsafe fn read_exact_at(tif: *mut TIFF, offset: u64, bytes: &mut [u8]) -> bool {
         return false;
     }
     let inner = tif_inner(tif);
-    if (*tif).tif_flags & TIFF_MAPPED != 0 && !(*inner).mapped_base.is_null() && end <= (*inner).mapped_size {
+    if (*tif).tif_flags & TIFF_MAPPED != 0
+        && !(*inner).mapped_base.is_null()
+        && end <= (*inner).mapped_size
+    {
         ptr::copy_nonoverlapping(
             (*inner).mapped_base.cast::<u8>().add(offset as usize),
             bytes.as_mut_ptr(),
@@ -120,7 +126,11 @@ unsafe fn read_exact_at(tif: *mut TIFF, offset: u64, bytes: &mut [u8]) -> bool {
         );
         true
     } else if seek_in_proc(tif, offset, libc::SEEK_SET) == offset {
-        read_from_proc(tif, bytes.as_mut_ptr().cast::<c_void>(), bytes.len() as Tmsize)
+        read_from_proc(
+            tif,
+            bytes.as_mut_ptr().cast::<c_void>(),
+            bytes.len() as Tmsize,
+        )
     } else {
         false
     }
@@ -133,7 +143,11 @@ unsafe fn write_exact_at(tif: *mut TIFF, offset: u64, bytes: &[u8]) -> bool {
     if bytes.is_empty() {
         return true;
     }
-    write_to_proc(tif, bytes.as_ptr().cast_mut().cast::<c_void>(), bytes.len() as Tmsize)
+    write_to_proc(
+        tif,
+        bytes.as_ptr().cast_mut().cast::<c_void>(),
+        bytes.len() as Tmsize,
+    )
 }
 
 unsafe fn next_append_offset(tif: *mut TIFF) -> Option<u64> {
@@ -269,7 +283,7 @@ unsafe fn set_u32_tag(tif: *mut TIFF, tag: u32, value: u32) -> bool {
 }
 
 unsafe fn set_u64_array_tag(tif: *mut TIFF, tag: u32, values: &[u64]) -> bool {
-    safe_tiff_set_field_marshaled(
+    safe_tiff_set_field_marshaled_nondirty(
         tif,
         tag,
         TIFFDataType::TIFF_LONG8,
@@ -300,9 +314,7 @@ fn checked_howmany_u32(value: u32, divisor: u32) -> Option<u32> {
     if divisor == 0 {
         None
     } else {
-        value
-            .checked_add(divisor - 1)
-            .map(|sum| sum / divisor)
+        value.checked_add(divisor - 1).map(|sum| sum / divisor)
     }
 }
 
@@ -325,7 +337,11 @@ unsafe fn cast_u64_to_tmsize(tif: *mut TIFF, module: &str, value: u64) -> Tmsize
 
 unsafe fn require_u32_tag(tif: *mut TIFF, tag: u32, module: &str, label: &str) -> Option<u32> {
     let Some(value) = get_tag_scalar_u32(tif, tag, false) else {
-        emit_error_message(tif, module, format!("Must set \"{}\" before writing data", label));
+        emit_error_message(
+            tif,
+            module,
+            format!("Must set \"{}\" before writing data", label),
+        );
         return None;
     };
     Some(value)
@@ -401,22 +417,13 @@ unsafe fn apply_postdecode_bytes(tif: *mut TIFF, data: &mut [u8]) {
 
     match bits_per_sample(tif) {
         8 => {}
-        16 => TIFFSwabArrayOfShort(
-            data.as_mut_ptr().cast::<u16>(),
-            (data.len() / 2) as Tmsize,
-        ),
+        16 => TIFFSwabArrayOfShort(data.as_mut_ptr().cast::<u16>(), (data.len() / 2) as Tmsize),
         24 => TIFFSwabArrayOfTriples(data.as_mut_ptr(), (data.len() / 3) as Tmsize),
         32 => {
             if sample_format(tif) == SAMPLEFORMAT_COMPLEXINT {
-                TIFFSwabArrayOfShort(
-                    data.as_mut_ptr().cast::<u16>(),
-                    (data.len() / 2) as Tmsize,
-                );
+                TIFFSwabArrayOfShort(data.as_mut_ptr().cast::<u16>(), (data.len() / 2) as Tmsize);
             } else {
-                TIFFSwabArrayOfLong(
-                    data.as_mut_ptr().cast::<u32>(),
-                    (data.len() / 4) as Tmsize,
-                );
+                TIFFSwabArrayOfLong(data.as_mut_ptr().cast::<u32>(), (data.len() / 4) as Tmsize);
             }
         }
         64 => {
@@ -424,26 +431,22 @@ unsafe fn apply_postdecode_bytes(tif: *mut TIFF, data: &mut [u8]) {
                 sample_format(tif),
                 SAMPLEFORMAT_COMPLEXINT | SAMPLEFORMAT_COMPLEXIEEEFP
             ) {
-                TIFFSwabArrayOfLong(
-                    data.as_mut_ptr().cast::<u32>(),
-                    (data.len() / 4) as Tmsize,
-                );
+                TIFFSwabArrayOfLong(data.as_mut_ptr().cast::<u32>(), (data.len() / 4) as Tmsize);
             } else {
-                TIFFSwabArrayOfDouble(
-                    data.as_mut_ptr().cast::<f64>(),
-                    (data.len() / 8) as Tmsize,
-                );
+                TIFFSwabArrayOfDouble(data.as_mut_ptr().cast::<f64>(), (data.len() / 8) as Tmsize);
             }
         }
-        128 => TIFFSwabArrayOfDouble(
-            data.as_mut_ptr().cast::<f64>(),
-            (data.len() / 8) as Tmsize,
-        ),
+        128 => TIFFSwabArrayOfDouble(data.as_mut_ptr().cast::<f64>(), (data.len() / 8) as Tmsize),
         _ => {}
     }
 }
 
-unsafe fn decode_uncompressed_into(tif: *mut TIFF, module: &str, input: &[u8], output: &mut [u8]) -> bool {
+unsafe fn decode_uncompressed_into(
+    tif: *mut TIFF,
+    module: &str,
+    input: &[u8],
+    output: &mut [u8],
+) -> bool {
     if input.len() < output.len() {
         emit_error_message(tif, module, "Not enough data for decode");
         return false;
@@ -614,7 +617,12 @@ unsafe fn vstrip_size64_internal(tif: *mut TIFF, nrows: u32, report_errors: bool
         )?;
         return checked_mul_u64(tif, module, row_size, blocks_ver);
     }
-    checked_mul_u64(tif, module, u64::from(rows), scanline_size64_internal(tif, report_errors)?)
+    checked_mul_u64(
+        tif,
+        module,
+        u64::from(rows),
+        scanline_size64_internal(tif, report_errors)?,
+    )
 }
 
 unsafe fn strip_size64_internal(tif: *mut TIFF) -> Option<u64> {
@@ -639,7 +647,12 @@ unsafe fn tile_row_size64_internal(tif: *mut TIFF) -> Option<u64> {
         return None;
     }
 
-    let bits = checked_mul_u64(tif, module, u64::from(bits_per_sample(tif)), u64::from(width))?;
+    let bits = checked_mul_u64(
+        tif,
+        module,
+        u64::from(bits_per_sample(tif)),
+        u64::from(width),
+    )?;
     let row_bits = if planar_config(tif) == PLANARCONFIG_CONTIG {
         let spp = samples_per_pixel(tif);
         if spp == 0 {
@@ -688,7 +701,12 @@ unsafe fn vtile_size64_internal(tif: *mut TIFF, nrows: u32) -> Option<u64> {
         )?;
         checked_mul_u64(tif, module, row_size, blocks_ver)
     } else {
-        checked_mul_u64(tif, module, u64::from(nrows), tile_row_size64_internal(tif)?)
+        checked_mul_u64(
+            tif,
+            module,
+            u64::from(nrows),
+            tile_row_size64_internal(tif)?,
+        )
     }
 }
 
@@ -706,10 +724,12 @@ unsafe fn number_of_strips_internal(tif: *mut TIFF) -> Option<u32> {
         checked_howmany_u32(height, rps)?
     };
     if planar_config(tif) == PLANARCONFIG_SEPARATE {
-        strips = strips.checked_mul(u32::from(samples_per_pixel(tif))).or_else(|| {
-            emit_error_message(tif, module, "Integer overflow");
-            None
-        })?;
+        strips = strips
+            .checked_mul(u32::from(samples_per_pixel(tif)))
+            .or_else(|| {
+                emit_error_message(tif, module, "Integer overflow");
+                None
+            })?;
     }
     Some(strips)
 }
@@ -745,15 +765,22 @@ unsafe fn number_of_tiles_internal(tif: *mut TIFF) -> Option<u32> {
             None
         })?;
     if planar_config(tif) == PLANARCONFIG_SEPARATE {
-        tiles = tiles.checked_mul(u32::from(samples_per_pixel(tif))).or_else(|| {
-            emit_error_message(tif, module, "Integer overflow");
-            None
-        })?;
+        tiles = tiles
+            .checked_mul(u32::from(samples_per_pixel(tif)))
+            .or_else(|| {
+                emit_error_message(tif, module, "Integer overflow");
+                None
+            })?;
     }
     Some(tiles)
 }
 
-unsafe fn compute_strip_internal(tif: *mut TIFF, row: u32, sample: u16, report_errors: bool) -> Option<u32> {
+unsafe fn compute_strip_internal(
+    tif: *mut TIFF,
+    row: u32,
+    sample: u16,
+    report_errors: bool,
+) -> Option<u32> {
     let module = "TIFFComputeStrip";
     let rps = rows_per_strip(tif);
     if rps == 0 {
@@ -776,23 +803,19 @@ unsafe fn compute_strip_internal(tif: *mut TIFF, row: u32, sample: u16, report_e
         } else {
             checked_howmany_u32(image_length(tif)?, rps)?
         };
-        strip = strip.checked_add(u32::from(sample).checked_mul(strips_per_image)?).or_else(|| {
-            if report_errors {
-                emit_error_message(tif, module, "Integer overflow");
-            }
-            None
-        })?;
+        strip = strip
+            .checked_add(u32::from(sample).checked_mul(strips_per_image)?)
+            .or_else(|| {
+                if report_errors {
+                    emit_error_message(tif, module, "Integer overflow");
+                }
+                None
+            })?;
     }
     Some(strip)
 }
 
-unsafe fn check_tile_internal(
-    tif: *mut TIFF,
-    x: u32,
-    y: u32,
-    z: u32,
-    sample: u16,
-) -> bool {
+unsafe fn check_tile_internal(tif: *mut TIFF, x: u32, y: u32, z: u32, sample: u16) -> bool {
     let Some(width) = image_width(tif) else {
         emit_error_message(tif, "TIFFCheckTile", "Missing image width");
         return false;
@@ -921,7 +944,12 @@ unsafe fn strile_bounds(tif: *mut TIFF, strile: u32) -> Option<(StrileArrays, us
     }
 }
 
-unsafe fn write_appended_strile_data(tif: *mut TIFF, module: &str, strile: u32, data: &[u8]) -> bool {
+unsafe fn write_appended_strile_data(
+    tif: *mut TIFF,
+    module: &str,
+    strile: u32,
+    data: &[u8],
+) -> bool {
     let Some(mut arrays) = ensure_strile_arrays(tif, module) else {
         return false;
     };
@@ -949,7 +977,9 @@ unsafe fn write_appended_strile_data(tif: *mut TIFF, module: &str, strile: u32, 
         emit_error_message(tif, module, "Failed to write strile payload");
         return false;
     }
-    let Some(new_bytecount) = checked_add_u64(tif, module, arrays.bytecounts[index], data.len() as u64) else {
+    let Some(new_bytecount) =
+        checked_add_u64(tif, module, arrays.bytecounts[index], data.len() as u64)
+    else {
         return false;
     };
     arrays.bytecounts[index] = new_bytecount;
@@ -962,7 +992,12 @@ unsafe fn write_appended_strile_data(tif: *mut TIFF, module: &str, strile: u32, 
     }
 }
 
-unsafe fn write_overwrite_strile_data(tif: *mut TIFF, module: &str, strile: u32, data: &[u8]) -> bool {
+unsafe fn write_overwrite_strile_data(
+    tif: *mut TIFF,
+    module: &str,
+    strile: u32,
+    data: &[u8],
+) -> bool {
     let Some(mut arrays) = ensure_strile_arrays(tif, module) else {
         return false;
     };
@@ -973,7 +1008,8 @@ unsafe fn write_overwrite_strile_data(tif: *mut TIFF, module: &str, strile: u32,
         emit_error_message(tif, module, "Strile index out of range");
         return false;
     }
-    let reuse_existing = arrays.offsets[index] != 0 && arrays.bytecounts[index] >= data.len() as u64;
+    let reuse_existing =
+        arrays.offsets[index] != 0 && arrays.bytecounts[index] >= data.len() as u64;
     let offset = if reuse_existing {
         arrays.offsets[index]
     } else {
@@ -1032,7 +1068,8 @@ unsafe fn write_scanline_data(
 
     let rps = rows_per_strip(tif);
     let strip_row = if rps == u32::MAX { row } else { row % rps };
-    let Some(within_strip) = checked_mul_u64(tif, module, u64::from(strip_row), data.len() as u64) else {
+    let Some(within_strip) = checked_mul_u64(tif, module, u64::from(strip_row), data.len() as u64)
+    else {
         return false;
     };
     let Some(write_offset) = checked_add_u64(tif, module, strip_offset, within_strip) else {
@@ -1054,7 +1091,13 @@ unsafe fn write_scanline_data(
     }
 }
 
-unsafe fn read_strile_bytes(tif: *mut TIFF, module: &str, strile: u32, size: usize, buf: *mut c_void) -> Option<usize> {
+unsafe fn read_strile_bytes(
+    tif: *mut TIFF,
+    module: &str,
+    strile: u32,
+    size: usize,
+    buf: *mut c_void,
+) -> Option<usize> {
     let (arrays, index) = strile_bounds(tif, strile)?;
     let offset = arrays.offsets[index];
     let bytecount = arrays.bytecounts[index];
@@ -1130,7 +1173,8 @@ unsafe fn read_scanline_bytes(tif: *mut TIFF, row: u32, sample: u16, out: &mut [
     }
     let rps = rows_per_strip(tif);
     let strip_row = if rps == u32::MAX { row } else { row % rps };
-    let Some(within_strip) = checked_mul_u64(tif, module, u64::from(strip_row), out.len() as u64) else {
+    let Some(within_strip) = checked_mul_u64(tif, module, u64::from(strip_row), out.len() as u64)
+    else {
         return false;
     };
     let Some(end_offset) = checked_add_u64(tif, module, within_strip, out.len() as u64) else {
@@ -1200,7 +1244,11 @@ unsafe fn check_write_mode(tif: *mut TIFF, tiles: bool, module: &str) -> bool {
         return false;
     }
     if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(tif, module, "Only COMPRESSION_NONE is implemented in the safe port");
+        emit_error_message(
+            tif,
+            module,
+            "Only COMPRESSION_NONE is implemented in the safe port",
+        );
         return false;
     }
     true
@@ -1234,11 +1282,7 @@ pub unsafe extern "C" fn TIFFRasterScanlineSize64(tif: *mut TIFF) -> u64 {
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFRasterScanlineSize(tif: *mut TIFF) -> Tmsize {
-    cast_u64_to_tmsize(
-        tif,
-        "TIFFRasterScanlineSize",
-        TIFFRasterScanlineSize64(tif),
-    )
+    cast_u64_to_tmsize(tif, "TIFFRasterScanlineSize", TIFFRasterScanlineSize64(tif))
 }
 
 #[no_mangle]
@@ -1374,13 +1418,21 @@ pub unsafe extern "C" fn TIFFNumberOfTiles(tif: *mut TIFF) -> u32 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn TIFFReadBufferSetup(tif: *mut TIFF, bp: *mut c_void, size: Tmsize) -> c_int {
+pub unsafe extern "C" fn TIFFReadBufferSetup(
+    tif: *mut TIFF,
+    bp: *mut c_void,
+    size: Tmsize,
+) -> c_int {
     if tif.is_null() {
         return 0;
     }
     free_raw_buffer_if_owned(tif);
     (*tif).tif_flags &= !TIFF_BUFFERMMAP;
-    let alloc_size = if size <= 0 { 8192 } else { ((size + 1023) / 1024) * 1024 };
+    let alloc_size = if size <= 0 {
+        8192
+    } else {
+        ((size + 1023) / 1024) * 1024
+    };
     if bp.is_null() {
         let buffer = _TIFFcallocExt(tif, 1, alloc_size);
         if buffer.is_null() {
@@ -1400,7 +1452,11 @@ pub unsafe extern "C" fn TIFFReadBufferSetup(tif: *mut TIFF, bp: *mut c_void, si
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn TIFFWriteBufferSetup(tif: *mut TIFF, bp: *mut c_void, size: Tmsize) -> c_int {
+pub unsafe extern "C" fn TIFFWriteBufferSetup(
+    tif: *mut TIFF,
+    bp: *mut c_void,
+    size: Tmsize,
+) -> c_int {
     if tif.is_null() {
         return 0;
     }
@@ -1457,7 +1513,9 @@ pub unsafe extern "C" fn TIFFWriteCheck(
     let module_name = if module.is_null() {
         "TIFFWriteCheck"
     } else {
-        std::ffi::CStr::from_ptr(module).to_str().unwrap_or("TIFFWriteCheck")
+        std::ffi::CStr::from_ptr(module)
+            .to_str()
+            .unwrap_or("TIFFWriteCheck")
     };
     if !check_write_mode(tif, tiles != 0, module_name) {
         return 0;
@@ -1702,7 +1760,11 @@ pub unsafe extern "C" fn TIFFReadEncodedStrip(
         return -1;
     }
     if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(tif, module, "Only COMPRESSION_NONE is implemented in the safe port");
+        emit_error_message(
+            tif,
+            module,
+            "Only COMPRESSION_NONE is implemented in the safe port",
+        );
         return -1;
     }
     let Some(expected_size) = expected_strip_size_for_index(tif, strip) else {
@@ -1775,7 +1837,11 @@ pub unsafe extern "C" fn TIFFReadEncodedTile(
         return -1;
     }
     if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(tif, module, "Only COMPRESSION_NONE is implemented in the safe port");
+        emit_error_message(
+            tif,
+            module,
+            "Only COMPRESSION_NONE is implemented in the safe port",
+        );
         return -1;
     }
     let tile_size = TIFFTileSize64(tif);
@@ -1825,31 +1891,108 @@ pub unsafe extern "C" fn TIFFReadRawTile(
 pub unsafe extern "C" fn TIFFDeferStrileArrayWriting(tif: *mut TIFF) -> c_int {
     if tif.is_null() || crate::TIFFGetMode(tif) == libc::O_RDONLY {
         if !tif.is_null() {
-            emit_error_message(tif, "TIFFDeferStrileArrayWriting", "File opened in read-only mode");
+            emit_error_message(
+                tif,
+                "TIFFDeferStrileArrayWriting",
+                "File opened in read-only mode",
+            );
         }
         return 0;
     }
+    if crate::TIFFCurrentDirOffset(tif) != 0 {
+        emit_error_message(
+            tif,
+            "TIFFDeferStrileArrayWriting",
+            "Directory has already been written",
+        );
+        return 0;
+    }
     (*tif_inner(tif)).strile_state.defer_array_writing = true;
-    TIFFSetupStrips(tif)
+    1
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFForceStrileArrayWriting(tif: *mut TIFF) -> c_int {
+    let module = "TIFFForceStrileArrayWriting";
     if tif.is_null() || crate::TIFFGetMode(tif) == libc::O_RDONLY {
         if !tif.is_null() {
-            emit_error_message(tif, "TIFFForceStrileArrayWriting", "File opened in read-only mode");
+            emit_error_message(tif, module, "File opened in read-only mode");
         }
         return 0;
     }
-    if crate::TIFFCurrentDirOffset(tif) == 0 {
-        emit_error_message(tif, "TIFFForceStrileArrayWriting", "Directory has not yet been written");
+    let dir_offset = crate::TIFFCurrentDirOffset(tif);
+    if dir_offset == 0 {
+        emit_error_message(tif, module, "Directory has not yet been written");
+        return 0;
+    }
+    if ((*tif).tif_flags & TIFF_DIRTYDIRECT) != 0 {
+        emit_error_message(
+            tif,
+            module,
+            "Directory has changes other than the strile arrays. TIFFRewriteDirectory() should be called instead",
+        );
         return 0;
     }
     if TIFFSetupStrips(tif) == 0 {
         return 0;
     }
-    (*tif_inner(tif)).strile_state.defer_array_writing = false;
-    TIFFRewriteDirectory(tif)
+    let (offset_tag, bytecount_tag) = if is_tiled_image(tif) {
+        (TAG_TILEOFFSETS as u16, TAG_TILEBYTECOUNTS as u16)
+    } else {
+        (TAG_STRIPOFFSETS as u16, TAG_STRIPBYTECOUNTS as u16)
+    };
+    if ((*tif).tif_flags & TIFF_DIRTYSTRIP) == 0
+        && !(safe_tiff_directory_entry_is_dummy(tif, dir_offset, offset_tag)
+            && safe_tiff_directory_entry_is_dummy(tif, dir_offset, bytecount_tag))
+    {
+        emit_error_message(
+            tif,
+            module,
+            "Function not called together with TIFFDeferStrileArrayWriting()",
+        );
+        return 0;
+    }
+
+    let Some(arrays) = read_strile_arrays(tif) else {
+        emit_error_message(tif, module, "Failed to initialize strile arrays");
+        return 0;
+    };
+    let Ok(count) = isize::try_from(arrays.offsets.len()) else {
+        emit_error_message(tif, module, "Strile array is too large to rewrite safely");
+        return 0;
+    };
+    let offsets_ptr = if arrays.offsets.is_empty() {
+        ptr::null_mut()
+    } else {
+        arrays.offsets.as_ptr().cast_mut().cast::<c_void>()
+    };
+    let bytecounts_ptr = if arrays.bytecounts.is_empty() {
+        ptr::null_mut()
+    } else {
+        arrays.bytecounts.as_ptr().cast_mut().cast::<c_void>()
+    };
+
+    if _TIFFRewriteField(
+        tif,
+        offset_tag,
+        TIFFDataType::TIFF_LONG8,
+        count,
+        offsets_ptr,
+    ) == 0
+        || _TIFFRewriteField(
+            tif,
+            bytecount_tag,
+            TIFFDataType::TIFF_LONG8,
+            count,
+            bytecounts_ptr,
+        ) == 0
+    {
+        return 0;
+    }
+
+    (*tif).tif_flags &= !TIFF_DIRTYSTRIP;
+    (*tif).tif_flags &= !TIFF_BEENWRITING;
+    1
 }
 
 #[no_mangle]
@@ -1916,7 +2059,11 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
         return 0;
     }
     if compression(tif) != COMPRESSION_NONE {
-        emit_error_message(tif, module, "Only COMPRESSION_NONE is implemented in the safe port");
+        emit_error_message(
+            tif,
+            module,
+            "Only COMPRESSION_NONE is implemented in the safe port",
+        );
         return 0;
     }
     let expected_size = if is_tiled_image(tif) {
@@ -1978,12 +2125,16 @@ pub unsafe extern "C" fn TIFFFlush(tif: *mut TIFF) -> c_int {
     if TIFFFlushData(tif) == 0 {
         return 0;
     }
-    if ((*tif).tif_flags & (TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP)) != 0 {
-        if crate::TIFFCurrentDirOffset(tif) == 0 {
-            TIFFWriteDirectory(tif)
-        } else {
-            TIFFRewriteDirectory(tif)
+    if ((*tif).tif_flags & TIFF_DIRTYSTRIP) != 0
+        && ((*tif).tif_flags & TIFF_DIRTYDIRECT) == 0
+        && crate::TIFFGetMode(tif) == libc::O_RDWR
+    {
+        if TIFFForceStrileArrayWriting(tif) != 0 {
+            return 1;
         }
+    }
+    if ((*tif).tif_flags & (TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP)) != 0 {
+        TIFFRewriteDirectory(tif)
     } else {
         1
     }

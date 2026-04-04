@@ -45,6 +45,7 @@ const TAG_YRESOLUTION: u32 = 283;
 const TAG_ORIENTATION: u32 = 274;
 const TAG_SAMPLESPERPIXEL: u32 = 277;
 const TAG_ROWSPERSTRIP: u32 = 278;
+const TAG_STRIPBYTECOUNTS: u32 = 279;
 const TAG_MINSAMPLEVALUE: u32 = 280;
 const TAG_MAXSAMPLEVALUE: u32 = 281;
 const TAG_PLANARCONFIG: u32 = 284;
@@ -53,6 +54,8 @@ const TAG_TRANSFERFUNCTION: u32 = 301;
 const TAG_WHITEPOINT: u32 = 318;
 const TAG_TILEWIDTH: u32 = 322;
 const TAG_TILELENGTH: u32 = 323;
+const TAG_TILEOFFSETS: u32 = 324;
+const TAG_TILEBYTECOUNTS: u32 = 325;
 const TAG_SUBIFD: u32 = 330;
 const TAG_INKSET: u32 = 332;
 const TAG_INKNAMES: u32 = 333;
@@ -64,6 +67,7 @@ const TAG_MATTEING: u32 = 32995;
 const TAG_DATATYPE: u32 = 32996;
 const TAG_IMAGEDEPTH: u32 = 32997;
 const TAG_TILEDEPTH: u32 = 32998;
+const TAG_STRIPOFFSETS: u32 = 273;
 const TAG_YCBCRSUBSAMPLING: u32 = 530;
 const TAG_YCBCRPOSITIONING: u32 = 531;
 
@@ -247,11 +251,7 @@ unsafe fn write_exact_at(tif: *mut TIFF, offset: u64, bytes: &[u8]) -> bool {
     if bytes.is_empty() {
         return true;
     }
-    write_to_proc(
-        tif,
-        bytes.as_ptr().cast_mut().cast(),
-        bytes.len() as isize,
-    )
+    write_to_proc(tif, bytes.as_ptr().cast_mut().cast(), bytes.len() as isize)
 }
 
 fn align_up(value: u64, alignment: u64) -> Option<u64> {
@@ -405,6 +405,7 @@ unsafe fn set_current_directory(
     }
     (*tif_inner(tif)).current_diroff = offset;
     (*tif_inner(tif)).next_diroff = next_offset;
+    (*tif_inner(tif)).strile_state.defer_array_writing = false;
     (*tif).tif_curdir = curdir_value;
 }
 
@@ -499,8 +500,7 @@ fn parse_real_value(bytes: &[u8], actual_type: TIFFDataType, big_endian: bool) -
         }
         x if x == TIFFDataType::TIFF_SRATIONAL.0 => {
             let numerator = i32::from_ne_bytes(parse_u32(&bytes[..4], big_endian).to_ne_bytes());
-            let denominator =
-                i32::from_ne_bytes(parse_u32(&bytes[4..8], big_endian).to_ne_bytes());
+            let denominator = i32::from_ne_bytes(parse_u32(&bytes[4..8], big_endian).to_ne_bytes());
             if denominator == 0 {
                 None
             } else {
@@ -581,7 +581,12 @@ fn convert_to_u64_array(
     for chunk in payload.chunks_exact(width) {
         let value = parse_integer_value(chunk, actual_type, big_endian)?;
         let Ok(value) = u64::try_from(value) else {
-            warn_bad_value(tif, module_name, tag, "value is negative or out of range for uint64");
+            warn_bad_value(
+                tif,
+                module_name,
+                tag,
+                "value is negative or out of range for uint64",
+            );
             return None;
         };
         values.push(value);
@@ -836,17 +841,15 @@ unsafe fn parse_tag_value(
             count,
             big_endian,
         )?),
-        x if x == TIFFDataType::TIFF_DOUBLE.0 => {
-            StoredValues::F64(convert_to_f64_array(
-                tif,
-                module_name,
-                tag,
-                actual_type,
-                payload,
-                count,
-                big_endian,
-            )?)
-        }
+        x if x == TIFFDataType::TIFF_DOUBLE.0 => StoredValues::F64(convert_to_f64_array(
+            tif,
+            module_name,
+            tag,
+            actual_type,
+            payload,
+            count,
+            big_endian,
+        )?),
         _ => {
             warn_bad_value(tif, module_name, tag, "data type is unsupported");
             return None;
@@ -883,16 +886,15 @@ unsafe fn load_directory(
 
     let inner = tif_inner(tif);
     let big_endian = (*inner).header_magic == TIFF_BIGENDIAN;
-    let (count_size, entry_size, next_size, inline_size) = if (*inner).header_version
-        == TIFF_VERSION_CLASSIC
-    {
-        (2usize, 12usize, 4usize, 4usize)
-    } else if (*inner).header_version == TIFF_VERSION_BIG {
-        (8usize, 20usize, 8usize, 8usize)
-    } else {
-        emit_error_message(tif, module_name, "TIFF header is not initialized");
-        return None;
-    };
+    let (count_size, entry_size, next_size, inline_size) =
+        if (*inner).header_version == TIFF_VERSION_CLASSIC {
+            (2usize, 12usize, 4usize, 4usize)
+        } else if (*inner).header_version == TIFF_VERSION_BIG {
+            (8usize, 20usize, 8usize, 8usize)
+        } else {
+            emit_error_message(tif, module_name, "TIFF header is not initialized");
+            return None;
+        };
 
     let mut count_bytes = [0u8; 8];
     if !read_exact_at(tif, offset, &mut count_bytes[..count_size]) {
@@ -1021,7 +1023,10 @@ unsafe fn load_directory(
             emit_warning_message(
                 tif,
                 module_name,
-                format!("Unknown field with tag {} (0x{:x}) encountered", tag_u32, tag_u32),
+                format!(
+                    "Unknown field with tag {} (0x{:x}) encountered",
+                    tag_u32, tag_u32
+                ),
             );
             let created = _TIFFCreateAnonField(tif, tag_u32, actual_type);
             if created.is_null() || _TIFFMergeFields(tif, created, 1) == 0 {
@@ -1088,7 +1093,11 @@ unsafe fn load_directory(
     })
 }
 
-unsafe fn read_directory_next_offset(tif: *mut TIFF, offset: u64, module_name: &str) -> Option<u64> {
+unsafe fn read_directory_next_offset(
+    tif: *mut TIFF,
+    offset: u64,
+    module_name: &str,
+) -> Option<u64> {
     if offset == 0 {
         return Some(0);
     }
@@ -1178,8 +1187,9 @@ unsafe fn load_main_directory_at_index(
     let mut seen: HashSet<u64> = state.main_offsets.iter().copied().collect();
     while state.main_offsets.len() <= target_index && !state.main_complete {
         let current_offset = *state.main_offsets.last().expect("main offsets");
-        let current_next = if let Some(next) =
-            state.main_next_offsets.get(state.main_offsets.len().saturating_sub(1))
+        let current_next = if let Some(next) = state
+            .main_next_offsets
+            .get(state.main_offsets.len().saturating_sub(1))
         {
             *next
         } else {
@@ -1217,7 +1227,9 @@ unsafe fn load_main_directory_at_index(
     set_current_directory(
         tif,
         current,
-        ActiveChain::Main { index: target_index },
+        ActiveChain::Main {
+            index: target_index,
+        },
         target_index as u32,
     );
     true
@@ -1237,7 +1249,11 @@ unsafe fn load_custom_chain_directory(
     set_current_directory(
         tif,
         current,
-        ActiveChain::Custom { kind, visited, index },
+        ActiveChain::Custom {
+            kind,
+            visited,
+            index,
+        },
         index,
     );
     true
@@ -1263,8 +1279,7 @@ pub(crate) unsafe fn read_next_directory(tif: *mut TIFF) -> bool {
         ActiveChain::Main { index } => {
             let next_offset = current.next_offset;
             let state = directory_state_mut(tif);
-            if index + 1 < state.main_offsets.len()
-                && state.main_offsets[index + 1] == next_offset
+            if index + 1 < state.main_offsets.len() && state.main_offsets[index + 1] == next_offset
             {
                 return load_main_directory_at_index(tif, index + 1, module_name);
             }
@@ -1346,7 +1361,10 @@ pub(crate) unsafe fn set_sub_directory(tif: *mut TIFF, diroff: u64) -> bool {
         .iter()
         .position(|offset| *offset == diroff)
     {
-        (state.subifd_seed_offsets[..=position].to_vec(), position as u32)
+        (
+            state.subifd_seed_offsets[..=position].to_vec(),
+            position as u32,
+        )
     } else {
         (vec![diroff], 0)
     };
@@ -1518,12 +1536,12 @@ unsafe fn default_tag_value(
             _ => None,
         })
         .unwrap_or(SAMPLEFORMAT_UINT);
-    let extrasample_values = current.and_then(|dir| dir.find_tag(TAG_EXTRASAMPLES)).and_then(
-        |entry| match &entry.values {
+    let extrasample_values = current
+        .and_then(|dir| dir.find_tag(TAG_EXTRASAMPLES))
+        .and_then(|entry| match &entry.values {
             StoredValues::U16(values) => Some(values),
             _ => None,
-        },
-    );
+        });
     let extrasamples = extrasample_values.map(|values| values.len()).unwrap_or(0);
     let matteing = (extrasamples == 1)
         && extrasample_values
@@ -1602,9 +1620,7 @@ unsafe fn default_tag_value(
             let (data, count) = cache_u16_values(tif, vec![0, max]);
             (TIFFDataType::TIFF_SHORT, count, data)
         }
-        TAG_EXTRASAMPLES => {
-            (TIFFDataType::TIFF_SHORT, 0, ptr::null())
-        }
+        TAG_EXTRASAMPLES => (TIFFDataType::TIFF_SHORT, 0, ptr::null()),
         TAG_MATTEING => {
             let (data, count) = cache_u16_values(tif, vec![matteing as u16]);
             (TIFFDataType::TIFF_SHORT, count, data)
@@ -1729,7 +1745,11 @@ unsafe fn initialize_writable_directory(tif: *mut TIFF, kind: DirectoryKind) -> 
         DirectoryKind::Custom(info) => reset_field_registry_with_array(tif, info),
     };
     if !ok {
-        emit_error_message(tif, "TIFFCreateDirectory", "Failed to initialize field registry");
+        emit_error_message(
+            tif,
+            "TIFFCreateDirectory",
+            "Failed to initialize field registry",
+        );
         return false;
     }
 
@@ -1775,11 +1795,7 @@ unsafe fn ensure_writable_directory(tif: *mut TIFF) -> bool {
         true
     } else {
         if !initialize_field_registry(tif) {
-            emit_error_message(
-                tif,
-                "TIFFSetField",
-                "Failed to initialize field registry",
-            );
+            emit_error_message(tif, "TIFFSetField", "Failed to initialize field registry");
             return false;
         }
         set_current_directory(
@@ -1805,7 +1821,12 @@ unsafe fn current_directory_mut(tif: *mut TIFF) -> Option<&'static mut CurrentDi
     directory_state_mut(tif).current.as_mut()
 }
 
-unsafe fn upsert_current_tag(tif: *mut TIFF, parsed: ParsedTag, record_custom: bool) -> c_int {
+unsafe fn upsert_current_tag_with_flags(
+    tif: *mut TIFF,
+    parsed: ParsedTag,
+    record_custom: bool,
+    mark_directory_dirty: bool,
+) -> c_int {
     let tag = parsed.tag;
     let Some(current) = current_directory_mut(tif) else {
         return 0;
@@ -1819,7 +1840,9 @@ unsafe fn upsert_current_tag(tif: *mut TIFF, parsed: ParsedTag, record_custom: b
     if record_custom {
         safe_tiff_record_custom_tag(tif, tag);
     }
-    (*tif).tif_flags |= TIFF_DIRTYDIRECT;
+    if mark_directory_dirty {
+        (*tif).tif_flags |= TIFF_DIRTYDIRECT;
+    }
     configure_current_directory_flags(tif, current);
     sync_fillorder_flags(tif);
     1
@@ -1891,11 +1914,17 @@ unsafe fn transfer_function_sample_count(tif: *mut TIFF, module_name: &str) -> O
     Some(1u64 << bits_per_sample)
 }
 
-unsafe fn clear_transferfunction_for_layout_change(tif: *mut TIFF, module_name: &str, reason: &str) {
+unsafe fn clear_transferfunction_for_layout_change(
+    tif: *mut TIFF,
+    module_name: &str,
+    reason: &str,
+) {
     if let Some(current) = current_directory_mut(tif) {
         let had_transfer_function = current.find_tag(TAG_TRANSFERFUNCTION).is_some();
         if had_transfer_function {
-            current.tags.retain(|entry| entry.tag != TAG_TRANSFERFUNCTION);
+            current
+                .tags
+                .retain(|entry| entry.tag != TAG_TRANSFERFUNCTION);
             emit_warning_message(tif, module_name, reason);
         }
     }
@@ -1916,7 +1945,11 @@ unsafe fn stored_values_from_marshaled(
                 vec![0u8]
             } else {
                 if data.is_null() {
-                    emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                    emit_error_message(
+                        tif,
+                        module_name,
+                        format!("Tag {} data pointer is NULL", tag),
+                    );
                     return None;
                 }
                 checked_allocation_len(
@@ -1934,7 +1967,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_BYTE.0 || x == TIFFDataType::TIFF_UNDEFINED.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(tif, module_name, "byte tag data", count_usize)?;
@@ -1947,15 +1984,14 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_SBYTE.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
-            checked_allocation_len(
-                tif,
-                module_name,
-                "signed byte tag data",
-                count_usize,
-            )?;
+            checked_allocation_len(tif, module_name, "signed byte tag data", count_usize)?;
             let values = if count == 0 {
                 Vec::new()
             } else {
@@ -1965,7 +2001,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_SHORT.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -1983,7 +2023,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_SSHORT.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2001,7 +2045,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_LONG.0 || x == TIFFDataType::TIFF_IFD.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2019,7 +2067,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_SLONG.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2037,7 +2089,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_LONG8.0 || x == TIFFDataType::TIFF_IFD8.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2055,7 +2111,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_SLONG8.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2073,7 +2133,11 @@ unsafe fn stored_values_from_marshaled(
         }
         x if x == TIFFDataType::TIFF_FLOAT.0 => {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2094,7 +2158,11 @@ unsafe fn stored_values_from_marshaled(
             || x == TIFFDataType::TIFF_SRATIONAL.0 =>
         {
             if count != 0 && data.is_null() {
-                emit_error_message(tif, module_name, format!("Tag {} data pointer is NULL", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} data pointer is NULL", tag),
+                );
                 return None;
             }
             checked_allocation_len(
@@ -2114,7 +2182,10 @@ unsafe fn stored_values_from_marshaled(
             emit_error_message(
                 tif,
                 module_name,
-                format!("Tag {} uses unsupported set-field storage type {}", tag, storage_type.0),
+                format!(
+                    "Tag {} uses unsupported set-field storage type {}",
+                    tag, storage_type.0
+                ),
             );
             None
         }
@@ -2145,7 +2216,11 @@ unsafe fn validate_and_normalize_tag(
     match *tag {
         TAG_COMPRESSION => {
             let Some(value) = single_u16(parsed) else {
-                emit_error_message(tif, module_name, "Compression expects a single uint16 value");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "Compression expects a single uint16 value",
+                );
                 return false;
             };
             if TIFFSetCompressionScheme(tif, value as c_int) == 0 {
@@ -2158,17 +2233,29 @@ unsafe fn validate_and_normalize_tag(
                 return false;
             };
             if value != FILLORDER_MSB2LSB_U16 && value != FILLORDER_LSB2MSB_U16 {
-                emit_error_message(tif, module_name, format!("Bad value {} for FillOrder tag", value));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for FillOrder tag", value),
+                );
                 return false;
             }
         }
         TAG_ORIENTATION => {
             let Some(value) = single_u16(parsed) else {
-                emit_error_message(tif, module_name, "Orientation expects a single uint16 value");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "Orientation expects a single uint16 value",
+                );
                 return false;
             };
             if !(ORIENTATION_TOPLEFT..=8).contains(&value) {
-                emit_error_message(tif, module_name, format!("Bad value {} for Orientation tag", value));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for Orientation tag", value),
+                );
                 return false;
             }
         }
@@ -2207,11 +2294,19 @@ unsafe fn validate_and_normalize_tag(
         }
         TAG_XRESOLUTION | TAG_YRESOLUTION => {
             let Some(value) = current_real_value(parsed) else {
-                emit_error_message(tif, module_name, format!("Tag {} expects a floating-point value", tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Tag {} expects a floating-point value", tag),
+                );
                 return false;
             };
             if !value.is_finite() || value < 0.0 {
-                emit_error_message(tif, module_name, format!("Bad value {} for tag {}", value, tag));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for tag {}", value, tag),
+                );
                 return false;
             }
         }
@@ -2225,17 +2320,29 @@ unsafe fn validate_and_normalize_tag(
                 return false;
             };
             if value != PLANARCONFIG_CONTIG && value != PLANARCONFIG_SEPARATE {
-                emit_error_message(tif, module_name, format!("Bad value {} for PlanarConfiguration tag", value));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for PlanarConfiguration tag", value),
+                );
                 return false;
             }
         }
         TAG_RESOLUTIONUNIT => {
             let Some(value) = single_u16(parsed) else {
-                emit_error_message(tif, module_name, "ResolutionUnit expects a single uint16 value");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "ResolutionUnit expects a single uint16 value",
+                );
                 return false;
             };
             if !(RESUNIT_NONE..=RESUNIT_CENTIMETER).contains(&value) {
-                emit_error_message(tif, module_name, format!("Bad value {} for ResolutionUnit tag", value));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for ResolutionUnit tag", value),
+                );
                 return false;
             }
         }
@@ -2250,7 +2357,11 @@ unsafe fn validate_and_normalize_tag(
                 2 => SAMPLEFORMAT_UINT,
                 3 => SAMPLEFORMAT_IEEEFP,
                 _ => {
-                    emit_error_message(tif, module_name, format!("Bad value {} for DataType tag", value));
+                    emit_error_message(
+                        tif,
+                        module_name,
+                        format!("Bad value {} for DataType tag", value),
+                    );
                     return false;
                 }
             };
@@ -2260,17 +2371,28 @@ unsafe fn validate_and_normalize_tag(
         }
         TAG_SAMPLEFORMAT => {
             let Some(value) = single_u16(parsed) else {
-                emit_error_message(tif, module_name, "SampleFormat expects a single uint16 value");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "SampleFormat expects a single uint16 value",
+                );
                 return false;
             };
             if !(SAMPLEFORMAT_UINT..=SAMPLEFORMAT_COMPLEXIEEEFP).contains(&value) {
-                emit_error_message(tif, module_name, format!("Bad value {} for SampleFormat tag", value));
+                emit_error_message(
+                    tif,
+                    module_name,
+                    format!("Bad value {} for SampleFormat tag", value),
+                );
                 return false;
             }
         }
         TAG_SUBIFD => {
             if matches!(
-                directory_state(tif).current.as_ref().map(|current| current.kind),
+                directory_state(tif)
+                    .current
+                    .as_ref()
+                    .map(|current| current.kind),
                 Some(DirectoryKind::SubIfd)
             ) {
                 emit_error_message(tif, module_name, "Sorry, cannot nest SubIFDs");
@@ -2284,7 +2406,10 @@ unsafe fn validate_and_normalize_tag(
                 emit_error_message(
                     tif,
                     module_name,
-                    format!("Bad ExtraSamples count {} for SamplesPerPixel {}", count, samples),
+                    format!(
+                        "Bad ExtraSamples count {} for SamplesPerPixel {}",
+                        count, samples
+                    ),
                 );
                 return false;
             }
@@ -2316,7 +2441,11 @@ unsafe fn validate_and_normalize_tag(
                 Some(value) => value,
                 None => return false,
             };
-            let plane_count = if current_color_plane_count(tif) > 1 { 3 } else { 1 };
+            let plane_count = if current_color_plane_count(tif) > 1 {
+                3
+            } else {
+                1
+            };
             let expected_count = sample_count.saturating_mul(plane_count);
             if parsed.count != expected_count {
                 emit_error_message(
@@ -2330,17 +2459,17 @@ unsafe fn validate_and_normalize_tag(
                 return false;
             }
             if !matches!(parsed.values, StoredValues::U16(_)) {
-                emit_error_message(tif, module_name, "TransferFunction expects uint16 array data");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "TransferFunction expects uint16 array data",
+                );
                 return false;
             }
         }
         _ => {
             if field_bit != FIELD_CUSTOM && parsed.count == 0 && *tag != TAG_EXTRASAMPLES {
-                emit_error_message(
-                    tif,
-                    module_name,
-                    format!("Null count for tag {}", tag),
-                );
+                emit_error_message(tif, module_name, format!("Null count for tag {}", tag));
                 return false;
             }
         }
@@ -2350,7 +2479,11 @@ unsafe fn validate_and_normalize_tag(
         if let Some(current) = directory_state(tif).current.as_ref() {
             if let Some(entry) = current.find_tag(TAG_TRANSFERFUNCTION) {
                 let sample_count = transfer_function_sample_count(tif, module_name).unwrap_or(0);
-                let plane_count = if current_color_plane_count(tif) > 1 { 3 } else { 1 };
+                let plane_count = if current_color_plane_count(tif) > 1 {
+                    3
+                } else {
+                    1
+                };
                 if entry.count != sample_count.saturating_mul(plane_count) {
                     clear_transferfunction_for_layout_change(
                         tif,
@@ -2373,6 +2506,27 @@ pub unsafe extern "C" fn safe_tiff_set_field_marshaled(
     count: u64,
     data: *const c_void,
 ) -> c_int {
+    safe_tiff_set_field_marshaled_impl(tif, tag, storage_type, count, data, true)
+}
+
+pub(crate) unsafe fn safe_tiff_set_field_marshaled_nondirty(
+    tif: *mut TIFF,
+    tag: u32,
+    storage_type: TIFFDataType,
+    count: u64,
+    data: *const c_void,
+) -> c_int {
+    safe_tiff_set_field_marshaled_impl(tif, tag, storage_type, count, data, false)
+}
+
+unsafe fn safe_tiff_set_field_marshaled_impl(
+    tif: *mut TIFF,
+    tag: u32,
+    storage_type: TIFFDataType,
+    count: u64,
+    data: *const c_void,
+    mark_directory_dirty: bool,
+) -> c_int {
     if tif.is_null() {
         return 0;
     }
@@ -2386,7 +2540,9 @@ pub unsafe extern "C" fn safe_tiff_set_field_marshaled(
         return 0;
     }
 
-    let Some(values) = stored_values_from_marshaled(tif, "_TIFFVSetField", tag, storage_type, count, data) else {
+    let Some(values) =
+        stored_values_from_marshaled(tif, "_TIFFVSetField", tag, storage_type, count, data)
+    else {
         return 0;
     };
     let mut parsed = ParsedTag {
@@ -2400,7 +2556,12 @@ pub unsafe extern "C" fn safe_tiff_set_field_marshaled(
         return 0;
     }
 
-    upsert_current_tag(tif, parsed, (*field).field_bit == FIELD_CUSTOM)
+    upsert_current_tag_with_flags(
+        tif,
+        parsed,
+        (*field).field_bit == FIELD_CUSTOM,
+        mark_directory_dirty,
+    )
 }
 
 #[no_mangle]
@@ -2594,11 +2755,7 @@ unsafe fn write_offset_value_at(
     if write_exact_at(tif, offset, &bytes) {
         true
     } else {
-        emit_error_message(
-            tif,
-            module_name,
-            format!("Error writing {}", what),
-        );
+        emit_error_message(tif, module_name, format!("Error writing {}", what));
         false
     }
 }
@@ -2632,8 +2789,7 @@ unsafe fn directory_next_offset_location(
 unsafe fn find_tail_link_location(tif: *mut TIFF, module_name: &str) -> Option<u64> {
     let fmt = directory_encoding(tif, module_name)?;
     let mut link_location = header_link_offset(tif);
-    let mut next_offset =
-        read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
+    let mut next_offset = read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
     let mut seen = HashSet::new();
     while next_offset != 0 {
         if !seen.insert(next_offset) {
@@ -2657,8 +2813,7 @@ unsafe fn find_predecessor_link_location(
 ) -> Option<u64> {
     let fmt = directory_encoding(tif, module_name)?;
     let mut link_location = header_link_offset(tif);
-    let mut next_offset =
-        read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
+    let mut next_offset = read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
     let mut seen = HashSet::new();
     while next_offset != 0 {
         if next_offset == target_offset {
@@ -2673,7 +2828,10 @@ unsafe fn find_predecessor_link_location(
     emit_error_message(
         tif,
         module_name,
-        format!("Directory at offset 0x{:x} is not linked from the main chain", target_offset),
+        format!(
+            "Directory at offset 0x{:x} is not linked from the main chain",
+            target_offset
+        ),
     );
     None
 }
@@ -2685,8 +2843,7 @@ unsafe fn find_directory_link_by_number(
 ) -> Option<(u64, u64, u64)> {
     let fmt = directory_encoding(tif, module_name)?;
     let mut link_location = header_link_offset(tif);
-    let mut current_offset =
-        read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
+    let mut current_offset = read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
     let mut current_number = 1u32;
     let mut seen = HashSet::new();
 
@@ -2766,7 +2923,10 @@ unsafe fn double_to_rational(
         emit_error_message(
             tif,
             module_name,
-            format!("Tag {} value {} is invalid for unsigned rational encoding", tag, value),
+            format!(
+                "Tag {} value {} is invalid for unsigned rational encoding",
+                tag, value
+            ),
         );
         return None;
     }
@@ -2826,7 +2986,10 @@ unsafe fn double_to_srational(
         emit_error_message(
             tif,
             module_name,
-            format!("Tag {} value {} is invalid for signed rational encoding", tag, value),
+            format!(
+                "Tag {} value {} is invalid for signed rational encoding",
+                tag, value
+            ),
         );
         return None;
     }
@@ -2969,9 +3132,9 @@ unsafe fn normalize_classic_field_type(
         x if x == TIFFDataType::TIFF_SLONG8.0 => {
             let fits = match values {
                 StoredValues::I32(_) => true,
-                StoredValues::I64(values) => values.iter().all(|value| {
-                    *value >= i32::MIN as i64 && *value <= i32::MAX as i64
-                }),
+                StoredValues::I64(values) => values
+                    .iter()
+                    .all(|value| *value >= i32::MIN as i64 && *value <= i32::MAX as i64),
                 _ => false,
             };
             if !fits {
@@ -2997,19 +3160,8 @@ unsafe fn encode_stored_values_as_type(
     count: u64,
     big_endian: bool,
 ) -> Option<Vec<u8>> {
-    let byte_len = checked_total_bytes(
-        tif,
-        count,
-        type_width(field_type)?,
-        module_name,
-        tag,
-    )?;
-    checked_allocation_len(
-        tif,
-        module_name,
-        "directory tag payload",
-        byte_len,
-    )?;
+    let byte_len = checked_total_bytes(tif, count, type_width(field_type)?, module_name, tag)?;
+    checked_allocation_len(tif, module_name, "directory tag payload", byte_len)?;
 
     let mut buffer = Vec::with_capacity(byte_len);
     match field_type.0 {
@@ -3273,7 +3425,8 @@ unsafe fn encode_directory_entry(
     };
     let (values, count) = expand_values_for_write(tif, module_name, parsed)?;
     let field_type = on_disk_field_type(tif, module_name, parsed.tag, &values)?;
-    let field_type = normalize_classic_field_type(tif, module_name, parsed.tag, field_type, &values)?;
+    let field_type =
+        normalize_classic_field_type(tif, module_name, parsed.tag, field_type, &values)?;
     let data = encode_stored_values_as_type(
         tif,
         module_name,
@@ -3353,7 +3506,11 @@ unsafe fn write_encoded_directory(
     {
         Some(value) => value,
         None => {
-            emit_error_message(tif, module_name, "Directory is too large to serialize safely");
+            emit_error_message(
+                tif,
+                module_name,
+                "Directory is too large to serialize safely",
+            );
             return false;
         }
     };
@@ -3371,7 +3528,8 @@ unsafe fn write_encoded_directory(
     let mut entries_buffer = vec![0u8; entries_buffer_len];
     for (index, entry) in entries.iter().enumerate() {
         let base = index * fmt.entry_size;
-        entries_buffer[base..base + 2].copy_from_slice(&encode_u16_bytes(entry.tag, fmt.big_endian));
+        entries_buffer[base..base + 2]
+            .copy_from_slice(&encode_u16_bytes(entry.tag, fmt.big_endian));
         entries_buffer[base + 2..base + 4]
             .copy_from_slice(&encode_u16_bytes(entry.field_type.0 as u16, fmt.big_endian));
         if fmt.classic {
@@ -3379,7 +3537,10 @@ unsafe fn write_encoded_directory(
                 emit_error_message(
                     tif,
                     module_name,
-                    format!("Tag {} count {} exceeds Classic TIFF range", entry.tag, entry.count),
+                    format!(
+                        "Tag {} count {} exceeds Classic TIFF range",
+                        entry.tag, entry.count
+                    ),
                 );
                 return false;
             };
@@ -3406,7 +3567,8 @@ unsafe fn write_encoded_directory(
             entries_buffer[base + 4..base + 12]
                 .copy_from_slice(&encode_u64_bytes(entry.count, fmt.big_endian));
             if entry.data.len() <= fmt.inline_size {
-                entries_buffer[base + 12..base + 12 + entry.data.len()].copy_from_slice(&entry.data);
+                entries_buffer[base + 12..base + 12 + entry.data.len()]
+                    .copy_from_slice(&entry.data);
             } else {
                 entries_buffer[base + 12..base + 20]
                     .copy_from_slice(&encode_u64_bytes(entry.payload_offset, fmt.big_endian));
@@ -3447,15 +3609,29 @@ unsafe fn write_encoded_directory(
         emit_error_message(tif, module_name, "Failed to write directory count");
         return false;
     }
-    if !write_exact_at(
-        tif,
-        dir_offset + fmt.count_size as u64,
-        &entries_buffer,
-    ) {
+    if !write_exact_at(tif, dir_offset + fmt.count_size as u64, &entries_buffer) {
         emit_error_message(tif, module_name, "Failed to write directory entry table");
         return false;
     }
     true
+}
+
+unsafe fn deferred_strile_tags(current: &CurrentDirectory) -> (u16, u16) {
+    if current
+        .find_tag(TAG_TILEWIDTH)
+        .zip(current.find_tag(TAG_TILELENGTH))
+        .is_some()
+    {
+        (TAG_TILEOFFSETS as u16, TAG_TILEBYTECOUNTS as u16)
+    } else {
+        (TAG_STRIPOFFSETS as u16, TAG_STRIPBYTECOUNTS as u16)
+    }
+}
+
+unsafe fn should_defer_strile_array_writing(tif: *mut TIFF, current: &CurrentDirectory) -> bool {
+    current.offset == 0
+        && matches!(current.kind, DirectoryKind::Main | DirectoryKind::SubIfd)
+        && (*tif_inner(tif)).strile_state.defer_array_writing
 }
 
 unsafe fn serialize_directory_at_offset(
@@ -3465,12 +3641,36 @@ unsafe fn serialize_directory_at_offset(
     dir_offset: u64,
     next_offset: u64,
 ) -> bool {
-    let mut entries = Vec::with_capacity(current.tags.len());
+    let deferred_tags =
+        should_defer_strile_array_writing(tif, current).then(|| deferred_strile_tags(current));
+    let mut entries =
+        Vec::with_capacity(current.tags.len() + usize::from(deferred_tags.is_some()) * 2);
     for parsed in &current.tags {
+        if let Some((offset_tag, bytecount_tag)) = deferred_tags {
+            if parsed.tag == offset_tag as u32 || parsed.tag == bytecount_tag as u32 {
+                continue;
+            }
+        }
         let Some(encoded) = encode_directory_entry(tif, module_name, parsed) else {
             return false;
         };
         entries.push(encoded);
+    }
+    if let Some((offset_tag, bytecount_tag)) = deferred_tags {
+        entries.push(EncodedDirectoryEntry {
+            tag: offset_tag,
+            field_type: TIFFDataType::TIFF_NOTYPE,
+            count: 0,
+            data: Vec::new(),
+            payload_offset: 0,
+        });
+        entries.push(EncodedDirectoryEntry {
+            tag: bytecount_tag,
+            field_type: TIFFDataType::TIFF_NOTYPE,
+            count: 0,
+            data: Vec::new(),
+            payload_offset: 0,
+        });
     }
     entries.sort_by_key(|entry| entry.tag);
     write_encoded_directory(tif, module_name, dir_offset, next_offset, &mut entries)
@@ -3490,11 +3690,7 @@ unsafe fn write_standalone_directory(
     Some(dir_offset)
 }
 
-unsafe fn update_current_directory_location(
-    tif: *mut TIFF,
-    offset: u64,
-    next_offset: u64,
-) {
+unsafe fn update_current_directory_location(tif: *mut TIFF, offset: u64, next_offset: u64) {
     if let Some(current) = current_directory_mut(tif) {
         current.offset = offset;
         current.next_offset = next_offset;
@@ -3564,27 +3760,71 @@ unsafe fn rewrite_directory_next_offset(
     )
 }
 
-unsafe fn encode_marshaled_values_for_type(
+unsafe fn find_directory_entry_metadata(
     tif: *mut TIFF,
     module_name: &str,
-    tag: u32,
-    target_type: TIFFDataType,
-    storage_type: TIFFDataType,
-    count: u64,
-    data: *const c_void,
-) -> Option<(u64, Vec<u8>)> {
-    let values = stored_values_from_marshaled(tif, module_name, tag, storage_type, count, data)?;
-    let actual_count = values.len() as u64;
-    let bytes = encode_stored_values_as_type(
+    dir_offset: u64,
+    tag: u16,
+) -> Option<(u64, u16, u64, u64)> {
+    let fmt = directory_encoding(tif, module_name)?;
+    let mut count_bytes = [0u8; 8];
+    if !read_exact_at(tif, dir_offset, &mut count_bytes[..fmt.count_size]) {
+        emit_error_message(tif, module_name, "Error fetching directory count");
+        return None;
+    }
+    let entry_count = if fmt.classic {
+        parse_u16(&count_bytes[..2], fmt.big_endian) as usize
+    } else {
+        parse_u64(&count_bytes[..8], fmt.big_endian) as usize
+    };
+
+    let entries_offset = dir_offset + fmt.count_size as u64;
+    for index in 0..entry_count {
+        let entry_offset = entries_offset + index as u64 * fmt.entry_size as u64;
+        let mut raw = [0u8; 20];
+        if !read_exact_at(tif, entry_offset, &mut raw[..fmt.entry_size]) {
+            emit_error_message(tif, module_name, "Error reading directory entry");
+            return None;
+        }
+        let entry_tag = parse_u16(&raw[..2], fmt.big_endian);
+        if entry_tag == tag {
+            let raw_type = parse_u16(&raw[2..4], fmt.big_endian);
+            let raw_count = if fmt.classic {
+                parse_u32(&raw[4..8], fmt.big_endian) as u64
+            } else {
+                parse_u64(&raw[4..12], fmt.big_endian)
+            };
+            let raw_offset = if fmt.classic {
+                parse_u32(&raw[8..12], fmt.big_endian) as u64
+            } else {
+                parse_u64(&raw[12..20], fmt.big_endian)
+            };
+            return Some((entry_offset, raw_type, raw_count, raw_offset));
+        }
+    }
+
+    emit_error_message(
         tif,
         module_name,
-        tag,
-        target_type,
-        &values,
-        actual_count,
-        (*tif_inner(tif)).header_magic == TIFF_BIGENDIAN,
-    )?;
-    Some((actual_count, bytes))
+        format!(
+            "Tag {} does not exist in the current on-disk directory",
+            tag
+        ),
+    );
+    None
+}
+
+pub(crate) unsafe fn safe_tiff_directory_entry_is_dummy(
+    tif: *mut TIFF,
+    dir_offset: u64,
+    tag: u16,
+) -> bool {
+    match find_directory_entry_metadata(tif, "TIFFForceStrileArrayWriting", dir_offset, tag) {
+        Some((_entry_offset, raw_type, raw_count, raw_offset)) => {
+            raw_type == 0 && raw_count == 0 && raw_offset == 0
+        }
+        None => false,
+    }
 }
 
 #[no_mangle]
@@ -3631,10 +3871,7 @@ pub unsafe extern "C" fn TIFFCreateGPSDirectory(tif: *mut TIFF) -> c_int {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn TIFFWriteCustomDirectory(
-    tif: *mut TIFF,
-    pdiroff: *mut u64,
-) -> c_int {
+pub unsafe extern "C" fn TIFFWriteCustomDirectory(tif: *mut TIFF, pdiroff: *mut u64) -> c_int {
     let module_name = "TIFFWriteCustomDirectory";
     if tif.is_null() || (*tif_inner(tif)).tif_mode == libc::O_RDONLY {
         if !tif.is_null() {
@@ -3646,7 +3883,8 @@ pub unsafe extern "C" fn TIFFWriteCustomDirectory(
         emit_error_message(tif, module_name, "No directory is loaded for writing");
         return 0;
     };
-    let Some(dir_offset) = write_standalone_directory(tif, module_name, &current, current.next_offset)
+    let Some(dir_offset) =
+        write_standalone_directory(tif, module_name, &current, current.next_offset)
     else {
         return 0;
     };
@@ -3681,11 +3919,19 @@ pub unsafe extern "C" fn TIFFWriteDirectory(tif: *mut TIFF) -> c_int {
         let (parent_offset, previous_offset, done, offsets) = {
             let state = directory_state_mut(tif);
             let Some(pending) = state.pending_subifd.as_mut() else {
-                emit_error_message(tif, module_name, "No pending SubIFD write sequence is active");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "No pending SubIFD write sequence is active",
+                );
                 return 0;
             };
             if pending.next_index >= pending.offsets.len() {
-                emit_error_message(tif, module_name, "SubIFD write sequence is already complete");
+                emit_error_message(
+                    tif,
+                    module_name,
+                    "SubIFD write sequence is already complete",
+                );
                 return 0;
             }
             let previous_offset = pending.last_offset;
@@ -3868,7 +4114,8 @@ pub unsafe extern "C" fn TIFFRewriteDirectory(tif: *mut TIFF) -> c_int {
         return 0;
     }
 
-    let Some(link_location) = find_predecessor_link_location(tif, current.offset, module_name) else {
+    let Some(link_location) = find_predecessor_link_location(tif, current.offset, module_name)
+    else {
         return 0;
     };
     let Some(dir_offset) =
@@ -3899,7 +4146,11 @@ pub unsafe extern "C" fn TIFFUnlinkDirectory(tif: *mut TIFF, dirnum: u32) -> c_i
     let module_name = "TIFFUnlinkDirectory";
     if tif.is_null() || (*tif_inner(tif)).tif_mode == libc::O_RDONLY {
         if !tif.is_null() {
-            emit_error_message(tif, module_name, "Can not unlink directory in read-only file");
+            emit_error_message(
+                tif,
+                module_name,
+                "Can not unlink directory in read-only file",
+            );
         }
         return 0;
     }
@@ -3950,61 +4201,47 @@ unsafe fn rewrite_field_in_directory_at_offset(
     let Some(fmt) = directory_encoding(tif, module_name) else {
         return 0;
     };
-    let mut count_bytes = [0u8; 8];
-    if !read_exact_at(tif, dir_offset, &mut count_bytes[..fmt.count_size]) {
-        emit_error_message(tif, module_name, "Error fetching directory count");
+    let Some((entry_offset, raw_type, raw_count, raw_offset)) =
+        find_directory_entry_metadata(tif, module_name, dir_offset, tag)
+    else {
         return 0;
-    }
-    let entry_count = if fmt.classic {
-        parse_u16(&count_bytes[..2], fmt.big_endian) as usize
-    } else {
-        parse_u64(&count_bytes[..8], fmt.big_endian) as usize
     };
 
-    let entries_offset = dir_offset + fmt.count_size as u64;
-    let mut found_entry_offset = None;
-    let mut found_type = None;
-    for index in 0..entry_count {
-        let entry_offset = entries_offset + index as u64 * fmt.entry_size as u64;
-        let mut raw = [0u8; 20];
-        if !read_exact_at(tif, entry_offset, &mut raw[..fmt.entry_size]) {
-            emit_error_message(tif, module_name, "Error reading directory entry");
+    let Some(values) =
+        stored_values_from_marshaled(tif, module_name, tag as u32, in_datatype, count, data)
+    else {
+        return 0;
+    };
+    let actual_count = values.len() as u64;
+    let target_type = if raw_type == 0 && raw_count == 0 && raw_offset == 0 {
+        let Some(field_type) = on_disk_field_type(tif, module_name, tag as u32, &values) else {
             return 0;
-        }
-        let entry_tag = parse_u16(&raw[..2], fmt.big_endian);
-        if entry_tag == tag {
-            let raw_type = parse_u16(&raw[2..4], fmt.big_endian);
-            found_entry_offset = Some(entry_offset);
-            found_type = type_from_raw(raw_type);
-            break;
-        }
-    }
-
-    let Some(entry_offset) = found_entry_offset else {
-        emit_error_message(
-            tif,
-            module_name,
-            format!("Tag {} does not exist in the current on-disk directory", tag),
-        );
-        return 0;
+        };
+        let Some(field_type) =
+            normalize_classic_field_type(tif, module_name, tag as u32, field_type, &values)
+        else {
+            return 0;
+        };
+        field_type
+    } else {
+        let Some(found_type) = type_from_raw(raw_type) else {
+            emit_error_message(
+                tif,
+                module_name,
+                format!("Tag {} has an unsupported on-disk type", tag),
+            );
+            return 0;
+        };
+        found_type
     };
-    let Some(target_type) = found_type else {
-        emit_error_message(
-            tif,
-            module_name,
-            format!("Tag {} has an unsupported on-disk type", tag),
-        );
-        return 0;
-    };
-
-    let Some((actual_count, bytes)) = encode_marshaled_values_for_type(
+    let Some(bytes) = encode_stored_values_as_type(
         tif,
         module_name,
         tag as u32,
         target_type,
-        in_datatype,
-        count,
-        data,
+        &values,
+        actual_count,
+        (*tif_inner(tif)).header_magic == TIFF_BIGENDIAN,
     ) else {
         return 0;
     };
@@ -4031,7 +4268,10 @@ unsafe fn rewrite_field_in_directory_at_offset(
             emit_error_message(
                 tif,
                 module_name,
-                format!("Tag {} count {} exceeds Classic TIFF range", tag, actual_count),
+                format!(
+                    "Tag {} count {} exceeds Classic TIFF range",
+                    tag, actual_count
+                ),
             );
             return 0;
         };
