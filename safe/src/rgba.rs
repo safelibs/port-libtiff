@@ -4,14 +4,14 @@ use crate::core::{
     safe_tiff_cielab16_to_xyz, safe_tiff_cielab_to_rgb_init, safe_tiff_logl16_to_y,
     safe_tiff_logluv24_to_xyz, safe_tiff_logluv32_to_xyz, safe_tiff_xyz_to_rgb24,
     safe_tiff_ycbcr_to_rgb, safe_tiff_ycbcr_to_rgb_init, set_jpeg_color_mode,
-    COMPRESSION_JPEG, COMPRESSION_OJPEG, JPEGCOLORMODE_RGB, TIFFIsCODECConfigured,
+    TIFFIsCODECConfigured, COMPRESSION_JPEG, COMPRESSION_OJPEG, JPEGCOLORMODE_RGB,
 };
 use crate::strile::{
     TIFFComputeTile, TIFFGetStrileByteCount, TIFFNumberOfStrips, TIFFNumberOfTiles,
     TIFFReadRawStrip, TIFFReadRawTile, TIFFReadScanline, TIFFReadTile, TIFFScanlineSize,
     TIFFTileSize,
 };
-use crate::{emit_error_message, TIFF, TIFFIsTiled};
+use crate::{emit_error_message, TIFFIsTiled, TIFF};
 use libc::{c_char, c_int, c_void};
 use std::cmp::min;
 use std::ptr;
@@ -81,6 +81,15 @@ struct PreparedRgbaImage {
     is_contig: c_int,
 }
 
+#[derive(Clone, Copy)]
+struct RowDecodeState {
+    bits: u16,
+    samples_per_pixel: usize,
+    photometric: u16,
+    planar: u16,
+    alpha_index: Option<usize>,
+}
+
 const DEFAULT_DISPLAY: TIFFDisplay = TIFFDisplay {
     d_mat: [
         [3.2410, -1.5374, -0.4986],
@@ -144,9 +153,7 @@ unsafe fn tag_u16_optional(tif: *mut TIFF, tag: u32, defaulted: bool) -> Option<
     match type_.0 {
         x if x == crate::abi::TIFFDataType::TIFF_SHORT.0 => Some(*data.cast::<u16>()),
         x if x == crate::abi::TIFFDataType::TIFF_LONG.0 => u16::try_from(*data.cast::<u32>()).ok(),
-        x if x == crate::abi::TIFFDataType::TIFF_SLONG.0 => {
-            u16::try_from(*data.cast::<i32>()).ok()
-        }
+        x if x == crate::abi::TIFFDataType::TIFF_SLONG.0 => u16::try_from(*data.cast::<i32>()).ok(),
         _ => None,
     }
 }
@@ -240,7 +247,11 @@ fn scale_sample_to_u8(sample: u16, bits: u16) -> u8 {
 }
 
 fn palette_entry_to_u8(value: u16) -> u8 {
-    if value > 255 { (value >> 8) as u8 } else { value as u8 }
+    if value > 255 {
+        (value >> 8) as u8
+    } else {
+        value as u8
+    }
 }
 
 unsafe fn ycbcr_subsampling(tif: *mut TIFF) -> Option<(u16, u16)> {
@@ -291,7 +302,9 @@ unsafe fn validate_and_init_ycbcr_state(
         set_error(emsg, "Invalid YCbCr conversion tags");
         return false;
     }
-    if !luma[..3].iter().all(|value| value.is_finite()) || !ref_black_white[..6].iter().all(|value| value.is_finite()) {
+    if !luma[..3].iter().all(|value| value.is_finite())
+        || !ref_black_white[..6].iter().all(|value| value.is_finite())
+    {
         set_error(emsg, "Invalid YCbCr conversion tags");
         return false;
     }
@@ -345,7 +358,10 @@ unsafe fn validate_and_init_cielab_state(
         ref_white.as_ptr().cast_mut(),
     ) < 0
     {
-        set_error(emsg, "Failed to initialize CIE L*a*b*->RGB conversion state.");
+        set_error(
+            emsg,
+            "Failed to initialize CIE L*a*b*->RGB conversion state.",
+        );
         return false;
     }
     true
@@ -425,29 +441,20 @@ fn bit_sample_plane(bytes: &[u8], pixel: usize, bits: u16) -> u16 {
 unsafe fn pixel_rgba_from_row(
     img: *mut TIFFRGBAImage,
     tif: *mut TIFF,
+    state: RowDecodeState,
     row_data: &[u8],
-    separate_rows: Option<&[Vec<u8>]>,
+    separate_rows: Option<&[&[u8]]>,
     x: usize,
 ) -> Option<u32> {
-    let bits = tag_u16(tif, TAG_BITSPERSAMPLE, true, 1);
-    let spp = usize::from(tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1).max(1));
-    let photometric = if img.is_null() {
-        tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK)
-    } else {
-        (*img).photometric
-    };
-    let planar = tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG);
-    let alpha_index = match photometric {
-        PHOTOMETRIC_RGB if spp >= 4 => Some(3usize),
-        PHOTOMETRIC_MINISBLACK | PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_PALETTE if spp >= 2 => {
-            Some(1usize)
-        }
-        _ => None,
-    };
+    let bits = state.bits;
+    let spp = state.samples_per_pixel;
+    let photometric = state.photometric;
+    let planar = state.planar;
+    let alpha_index = state.alpha_index;
     let sample = |index: usize| -> u16 {
         if planar == PLANARCONFIG_SEPARATE {
             separate_rows
-                .and_then(|rows| rows.get(index))
+                .and_then(|rows| rows.get(index).copied())
                 .map(|row| bit_sample_plane(row, x, bits))
                 .unwrap_or(0)
         } else {
@@ -549,14 +556,20 @@ unsafe fn pixel_rgba_from_row(
                     &mut xyz[2],
                 );
             }
-            crate::core::safe_tiff_xyz_to_rgb(cielab_ptr, xyz[0], xyz[1], xyz[2], &mut r, &mut g, &mut b);
+            crate::core::safe_tiff_xyz_to_rgb(
+                cielab_ptr, xyz[0], xyz[1], xyz[2], &mut r, &mut g, &mut b,
+            );
             rgb[0] = r as u8;
             rgb[1] = g as u8;
             rgb[2] = b as u8;
             pack_rgba(rgb[0], rgb[1], rgb[2], alpha)
         }
         PHOTOMETRIC_YCBCR => {
-            let ycbcr = if img.is_null() { ptr::null_mut() } else { (*img).ycbcr };
+            let ycbcr = if img.is_null() {
+                ptr::null_mut()
+            } else {
+                (*img).ycbcr
+            };
             if ycbcr.is_null() {
                 return None;
             }
@@ -576,6 +589,47 @@ unsafe fn pixel_rgba_from_row(
         }
         _ => return None,
     })
+}
+
+unsafe fn row_decode_state(img: *mut TIFFRGBAImage, tif: *mut TIFF) -> RowDecodeState {
+    let bits = if img.is_null() {
+        tag_u16(tif, TAG_BITSPERSAMPLE, true, 1)
+    } else {
+        (*img).bitspersample
+    };
+    let samples_per_pixel = if img.is_null() {
+        usize::from(tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1).max(1))
+    } else {
+        usize::from((*img).samplesperpixel.max(1))
+    };
+    let photometric = if img.is_null() {
+        tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK)
+    } else {
+        (*img).photometric
+    };
+    let planar = if img.is_null() {
+        tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG)
+    } else if (*img).isContig != 0 {
+        PLANARCONFIG_CONTIG
+    } else {
+        PLANARCONFIG_SEPARATE
+    };
+    let alpha_index = match photometric {
+        PHOTOMETRIC_RGB if samples_per_pixel >= 4 => Some(3usize),
+        PHOTOMETRIC_MINISBLACK | PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_PALETTE
+            if samples_per_pixel >= 2 =>
+        {
+            Some(1usize)
+        }
+        _ => None,
+    };
+    RowDecodeState {
+        bits,
+        samples_per_pixel,
+        photometric,
+        planar,
+        alpha_index,
+    }
 }
 
 unsafe fn with_rgb_jpeg_mode<T>(
@@ -611,8 +665,9 @@ fn window_dest_row(
 unsafe fn fill_row_window(
     img: *mut TIFFRGBAImage,
     tif: *mut TIFF,
+    state: RowDecodeState,
     row_data: &[u8],
-    separate_rows: Option<&[Vec<u8>]>,
+    separate_rows: Option<&[&[u8]]>,
     col_offset: usize,
     read_width: usize,
     window_row: usize,
@@ -623,14 +678,20 @@ unsafe fn fill_row_window(
     requested_orientation: u16,
     stop_on_error: c_int,
 ) -> bool {
-    let dest_row = window_dest_row(raster_height, read_height, requested_orientation, window_row);
+    let dest_row = window_dest_row(
+        raster_height,
+        read_height,
+        requested_orientation,
+        window_row,
+    );
     let dst_offset = dest_row * raster_width;
     for x in 0..read_width {
-        let pixel = match pixel_rgba_from_row(img, tif, row_data, separate_rows, col_offset + x) {
-            Some(pixel) => pixel,
-            None if is_stop_on_error(stop_on_error) => return false,
-            None => 0,
-        };
+        let pixel =
+            match pixel_rgba_from_row(img, tif, state, row_data, separate_rows, col_offset + x) {
+                Some(pixel) => pixel,
+                None if is_stop_on_error(stop_on_error) => return false,
+                None => 0,
+            };
         raster[dst_offset + x] = pixel;
     }
     true
@@ -666,8 +727,9 @@ unsafe fn read_rows_into_raster(
         && matches!(compression, COMPRESSION_JPEG | COMPRESSION_OJPEG);
 
     with_rgb_jpeg_mode(tif, force_rgb, || {
+        let state = row_decode_state(img, tif);
         let scanline_size = usize::try_from(TIFFScanlineSize(tif)).ok()?;
-        let planar = tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG);
+        let planar = state.planar;
         let mut row_data = vec![0u8; scanline_size];
         let mut separate = if planar == PLANARCONFIG_SEPARATE {
             Some(vec![vec![0u8; scanline_size]; spp])
@@ -691,11 +753,14 @@ unsafe fn read_rows_into_raster(
                         planes[sample].fill(0);
                     }
                 }
+                let plane_slices: Vec<&[u8]> =
+                    planes.iter().map(|plane| plane.as_slice()).collect();
                 if !fill_row_window(
                     img,
                     tif,
+                    state,
                     &[],
-                    Some(planes),
+                    Some(&plane_slices),
                     col_offset,
                     read_width,
                     rel_row,
@@ -709,12 +774,7 @@ unsafe fn read_rows_into_raster(
                     return None;
                 }
             } else {
-                if TIFFReadScanline(
-                    tif,
-                    row_data.as_mut_ptr().cast::<c_void>(),
-                    row as u32,
-                    0,
-                ) < 0
+                if TIFFReadScanline(tif, row_data.as_mut_ptr().cast::<c_void>(), row as u32, 0) < 0
                 {
                     if is_stop_on_error(stop_on_error) {
                         return None;
@@ -724,6 +784,7 @@ unsafe fn read_rows_into_raster(
                 if !fill_row_window(
                     img,
                     tif,
+                    state,
                     &row_data,
                     None,
                     col_offset,
@@ -776,7 +837,11 @@ unsafe fn read_ojpeg_full_into_raster(
         return true;
     };
     if rgb.len() != expected_len {
-        emit_error_message(tif, "OJPEG", "Decoded OJPEG RGB image has an unexpected size");
+        emit_error_message(
+            tif,
+            "OJPEG",
+            "Decoded OJPEG RGB image has an unexpected size",
+        );
         if is_stop_on_error(stop_on_error) {
             return false;
         }
@@ -817,8 +882,9 @@ unsafe fn read_tile_region_rgba(
     let compression = tag_u16(tif, TAG_COMPRESSION, true, 1);
     let force_rgb = photometric == PHOTOMETRIC_YCBCR
         && matches!(compression, COMPRESSION_JPEG | COMPRESSION_OJPEG);
-    let spp = usize::from(tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1).max(1));
-    let planar = tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG);
+    let state = row_decode_state(img, tif);
+    let spp = state.samples_per_pixel;
+    let planar = state.planar;
 
     with_rgb_jpeg_mode(tif, force_rgb, || {
         let tile_size = usize::try_from(TIFFTileSize(tif)).ok()?;
@@ -856,7 +922,7 @@ unsafe fn read_tile_region_rgba(
         let image_height = tag_u32(tif, TAG_IMAGELENGTH, true, 0) as usize;
         let copy_width = min(tile_width, image_width.saturating_sub(x as usize));
         let copy_rows = min(tile_length, image_height.saturating_sub(y as usize));
-        let bits = tag_u16(tif, TAG_BITSPERSAMPLE, true, 1);
+        let bits = state.bits;
         let row_stride = if planar == PLANARCONFIG_CONTIG {
             ((tile_width * spp * bits as usize) + 7) / 8
         } else {
@@ -867,18 +933,20 @@ unsafe fn read_tile_region_rgba(
             let dst_row = copy_rows - 1 - row;
             for col in 0..copy_width {
                 let pixel = if let Some(planes) = separate.as_ref() {
-                    let plane_rows: Vec<Vec<u8>> = planes
+                    let row_start = row * row_stride;
+                    let row_end = (row + 1) * row_stride;
+                    let plane_rows: Vec<&[u8]> = planes
                         .iter()
-                        .map(|plane| plane[row * row_stride..(row + 1) * row_stride].to_vec())
+                        .map(|plane| &plane[row_start..row_end])
                         .collect();
-                    match pixel_rgba_from_row(img, tif, &[], Some(&plane_rows), col) {
+                    match pixel_rgba_from_row(img, tif, state, &[], Some(&plane_rows), col) {
                         Some(pixel) => pixel,
                         None if is_stop_on_error(stop_on_error) => return None,
                         None => 0,
                     }
                 } else {
                     let row_slice = &tile_data[row * row_stride..(row + 1) * row_stride];
-                    match pixel_rgba_from_row(img, tif, row_slice, None, col) {
+                    match pixel_rgba_from_row(img, tif, state, row_slice, None, col) {
                         Some(pixel) => pixel,
                         None if is_stop_on_error(stop_on_error) => return None,
                         None => 0,
@@ -941,8 +1009,12 @@ unsafe fn read_tiled_into_raster(
             let copy_y1 = tile_y_end.min(y + tile_length).min(height);
             for image_row in copy_y0..copy_y1 {
                 let window_row = image_row - row_offset;
-                let dest_row =
-                    window_dest_row(raster_height, read_height, requested_orientation, window_row);
+                let dest_row = window_dest_row(
+                    raster_height,
+                    read_height,
+                    requested_orientation,
+                    window_row,
+                );
                 let dst_col = copy_x0 - col_offset;
                 let src_col = copy_x0 - x;
                 let count = copy_x1 - copy_x0;
@@ -1087,7 +1159,11 @@ unsafe fn decode_logluv_row_rgba(
             Some((out, consumed))
         }
         (PHOTOMETRIC_LOGL, _) => {
-            emit_error_message(tif, "TIFFReadRGBAImage", "LogL data must use SGILog compression");
+            emit_error_message(
+                tif,
+                "TIFFReadRGBAImage",
+                "LogL data must use SGILog compression",
+            );
             None
         }
         _ => {
@@ -1152,8 +1228,12 @@ unsafe fn read_logluv_into_raster(
                     return false;
                 };
                 let mut raw = vec![0u8; raw_size];
-                let rc =
-                    TIFFReadRawTile(tif, tile, raw.as_mut_ptr().cast::<c_void>(), raw_size as isize);
+                let rc = TIFFReadRawTile(
+                    tif,
+                    tile,
+                    raw.as_mut_ptr().cast::<c_void>(),
+                    raw_size as isize,
+                );
                 if rc < 0 {
                     if is_stop_on_error(stop_on_error) {
                         return false;
@@ -1221,8 +1301,12 @@ unsafe fn read_logluv_into_raster(
                 return false;
             };
             let mut raw = vec![0u8; raw_size];
-            let rc =
-                TIFFReadRawStrip(tif, strip, raw.as_mut_ptr().cast::<c_void>(), raw_size as isize);
+            let rc = TIFFReadRawStrip(
+                tif,
+                strip,
+                raw.as_mut_ptr().cast::<c_void>(),
+                raw_size as isize,
+            );
             if rc < 0 {
                 if is_stop_on_error(stop_on_error) {
                     return false;
@@ -1232,13 +1316,9 @@ unsafe fn read_logluv_into_raster(
             raw.truncate(rc as usize);
             let mut consumed = 0usize;
             for rel_row in 0..rows_in_strip {
-                let Some((row_rgba, used)) = decode_logluv_row_rgba(
-                    tif,
-                    &raw[consumed..],
-                    width,
-                    photometric,
-                    compression,
-                ) else {
+                let Some((row_rgba, used)) =
+                    decode_logluv_row_rgba(tif, &raw[consumed..], width, photometric, compression)
+                else {
                     if is_stop_on_error(stop_on_error) {
                         return false;
                     }
@@ -1339,7 +1419,10 @@ fn rgba_codec_configured(compression: u16) -> bool {
 unsafe fn prepared_rgba_image(tif: *mut TIFF, emsg: *mut c_char) -> Option<PreparedRgbaImage> {
     let compression = tag_u16(tif, TAG_COMPRESSION, true, 1);
     if !rgba_codec_configured(compression) {
-        set_error(emsg, "Sorry, requested compression method is not configured");
+        set_error(
+            emsg,
+            "Sorry, requested compression method is not configured",
+        );
         return None;
     }
 
@@ -1378,8 +1461,7 @@ unsafe fn prepared_rgba_image(tif: *mut TIFF, emsg: *mut c_char) -> Option<Prepa
 
     let colorchannels = i32::from(samplesperpixel) - i32::from(extrasamples);
     let planarconfig = tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG);
-    let mut photometric = if let Some(photometric) = tag_u16_optional(tif, TAG_PHOTOMETRIC, false)
-    {
+    let mut photometric = if let Some(photometric) = tag_u16_optional(tif, TAG_PHOTOMETRIC, false) {
         photometric
     } else {
         match colorchannels {
@@ -1420,10 +1502,7 @@ unsafe fn prepared_rgba_image(tif: *mut TIFF, emsg: *mut c_char) -> Option<Prepa
                 );
                 return None;
             }
-            if planarconfig == PLANARCONFIG_CONTIG
-                && alpha != 0
-                && samplesperpixel < 4
-            {
+            if planarconfig == PLANARCONFIG_CONTIG && alpha != 0 && samplesperpixel < 4 {
                 set_error(emsg, "Sorry, can not handle image");
                 return None;
             }
@@ -1581,15 +1660,17 @@ unsafe fn cielab_case_supported(
     state: PreparedRgbaImage,
     emsg: *mut c_char,
 ) -> bool {
-    state.samplesperpixel == 3
-        && matches!(state.bitspersample, 8 | 16)
-        && {
-            let mut cielab: TIFFCIELabToRGB = std::mem::zeroed();
-            validate_and_init_cielab_state(tif, &mut cielab, emsg)
-        }
+    state.samplesperpixel == 3 && matches!(state.bitspersample, 8 | 16) && {
+        let mut cielab: TIFFCIELabToRGB = std::mem::zeroed();
+        validate_and_init_cielab_state(tif, &mut cielab, emsg)
+    }
 }
 
-unsafe fn contig_case_supported(tif: *mut TIFF, state: PreparedRgbaImage, emsg: *mut c_char) -> bool {
+unsafe fn contig_case_supported(
+    tif: *mut TIFF,
+    state: PreparedRgbaImage,
+    emsg: *mut c_char,
+) -> bool {
     match state.photometric {
         PHOTOMETRIC_RGB => match state.bitspersample {
             8 | 16 => {
@@ -1622,7 +1703,11 @@ unsafe fn contig_case_supported(tif: *mut TIFF, state: PreparedRgbaImage, emsg: 
     }
 }
 
-unsafe fn separate_case_supported(tif: *mut TIFF, state: PreparedRgbaImage, emsg: *mut c_char) -> bool {
+unsafe fn separate_case_supported(
+    tif: *mut TIFF,
+    state: PreparedRgbaImage,
+    emsg: *mut c_char,
+) -> bool {
     match state.photometric {
         PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_MINISBLACK | PHOTOMETRIC_RGB => {
             matches!(state.bitspersample, 8 | 16)
@@ -1633,7 +1718,11 @@ unsafe fn separate_case_supported(tif: *mut TIFF, state: PreparedRgbaImage, emsg
     }
 }
 
-unsafe fn pick_contig_case(img: *mut TIFFRGBAImage, state: PreparedRgbaImage, emsg: *mut c_char) -> bool {
+unsafe fn pick_contig_case(
+    img: *mut TIFFRGBAImage,
+    state: PreparedRgbaImage,
+    emsg: *mut c_char,
+) -> bool {
     (*img).get = Some(safe_tiff_rgba_image_get);
     (*img).put.any = None;
     let supported = contig_case_supported((*img).tif, state, emsg);
@@ -1643,7 +1732,11 @@ unsafe fn pick_contig_case(img: *mut TIFFRGBAImage, state: PreparedRgbaImage, em
     supported
 }
 
-unsafe fn pick_separate_case(img: *mut TIFFRGBAImage, state: PreparedRgbaImage, emsg: *mut c_char) -> bool {
+unsafe fn pick_separate_case(
+    img: *mut TIFFRGBAImage,
+    state: PreparedRgbaImage,
+    emsg: *mut c_char,
+) -> bool {
     (*img).get = Some(safe_tiff_rgba_image_get);
     (*img).put.any = None;
     let supported = separate_case_supported((*img).tif, state, emsg);
@@ -1786,7 +1879,11 @@ pub unsafe extern "C" fn safe_tiff_rgba_image_get(
         return 0;
     };
     if row_offset >= actual_height || col_offset >= actual_width {
-        emit_error_message(tif, "TIFFRGBAImageGet", "Requested RGBA window is outside the image");
+        emit_error_message(
+            tif,
+            "TIFFRGBAImageGet",
+            "Requested RGBA window is outside the image",
+        );
         return 0;
     }
     let read_width = min(raster_width, actual_width - col_offset);

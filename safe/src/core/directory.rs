@@ -224,11 +224,18 @@ impl StoredValues {
 
 impl CurrentDirectory {
     fn find_tag(&self, tag: u32) -> Option<&ParsedTag> {
-        self.tags.iter().find(|entry| entry.tag == tag)
+        self.tags
+            .binary_search_by_key(&tag, |entry| entry.tag)
+            .ok()
+            .and_then(|index| self.tags.get(index))
     }
 
     fn find_tag_mut(&mut self, tag: u32) -> Option<&mut ParsedTag> {
-        self.tags.iter_mut().find(|entry| entry.tag == tag)
+        let index = self
+            .tags
+            .binary_search_by_key(&tag, |entry| entry.tag)
+            .ok()?;
+        self.tags.get_mut(index)
     }
 }
 
@@ -262,7 +269,9 @@ unsafe fn append_write_offset(tif: *mut TIFF) -> Option<u64> {
         return Some(offset);
     }
 
-    (*tif).tif_sizeproc.map(|proc_| proc_((*tif).tif_clientdata))
+    (*tif)
+        .tif_sizeproc
+        .map(|proc_| proc_((*tif).tif_clientdata))
 }
 
 unsafe fn main_chain_head_offset(tif: *mut TIFF) -> u64 {
@@ -4074,7 +4083,11 @@ unsafe fn update_current_directory_location(tif: *mut TIFF, offset: u64, next_of
 unsafe fn update_main_chain_head_after_append(tif: *mut TIFF, dir_offset: u64) {
     let head_offset = {
         let offset = main_chain_head_offset(tif);
-        if offset != 0 { offset } else { dir_offset }
+        if offset != 0 {
+            offset
+        } else {
+            dir_offset
+        }
     };
     clear_main_chain_cache(tif);
     directory_state_mut(tif).first_ifd_offset = head_offset;

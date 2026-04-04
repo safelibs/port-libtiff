@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "warmup_runs": 1,
+  "timed_runs": 5,
+  "thresholds": {
+    "max_workload_slowdown": 2.0,
+    "max_suite_median_slowdown": 1.5
+  },
+  "safe_build": {
+    "source_dir": "safe",
+    "build_dir": "safe/build-perf",
+    "cmake_args": [
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-Dtiff-tools=ON",
+      "-Dtiff-tests=OFF"
+    ]
+  },
+  "baseline": {
+    "build_dir": "original/build-step2"
+  },
+  "workloads": [
+    {
+      "name": "tiffinfo-rgb-3c-8b",
+      "tool": "tiffinfo",
+      "input": "original/test/images/rgb-3c-8b.tiff",
+      "args": [
+        "{input}"
+      ],
+      "output": {
+        "kind": "stdout"
+      },
+      "validator": {
+        "kind": "stdout_contains",
+        "needle": "TIFF Directory at offset"
+      }
+    },
+    {
+      "name": "tiffinfo-subifd-chain",
+      "tool": "tiffinfo",
+      "input": "original/test/images/tiff_with_subifd_chain.tif",
+      "args": [
+        "{input}"
+      ],
+      "output": {
+        "kind": "stdout"
+      },
+      "validator": {
+        "kind": "stdout_contains",
+        "needle": "TIFF Directory at offset"
+      }
+    },
+    {
+      "name": "tiffcp-quad-lzw-compat",
+      "tool": "tiffcp",
+      "input": "original/test/images/quad-lzw-compat.tiff",
+      "args": [
+        "-c",
+        "none",
+        "{input}",
+        "{output}"
+      ],
+      "output": {
+        "kind": "file",
+        "extension": ".tiff"
+      },
+      "validator": {
+        "kind": "tiffinfo"
+      }
+    },
+    {
+      "name": "tiffcp-testfax4",
+      "tool": "tiffcp",
+      "input": "original/test/images/testfax4.tiff",
+      "args": [
+        "-c",
+        "lzw",
+        "{input}",
+        "{output}"
+      ],
+      "output": {
+        "kind": "file",
+        "extension": ".tiff"
+      },
+      "validator": {
+        "kind": "tiffinfo"
+      }
+    },
+    {
+      "name": "tiff2rgba-rgb-3c-16b",
+      "tool": "tiff2rgba",
+      "input": "original/test/images/rgb-3c-16b.tiff",
+      "args": [
+        "{input}",
+        "{output}"
+      ],
+      "output": {
+        "kind": "file",
+        "extension": ".tiff"
+      },
+      "validator": {
+        "kind": "tiffinfo"
+      }
+    },
+    {
+      "name": "tiffcrop-quad-tile-r90",
+      "tool": "tiffcrop",
+      "input": "original/test/images/quad-tile.jpg.tiff",
+      "args": [
+        "-R90",
+        "{input}",
+        "{output}"
+      ],
+      "output": {
+        "kind": "file",
+        "extension": ".tiff"
+      },
+      "validator": {
+        "kind": "tiffinfo"
+      }
+    },
+    {
+      "name": "tiff2pdf-rgb-3c-8b",
+      "tool": "tiff2pdf",
+      "input": "original/test/images/rgb-3c-8b.tiff",
+      "args": [
+        "{input}"
+      ],
+      "output": {
+        "kind": "stdout_file",
+        "extension": ".pdf"
+      },
+      "validator": {
+        "kind": "qpdf"
+      }
+    }
+  ]
+}

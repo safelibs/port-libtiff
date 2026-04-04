@@ -1,14 +1,12 @@
-use crate::abi::{TIFFCodec, TIFFDataType, TIFFInitMethod};
-use crate::strile::{
-    TIFFNumberOfStrips,
-    TIFFSwabArrayOfDouble, TIFFSwabArrayOfLong, TIFFSwabArrayOfLong8, TIFFSwabArrayOfShort,
-    TIFFSwabArrayOfTriples,
-};
 use super::{
-    jpeg_decode_bytes, jpeg_encode_bytes, reset_jpeg_state,
-    safe_tiff_set_field_marshaled_nondirty,
+    jpeg_decode_bytes, jpeg_encode_bytes, reset_jpeg_state, safe_tiff_set_field_marshaled_nondirty,
     set_jpeg_color_mode, unset_jpeg_pseudo_tag, COMPRESSION_JPEG, COMPRESSION_OJPEG,
     TAG_JPEGCOLORMODE, TAG_JPEGQUALITY,
+};
+use crate::abi::{TIFFCodec, TIFFDataType, TIFFInitMethod};
+use crate::strile::{
+    TIFFNumberOfStrips, TIFFSwabArrayOfDouble, TIFFSwabArrayOfLong, TIFFSwabArrayOfLong8,
+    TIFFSwabArrayOfShort, TIFFSwabArrayOfTriples,
 };
 use crate::{
     emit_error_message, stub_bool_method, stub_decoderow_method, stub_predecode_method,
@@ -19,6 +17,7 @@ use fax::{
 };
 use flate2::{bufread::ZlibDecoder, write::ZlibEncoder, Compression as FlateCompression};
 use libc::{c_char, c_int, c_void};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::io::{Cursor, Read, Write};
@@ -396,7 +395,10 @@ unsafe fn parse_u32_pair(
         }
         x if x == TIFFDataType::TIFF_SLONG.0 => {
             let values = slice::from_raw_parts(data.cast::<c_int>(), count as usize);
-            Some([u32::try_from(values[0]).ok()?, u32::try_from(values[1]).ok()?])
+            Some([
+                u32::try_from(values[0]).ok()?,
+                u32::try_from(values[1]).ok()?,
+            ])
         }
         x if x == TIFFDataType::TIFF_SHORT.0 => {
             let values = slice::from_raw_parts(data.cast::<u16>(), count as usize);
@@ -716,9 +718,7 @@ pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
         }
         if !matches!(
             additional as c_int,
-            LERC_ADD_COMPRESSION_NONE
-                | LERC_ADD_COMPRESSION_DEFLATE
-                | LERC_ADD_COMPRESSION_ZSTD
+            LERC_ADD_COMPRESSION_NONE | LERC_ADD_COMPRESSION_DEFLATE | LERC_ADD_COMPRESSION_ZSTD
         ) {
             emit_error_message(
                 tif,
@@ -736,7 +736,11 @@ pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
         return 0;
     }
     if count != 1 {
-        emit_error_message(tif, "_TIFFVSetField", format!("Tag {} expects a single value", tag));
+        emit_error_message(
+            tif,
+            "_TIFFVSetField",
+            format!("Tag {} expects a single value", tag),
+        );
         return -1;
     }
 
@@ -775,7 +779,11 @@ pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
         }
         TAG_LERC_VERSION => {
             let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(tif, "_TIFFVSetField", "LercVersion expects an integer value");
+                emit_error_message(
+                    tif,
+                    "_TIFFVSetField",
+                    "LercVersion expects an integer value",
+                );
                 return -1;
             };
             if value != LERC_VERSION_2_4 {
@@ -859,7 +867,11 @@ pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
         }
         TAG_JPEGQUALITY => {
             let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(tif, "_TIFFVSetField", "JPEGQuality expects an integer value");
+                emit_error_message(
+                    tif,
+                    "_TIFFVSetField",
+                    "JPEGQuality expects an integer value",
+                );
                 return -1;
             };
             state.jpeg_quality = value;
@@ -2153,6 +2165,42 @@ fn align_fax_writer(bits: &mut TrackingWriter, mode: i32) {
     }
 }
 
+fn bit_range_mask(start_bit: u32, end_bit: u32, lsb_first: bool) -> u8 {
+    let mut mask = 0u8;
+    let mut bit = start_bit;
+    while bit < end_bit {
+        let shift = if lsb_first { bit } else { 7 - bit };
+        mask |= 1 << shift;
+        bit += 1;
+    }
+    mask
+}
+
+fn write_bit_run(row: &mut [u8], start: u32, end: u32, bit: bool, lsb_first: bool) {
+    if start >= end {
+        return;
+    }
+
+    let fill = if bit { 0xff } else { 0x00 };
+    let start_byte = (start / 8) as usize;
+    let end_byte = ((end - 1) / 8) as usize;
+    if start_byte == end_byte {
+        let start_bit = start % 8;
+        let end_bit = end - (start_byte as u32 * 8);
+        let mask = bit_range_mask(start_bit, end_bit, lsb_first);
+        row[start_byte] = (row[start_byte] & !mask) | (fill & mask);
+        return;
+    }
+
+    let start_mask = bit_range_mask(start % 8, 8, lsb_first);
+    row[start_byte] = (row[start_byte] & !start_mask) | (fill & start_mask);
+    for byte in &mut row[start_byte + 1..end_byte] {
+        *byte = fill;
+    }
+    let end_mask = bit_range_mask(0, end - (end_byte as u32 * 8), lsb_first);
+    row[end_byte] = (row[end_byte] & !end_mask) | (fill & end_mask);
+}
+
 fn row_pixel_color(row: &[u8], x: u32, photometric: u16, lsb_first: bool) -> FaxColor {
     let byte = row[(x / 8) as usize];
     let shift = if lsb_first { x % 8 } else { 7 - (x % 8) };
@@ -2244,27 +2292,20 @@ fn pack_fax_row(
     lsb_first: bool,
 ) {
     let white_bit = photometric == PHOTOMETRIC_MINISBLACK;
+    let black_bit = !white_bit;
     row.fill(if white_bit { 0xff } else { 0x00 });
     let mut current = FaxColor::White;
-    let mut transition_index = 0usize;
-    for x in 0..width {
-        while transition_index < transitions.len() && u32::from(transitions[transition_index]) == x
-        {
-            current = !current;
-            transition_index += 1;
+    let mut run_start = 0u32;
+    for &transition in transitions {
+        let run_end = u32::from(transition).min(width);
+        if current == FaxColor::Black {
+            write_bit_run(row, run_start, run_end, black_bit, lsb_first);
         }
-        let black = current == FaxColor::Black;
-        let bit = match photometric {
-            PHOTOMETRIC_MINISBLACK => !black,
-            _ => black,
-        };
-        let byte_index = (x / 8) as usize;
-        let shift = if lsb_first { x % 8 } else { 7 - (x % 8) };
-        if bit {
-            row[byte_index] |= 1 << shift;
-        } else {
-            row[byte_index] &= !(1 << shift);
-        }
+        run_start = run_end;
+        current = !current;
+    }
+    if current == FaxColor::Black {
+        write_bit_run(row, run_start, width, black_bit, lsb_first);
     }
 }
 
@@ -2272,12 +2313,18 @@ fn group3_fillbits(tif: *mut TIFF) -> bool {
     unsafe { (tag_u32(tif, TAG_GROUP3OPTIONS, true, 0) & GROUP3OPT_FILLBITS) != 0 }
 }
 
-fn prepare_fax_input(tif: *mut TIFF, input: &[u8]) -> Vec<u8> {
-    let mut bytes = input.to_vec();
+fn prepared_fax_input<'a>(tif: *mut TIFF, input: &'a [u8]) -> Cow<'a, [u8]> {
     if unsafe { fill_order(tif) } == FILLORDER_LSB2MSB {
+        let mut bytes = input.to_vec();
         reverse_bits_in_place(&mut bytes);
+        Cow::Owned(bytes)
+    } else {
+        Cow::Borrowed(input)
     }
-    bytes
+}
+
+fn prepare_fax_input(tif: *mut TIFF, input: &[u8]) -> Vec<u8> {
+    prepared_fax_input(tif, input).into_owned()
 }
 
 fn finalize_fax_output(tif: *mut TIFF, output: &mut Vec<u8>) {
@@ -2292,8 +2339,8 @@ unsafe fn decode_group3_1d(
     geometry: CodecGeometry,
 ) -> Option<Vec<u8>> {
     if (fax_mode(tif) & FAXMODE_NOEOL) != 0 {
-        let bytes = prepare_fax_input(tif, input);
-        let mut reader = CcittBitReader::new(&bytes, 0);
+        let bytes = prepared_fax_input(tif, input);
+        let mut reader = CcittBitReader::new(bytes.as_ref(), 0);
         let mut output = vec![0u8; geometry.row_size.checked_mul(geometry.rows)?];
         for row_index in 0..geometry.rows {
             let transitions = decode_fax_1d_line_exact(&mut reader, geometry.width as u16)?;
@@ -2326,8 +2373,8 @@ unsafe fn decode_group3_1d(
         }
         return Some(output);
     }
-    let bytes = prepare_fax_input(tif, input);
-    let mut reader = CcittBitReader::new(&bytes, 0);
+    let bytes = prepared_fax_input(tif, input);
+    let mut reader = CcittBitReader::new(bytes.as_ref(), 0);
     let mut output = vec![0u8; row_size];
     for row_index in 0..geometry.rows {
         if !sync_to_eol(&mut reader, 16) {
@@ -2348,8 +2395,8 @@ unsafe fn decode_group3_1d(
 
 unsafe fn decode_group3_rows(tif: *mut TIFF, input: &[u8], width: u32) -> Option<Vec<Vec<u8>>> {
     let row_size = usize::try_from((width + 7) / 8).ok()?;
-    let bytes = prepare_fax_input(tif, input);
-    let mut reader = CcittBitReader::new(&bytes, 0);
+    let bytes = prepared_fax_input(tif, input);
+    let mut reader = CcittBitReader::new(bytes.as_ref(), 0);
     let mut rows = Vec::new();
     loop {
         if !sync_to_eol(&mut reader, 16) {
@@ -2371,11 +2418,11 @@ unsafe fn decode_group3_rows(tif: *mut TIFF, input: &[u8], width: u32) -> Option
 }
 
 unsafe fn decode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
-    let bytes = prepare_fax_input(tif, input);
+    let bytes = prepared_fax_input(tif, input);
     let mut output = vec![0u8; geometry.row_size.checked_mul(geometry.rows)?];
     let mut row_index = 0usize;
     fax::decoder::decode_g4(
-        bytes.iter().copied(),
+        bytes.as_ref().iter().copied(),
         geometry.width as u16,
         Some(geometry.rows as u16),
         |transitions| {
@@ -2520,10 +2567,18 @@ pub(crate) unsafe fn safe_tiff_codec_encode_bytes(
         COMPRESSION_CCITTFAX4 => encode_group4(tif, input, geometry),
         COMPRESSION_JBIG => encode_jbig_bytes(tif, input, geometry),
         COMPRESSION_JPEG | COMPRESSION_OJPEG => jpeg_encode_bytes(tif, input, geometry),
-        COMPRESSION_LERC => encode_lerc_bytes(tif, &encode_predictor_bytes(tif, geometry, input)?, geometry),
+        COMPRESSION_LERC => encode_lerc_bytes(
+            tif,
+            &encode_predictor_bytes(tif, geometry, input)?,
+            geometry,
+        ),
         COMPRESSION_LZMA => encode_lzma_bytes(tif, &encode_predictor_bytes(tif, geometry, input)?),
         COMPRESSION_ZSTD => encode_zstd_bytes(tif, &encode_predictor_bytes(tif, geometry, input)?),
-        COMPRESSION_WEBP => encode_webp_bytes(tif, &encode_predictor_bytes(tif, geometry, input)?, geometry),
+        COMPRESSION_WEBP => encode_webp_bytes(
+            tif,
+            &encode_predictor_bytes(tif, geometry, input)?,
+            geometry,
+        ),
         _ => None,
     }
 }

@@ -1,0 +1,1728 @@
+{
+  "version": 1,
+  "manifest": "/home/yans/code/safelibs/ported/libtiff/safe/perf/workloads.json",
+  "safe_build_dir": "/home/yans/code/safelibs/ported/libtiff/safe/build-perf",
+  "original_build_dir": "/home/yans/code/safelibs/ported/libtiff/original/build-step2",
+  "warmup_runs": 1,
+  "timed_runs": 5,
+  "thresholds": {
+    "max_workload_slowdown": 2.0,
+    "max_suite_median_slowdown": 1.5
+  },
+  "temp_root": "/tmp/libtiff-perf-hwo2ptu5",
+  "suite_median_slowdown": 0.9707573201280809,
+  "suite_passed": true,
+  "results": [
+    {
+      "name": "tiffinfo-rgb-3c-8b",
+      "tool": "tiffinfo",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0017527280142530799,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
+              "payload_size": 428,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/warmup-01/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0015218390617519617,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
+              "payload_size": 428,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-01/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014263358898460865,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
+              "payload_size": 428,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-02/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0013362939935177565,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
+              "payload_size": 428,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-03/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014056729851290584,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
+              "payload_size": 428,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-04/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.00131936592515558,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "b35062b469730134220275c751fbcb92dd18254ba0840036da6ef1dd881ed845",
+              "payload_size": 428,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/original/timed-05/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "median_seconds": 0.0014056729851290584
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0012863710289821029,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
+              "payload_size": 440,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/warmup-01/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0013815800193697214,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
+              "payload_size": 440,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-01/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0012943119509145617,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
+              "payload_size": 440,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-02/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0013761320151388645,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
+              "payload_size": 440,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-03/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0013207229785621166,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
+              "payload_size": 440,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-04/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.00122684589587152,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "daf2b838973885709a944f7fbdb42bb811aca46f6d7eeb4cb0f136c3282b5b7a",
+              "payload_size": 440,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-rgb-3c-8b/safe/timed-05/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "median_seconds": 0.0013207229785621166
+        }
+      },
+      "slowdown_ratio": 0.9395663091873803,
+      "passed": true,
+      "workload_threshold": 2.0
+    },
+    {
+      "name": "tiffinfo-subifd-chain",
+      "tool": "tiffinfo",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0014312269631773233,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
+              "payload_size": 2586,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/warmup-01/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0014005909906700253,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
+              "payload_size": 2586,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-01/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0013773799873888493,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
+              "payload_size": 2586,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-02/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0014703189954161644,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
+              "payload_size": 2586,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-03/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0013480420457199216,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
+              "payload_size": 2586,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-04/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0012345309369266033,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "18c29d1251a34209a9f54b9cb4058ff4195eef9cf024569fdd112fd0f80c78d1",
+              "payload_size": 2586,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/original/timed-05/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "median_seconds": 0.0013773799873888493
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.001293820096179843,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
+              "payload_size": 2510,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/warmup-01/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.001361072063446045,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
+              "payload_size": 2510,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-01/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0013106720289215446,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
+              "payload_size": 2510,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-02/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0013623250415548682,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
+              "payload_size": 2510,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-03/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0012604299699887633,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
+              "payload_size": 2510,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-04/stderr.bin",
+              "output_path": null
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffinfo",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/tiff_with_subifd_chain.tif"
+              ],
+              "duration_seconds": 0.0012673460878431797,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "stdout contained expected marker",
+              "payload_kind": "stdout",
+              "payload_sha256": "a63c9e72d618b1a57fea0ddf0881ef8144cb9f594a5d7e4fb7b2d3ffbc01aff6",
+              "payload_size": 2510,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffinfo-subifd-chain/safe/timed-05/stderr.bin",
+              "output_path": null
+            }
+          ],
+          "median_seconds": 0.0013106720289215446
+        }
+      },
+      "slowdown_ratio": 0.9515689504145,
+      "passed": true,
+      "workload_threshold": 2.0
+    },
+    {
+      "name": "tiffcp-quad-lzw-compat",
+      "tool": "tiffcp",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.003572812071070075,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
+              "payload_size": 590478,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.003931526909582317,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
+              "payload_size": 590478,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-01/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.004179709008894861,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
+              "payload_size": 590478,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-02/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.004396345932036638,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
+              "payload_size": 590478,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-03/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.0037727480521425605,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
+              "payload_size": 590478,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-04/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.004068468930199742,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "a29bdb8bc15146b12dbc8407f6a87f372a96e7cadf741a134a62fbd61928679a",
+              "payload_size": 590478,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/original/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.004068468930199742
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.0034973359433934093,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
+              "payload_size": 590632,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.0034115170128643513,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
+              "payload_size": 590632,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-01/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.00371182500384748,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
+              "payload_size": 590632,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-02/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.00335260306019336,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
+              "payload_size": 590632,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-03/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.003506673965603113,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
+              "payload_size": 590632,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-04/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "none",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-lzw-compat.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.003402743022888899,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "0340555332499e600b0f6940ca86564502026ccd17061fe83a7b43786d9c1284",
+              "payload_size": 590632,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-quad-lzw-compat/safe/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.0034115170128643513
+        }
+      },
+      "slowdown_ratio": 0.8385260085289289,
+      "passed": true,
+      "workload_threshold": 2.0
+    },
+    {
+      "name": "tiffcp-testfax4",
+      "tool": "tiffcp",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.00996369100175798,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
+              "payload_size": 106326,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.0102680359268561,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
+              "payload_size": 106326,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-01/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.010064858011901379,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
+              "payload_size": 106326,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-02/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.01006881904322654,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
+              "payload_size": 106326,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-03/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.010163109982386231,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
+              "payload_size": 106326,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-04/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.009858400095254183,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "e0c4d51726bb2b521820a491a809b022ee415a617b26f4eebd7b4e1dd4012461",
+              "payload_size": 106326,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/original/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.01006881904322654
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.014909300021827221,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
+              "payload_size": 106384,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.014772186987102032,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
+              "payload_size": 106384,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-01/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.014628540026023984,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
+              "payload_size": 106384,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-02/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.015483782044611871,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
+              "payload_size": 106384,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-03/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.015193030005320907,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
+              "payload_size": 106384,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-04/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcp",
+                "-c",
+                "lzw",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/testfax4.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.014896724023856223,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "6ca9ef6801374de1815ec96826778cbb4bcb0db4de400a1a47eab520576747d7",
+              "payload_size": 106384,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcp-testfax4/safe/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.014896724023856223
+        }
+      },
+      "slowdown_ratio": 1.479490689017546,
+      "passed": true,
+      "workload_threshold": 2.0
+    },
+    {
+      "name": "tiff2rgba-rgb-3c-16b",
+      "tool": "tiff2rgba",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.0021261220099404454,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
+              "payload_size": 95992,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.002000562963075936,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
+              "payload_size": 95992,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-01/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.001922867028042674,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
+              "payload_size": 95992,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-02/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.0018567999359220266,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
+              "payload_size": 95992,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-03/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.002009341958910227,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
+              "payload_size": 95992,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-04/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.0018274909816682339,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "bfeb6e43405ed6c8f0b69250e099f02edd934d2576f5400571608add4330c90d",
+              "payload_size": 95992,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/original/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.001922867028042674
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.0019835280254483223,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
+              "payload_size": 95896,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.0018537490395829082,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
+              "payload_size": 95896,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-01/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.001833142014220357,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
+              "payload_size": 95896,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-02/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.0018870619824156165,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
+              "payload_size": 95896,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-03/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.0018798329401761293,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
+              "payload_size": 95896,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-04/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2rgba",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-16b.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.0019005989888682961,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "ebf36b6154da4cfdbc3a57a91b58bd17a7c666ec1e9d842c08c9848ee8c2529f",
+              "payload_size": 95896,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2rgba-rgb-3c-16b/safe/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.0018798329401761293
+        }
+      },
+      "slowdown_ratio": 0.9776198316165678,
+      "passed": true,
+      "workload_threshold": 2.0
+    },
+    {
+      "name": "tiffcrop-quad-tile-r90",
+      "tool": "tiffcrop",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.004045029985718429,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
+              "payload_size": 82646,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.004039287916384637,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
+              "payload_size": 82646,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-01/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.0038228429621085525,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
+              "payload_size": 82646,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-02/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.003969449899159372,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
+              "payload_size": 82646,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-03/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.003997071995399892,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
+              "payload_size": 82646,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-04/output.tiff"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.003936983994208276,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "dbe45159a6366ae69e51593cbeb1ca3f7b4cee9ed52e43821f6841616c8282d9",
+              "payload_size": 82646,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/original/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.003969449899159372
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/warmup-01/output.tiff"
+              ],
+              "duration_seconds": 0.005245006061159074,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
+              "payload_size": 590084,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/warmup-01/output.tiff"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-01/output.tiff"
+              ],
+              "duration_seconds": 0.004897870006971061,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
+              "payload_size": 590084,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-01/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-02/output.tiff"
+              ],
+              "duration_seconds": 0.00492908398155123,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
+              "payload_size": 590084,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-02/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-03/output.tiff"
+              ],
+              "duration_seconds": 0.004891435033641756,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
+              "payload_size": 590084,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-03/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-04/output.tiff"
+              ],
+              "duration_seconds": 0.00496291893068701,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
+              "payload_size": 590084,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-04/output.tiff"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiffcrop",
+                "-R90",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/quad-tile.jpg.tiff",
+                "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-05/output.tiff"
+              ],
+              "duration_seconds": 0.005178948980756104,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "original tiffinfo -D accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "c44dac554f966a35fe2594e325c55195efdfc57e0b98b8b89ebf1bf460167a78",
+              "payload_size": 590084,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiffcrop-quad-tile-r90/safe/timed-05/output.tiff"
+            }
+          ],
+          "median_seconds": 0.00492908398155123
+        }
+      },
+      "slowdown_ratio": 1.2417549299702924,
+      "passed": true,
+      "workload_threshold": 2.0
+    },
+    {
+      "name": "tiff2pdf-rgb-3c-8b",
+      "tool": "tiff2pdf",
+      "implementations": {
+        "original": {
+          "warmups": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.001614028005860746,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/warmup-01/output.pdf"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0015323440311476588,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-01/output.pdf"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.001483176019974053,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-02/output.pdf"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014389059506356716,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-03/output.pdf"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014256080612540245,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-04/output.pdf"
+            },
+            {
+              "implementation": "original",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/original/build-step2/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.001500581973232329,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/original/timed-05/output.pdf"
+            }
+          ],
+          "median_seconds": 0.001483176019974053
+        },
+        "safe": {
+          "warmups": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0015741030219942331,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/warmup-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/warmup-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/warmup-01/output.pdf"
+            }
+          ],
+          "warmups_valid": true,
+          "timed_runs": [
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014471410540863872,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-01/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-01/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-01/output.pdf"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014210190856829286,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-02/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-02/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-02/output.pdf"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014752689749002457,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-03/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-03/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-03/output.pdf"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0013619489036500454,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-04/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-04/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-04/output.pdf"
+            },
+            {
+              "implementation": "safe",
+              "command": [
+                "/home/yans/code/safelibs/ported/libtiff/safe/build-perf/tools/tiff2pdf",
+                "/home/yans/code/safelibs/ported/libtiff/original/test/images/rgb-3c-8b.tiff"
+              ],
+              "duration_seconds": 0.0014398039784282446,
+              "returncode": 0,
+              "valid": true,
+              "validation_message": "qpdf --check accepted the output",
+              "payload_kind": "file",
+              "payload_sha256": "70a5bdae7211a7886c27381940a88551ae8cb547d07e6aaa2ba4c273de25df71",
+              "payload_size": 72309,
+              "stdout_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-05/stdout.bin",
+              "stderr_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-05/stderr.bin",
+              "output_path": "/tmp/libtiff-perf-hwo2ptu5/tiff2pdf-rgb-3c-8b/safe/timed-05/output.pdf"
+            }
+          ],
+          "median_seconds": 0.0014398039784282446
+        }
+      },
+      "slowdown_ratio": 0.9707573201280809,
+      "passed": true,
+      "workload_threshold": 2.0
+    }
+  ]
+}
