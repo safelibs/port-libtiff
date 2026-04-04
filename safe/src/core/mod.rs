@@ -6,7 +6,8 @@ mod field_tables;
 mod jpeg;
 
 pub(crate) use color::{
-    free_ycbcr_tables, safe_tiff_cielab_to_rgb_init, safe_tiff_cielab_to_xyz,
+    free_ycbcr_tables, safe_tiff_cielab16_to_xyz, safe_tiff_cielab_to_rgb_init,
+    safe_tiff_cielab_to_xyz,
     safe_tiff_logl10_from_y, safe_tiff_logl10_to_y, safe_tiff_logl16_from_y,
     safe_tiff_logl16_to_y, safe_tiff_logluv24_from_xyz, safe_tiff_logluv24_to_xyz,
     safe_tiff_logluv32_from_xyz, safe_tiff_logluv32_to_xyz,
