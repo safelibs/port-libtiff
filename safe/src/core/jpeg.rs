@@ -78,7 +78,7 @@ pub(crate) struct JpegStream {
     pub(crate) crop_height: u32,
 }
 
-unsafe fn get_tag_raw(
+fn get_tag_raw(
     tif: *mut TIFF,
     tag: u32,
     defaulted: bool,
@@ -92,136 +92,148 @@ unsafe fn get_tag_raw(
     Some((type_, usize::try_from(count).ok()?, data))
 }
 
-unsafe fn tag_u16(tif: *mut TIFF, tag: u32, defaulted: bool, fallback: u16) -> u16 {
-    let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
-        return fallback;
-    };
-    if count == 0 || data.is_null() {
-        return fallback;
-    }
-    match type_.0 {
-        x if x == TIFFDataType::TIFF_SHORT.0 => *data.cast::<u16>(),
-        x if x == TIFFDataType::TIFF_LONG.0 => {
-            u16::try_from(*data.cast::<u32>()).unwrap_or(fallback)
+fn tag_u16(tif: *mut TIFF, tag: u32, defaulted: bool, fallback: u16) -> u16 {
+    unsafe {
+        let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
+            return fallback;
+        };
+        if count == 0 || data.is_null() {
+            return fallback;
         }
-        x if x == TIFFDataType::TIFF_SLONG.0 => {
-            u16::try_from(*data.cast::<i32>()).unwrap_or(fallback)
+        match type_.0 {
+            x if x == TIFFDataType::TIFF_SHORT.0 => *data.cast::<u16>(),
+            x if x == TIFFDataType::TIFF_LONG.0 => {
+                u16::try_from(*data.cast::<u32>()).unwrap_or(fallback)
+            }
+            x if x == TIFFDataType::TIFF_SLONG.0 => {
+                u16::try_from(*data.cast::<i32>()).unwrap_or(fallback)
+            }
+            _ => fallback,
         }
-        _ => fallback,
     }
 }
 
-unsafe fn tag_u32(tif: *mut TIFF, tag: u32, defaulted: bool, fallback: u32) -> u32 {
-    let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
-        return fallback;
-    };
-    if count == 0 || data.is_null() {
-        return fallback;
-    }
-    match type_.0 {
-        x if x == TIFFDataType::TIFF_SHORT.0 => u32::from(*data.cast::<u16>()),
-        x if x == TIFFDataType::TIFF_LONG.0 => *data.cast::<u32>(),
-        x if x == TIFFDataType::TIFF_LONG8.0 || x == TIFFDataType::TIFF_IFD8.0 => {
-            u32::try_from(*data.cast::<u64>()).unwrap_or(fallback)
+fn tag_u32(tif: *mut TIFF, tag: u32, defaulted: bool, fallback: u32) -> u32 {
+    unsafe {
+        let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
+            return fallback;
+        };
+        if count == 0 || data.is_null() {
+            return fallback;
         }
-        x if x == TIFFDataType::TIFF_SLONG.0 => {
-            u32::try_from(*data.cast::<i32>()).unwrap_or(fallback)
+        match type_.0 {
+            x if x == TIFFDataType::TIFF_SHORT.0 => u32::from(*data.cast::<u16>()),
+            x if x == TIFFDataType::TIFF_LONG.0 => *data.cast::<u32>(),
+            x if x == TIFFDataType::TIFF_LONG8.0 || x == TIFFDataType::TIFF_IFD8.0 => {
+                u32::try_from(*data.cast::<u64>()).unwrap_or(fallback)
+            }
+            x if x == TIFFDataType::TIFF_SLONG.0 => {
+                u32::try_from(*data.cast::<i32>()).unwrap_or(fallback)
+            }
+            _ => fallback,
         }
-        _ => fallback,
     }
 }
 
-unsafe fn copy_u64_array_tag(tif: *mut TIFF, tag: u32) -> Option<Vec<u64>> {
-    let (type_, count, data) = get_tag_raw(tif, tag, false)?;
-    if count == 0 {
-        return Some(Vec::new());
-    }
-    if data.is_null() {
-        return None;
-    }
-    match type_.0 {
-        x if x == TIFFDataType::TIFF_SHORT.0 => Some(
-            slice::from_raw_parts(data.cast::<u16>(), count)
-                .iter()
-                .map(|value| u64::from(*value))
-                .collect(),
-        ),
-        x if x == TIFFDataType::TIFF_LONG.0 || x == TIFFDataType::TIFF_IFD.0 => Some(
-            slice::from_raw_parts(data.cast::<u32>(), count)
-                .iter()
-                .map(|value| u64::from(*value))
-                .collect(),
-        ),
-        x if x == TIFFDataType::TIFF_LONG8.0 || x == TIFFDataType::TIFF_IFD8.0 => {
-            Some(slice::from_raw_parts(data.cast::<u64>(), count).to_vec())
+fn copy_u64_array_tag(tif: *mut TIFF, tag: u32) -> Option<Vec<u64>> {
+    unsafe {
+        let (type_, count, data) = get_tag_raw(tif, tag, false)?;
+        if count == 0 {
+            return Some(Vec::new());
         }
-        _ => None,
-    }
-}
-
-unsafe fn copy_u8_array_tag(tif: *mut TIFF, tag: u32) -> Option<Vec<u8>> {
-    let (type_, count, data) = get_tag_raw(tif, tag, false)?;
-    if count == 0 {
-        return Some(Vec::new());
-    }
-    if data.is_null() {
-        return None;
-    }
-    match type_.0 {
-        x if x == TIFFDataType::TIFF_BYTE.0
-            || x == TIFFDataType::TIFF_UNDEFINED.0
-            || x == TIFFDataType::TIFF_ASCII.0 =>
-        {
-            Some(slice::from_raw_parts(data.cast::<u8>(), count).to_vec())
+        if data.is_null() {
+            return None;
         }
-        _ => None,
+        match type_.0 {
+            x if x == TIFFDataType::TIFF_SHORT.0 => Some(
+                slice::from_raw_parts(data.cast::<u16>(), count)
+                    .iter()
+                    .map(|value| u64::from(*value))
+                    .collect(),
+            ),
+            x if x == TIFFDataType::TIFF_LONG.0 || x == TIFFDataType::TIFF_IFD.0 => Some(
+                slice::from_raw_parts(data.cast::<u32>(), count)
+                    .iter()
+                    .map(|value| u64::from(*value))
+                    .collect(),
+            ),
+            x if x == TIFFDataType::TIFF_LONG8.0 || x == TIFFDataType::TIFF_IFD8.0 => {
+                Some(slice::from_raw_parts(data.cast::<u64>(), count).to_vec())
+            }
+            _ => None,
+        }
     }
 }
 
-unsafe fn file_size(tif: *mut TIFF) -> u64 {
-    let inner = tif_inner(tif);
-    if !(*inner).mapped_base.is_null() && (*inner).mapped_size != 0 {
-        (*inner).mapped_size
-    } else if let Some(sizeproc) = (*tif).tif_sizeproc {
-        sizeproc((*tif).tif_clientdata)
-    } else {
-        0
+fn copy_u8_array_tag(tif: *mut TIFF, tag: u32) -> Option<Vec<u8>> {
+    unsafe {
+        let (type_, count, data) = get_tag_raw(tif, tag, false)?;
+        if count == 0 {
+            return Some(Vec::new());
+        }
+        if data.is_null() {
+            return None;
+        }
+        match type_.0 {
+            x if x == TIFFDataType::TIFF_BYTE.0
+                || x == TIFFDataType::TIFF_UNDEFINED.0
+                || x == TIFFDataType::TIFF_ASCII.0 =>
+            {
+                Some(slice::from_raw_parts(data.cast::<u8>(), count).to_vec())
+            }
+            _ => None,
+        }
     }
 }
 
-unsafe fn read_exact_at(tif: *mut TIFF, offset: u64, bytes: &mut [u8]) -> bool {
-    let Some(end) = offset.checked_add(bytes.len() as u64) else {
-        return false;
-    };
-    let size = file_size(tif);
-    if size != 0 && end > size {
-        return false;
-    }
-    let inner = tif_inner(tif);
-    if !(*inner).mapped_base.is_null() && (*inner).mapped_size >= end {
-        ptr::copy_nonoverlapping(
-            (*inner).mapped_base.cast::<u8>().add(offset as usize),
-            bytes.as_mut_ptr(),
-            bytes.len(),
-        );
-        true
-    } else if seek_in_proc(tif, offset, libc::SEEK_SET) == offset {
-        read_from_proc(
-            tif,
-            bytes.as_mut_ptr().cast::<c_void>(),
-            bytes.len() as crate::Tmsize,
-        )
-    } else {
-        false
+fn file_size(tif: *mut TIFF) -> u64 {
+    unsafe {
+        let inner = tif_inner(tif);
+        if !(*inner).mapped_base.is_null() && (*inner).mapped_size != 0 {
+            (*inner).mapped_size
+        } else if let Some(sizeproc) = (*tif).tif_sizeproc {
+            sizeproc((*tif).tif_clientdata)
+        } else {
+            0
+        }
     }
 }
 
-unsafe fn read_exact_vec_at(tif: *mut TIFF, offset: u64, len: usize) -> Option<Vec<u8>> {
+fn read_exact_at(tif: *mut TIFF, offset: u64, bytes: &mut [u8]) -> bool {
+    unsafe {
+        let Some(end) = offset.checked_add(bytes.len() as u64) else {
+            return false;
+        };
+        let size = file_size(tif);
+        if size != 0 && end > size {
+            return false;
+        }
+        let inner = tif_inner(tif);
+        if !(*inner).mapped_base.is_null() && (*inner).mapped_size >= end {
+            ptr::copy_nonoverlapping(
+                (*inner).mapped_base.cast::<u8>().add(offset as usize),
+                bytes.as_mut_ptr(),
+                bytes.len(),
+            );
+            true
+        } else if seek_in_proc(tif, offset, libc::SEEK_SET) == offset {
+            read_from_proc(
+                tif,
+                bytes.as_mut_ptr().cast::<c_void>(),
+                bytes.len() as crate::Tmsize,
+            )
+        } else {
+            false
+        }
+    }
+}
+
+fn read_exact_vec_at(tif: *mut TIFF, offset: u64, len: usize) -> Option<Vec<u8>> {
     let mut bytes = vec![0u8; len];
     read_exact_at(tif, offset, &mut bytes).then_some(bytes)
 }
 
-unsafe fn read_table_at(tif: *mut TIFF, offset: u64, len: usize, label: &str) -> Option<Vec<u8>> {
+fn read_table_at(tif: *mut TIFF, offset: u64, len: usize, label: &str) -> Option<Vec<u8>> {
     if len == 0 {
         emit_error_message(tif, label, "Referenced JPEG table is empty");
         return None;
@@ -249,58 +261,68 @@ fn ensure_eoi(out: &mut Vec<u8>) {
     }
 }
 
-unsafe fn jpeg_helper_error(errbuf: &[c_char]) -> String {
-    if errbuf.is_empty() || errbuf[0] == 0 {
-        "JPEG helper failed".to_string()
-    } else {
-        CStr::from_ptr(errbuf.as_ptr()).to_string_lossy().into_owned()
+fn jpeg_helper_error(errbuf: &[c_char]) -> String {
+    unsafe {
+        if errbuf.is_empty() || errbuf[0] == 0 {
+            "JPEG helper failed".to_string()
+        } else {
+            CStr::from_ptr(errbuf.as_ptr())
+                .to_string_lossy()
+                .into_owned()
+        }
     }
 }
 
-pub(crate) unsafe fn reset_jpeg_state(tif: *mut TIFF) {
-    let state = &mut (*tif_inner(tif)).codec_state;
-    state.jpeg_quality = DEFAULT_JPEG_QUALITY;
-    state.jpeg_colormode = JPEGCOLORMODE_RAW;
-    (*tif).tif_flags &= !TIFF_UPSAMPLED;
+pub(crate) fn reset_jpeg_state(tif: *mut TIFF) {
+    unsafe {
+        let state = &mut (*tif_inner(tif)).codec_state;
+        state.jpeg_quality = DEFAULT_JPEG_QUALITY;
+        state.jpeg_colormode = JPEGCOLORMODE_RAW;
+        (*tif).tif_flags &= !TIFF_UPSAMPLED;
+    }
 }
 
-pub(crate) unsafe fn jpeg_quality(tif: *mut TIFF) -> c_int {
-    (*tif_inner(tif)).codec_state.jpeg_quality
+pub(crate) fn jpeg_quality(tif: *mut TIFF) -> c_int {
+    unsafe { (*tif_inner(tif)).codec_state.jpeg_quality }
 }
 
 pub(crate) fn jpeg_default_quality() -> c_int {
     DEFAULT_JPEG_QUALITY
 }
 
-pub(crate) unsafe fn jpeg_color_mode(tif: *mut TIFF) -> c_int {
-    (*tif_inner(tif)).codec_state.jpeg_colormode
+pub(crate) fn jpeg_color_mode(tif: *mut TIFF) -> c_int {
+    unsafe { (*tif_inner(tif)).codec_state.jpeg_colormode }
 }
 
-pub(crate) unsafe fn set_jpeg_color_mode(tif: *mut TIFF, value: c_int) {
-    let mode = if value == JPEGCOLORMODE_RGB {
-        JPEGCOLORMODE_RGB
-    } else {
-        JPEGCOLORMODE_RAW
-    };
-    (*tif_inner(tif)).codec_state.jpeg_colormode = mode;
-    if mode == JPEGCOLORMODE_RGB {
-        (*tif).tif_flags |= TIFF_UPSAMPLED;
-    } else {
-        (*tif).tif_flags &= !TIFF_UPSAMPLED;
+pub(crate) fn set_jpeg_color_mode(tif: *mut TIFF, value: c_int) {
+    unsafe {
+        let mode = if value == JPEGCOLORMODE_RGB {
+            JPEGCOLORMODE_RGB
+        } else {
+            JPEGCOLORMODE_RAW
+        };
+        (*tif_inner(tif)).codec_state.jpeg_colormode = mode;
+        if mode == JPEGCOLORMODE_RGB {
+            (*tif).tif_flags |= TIFF_UPSAMPLED;
+        } else {
+            (*tif).tif_flags &= !TIFF_UPSAMPLED;
+        }
     }
 }
 
-pub(crate) unsafe fn unset_jpeg_pseudo_tag(tif: *mut TIFF, tag: u32) -> c_int {
-    match tag {
-        TAG_JPEGQUALITY => {
-            (*tif_inner(tif)).codec_state.jpeg_quality = DEFAULT_JPEG_QUALITY;
-            1
+pub(crate) fn unset_jpeg_pseudo_tag(tif: *mut TIFF, tag: u32) -> c_int {
+    unsafe {
+        match tag {
+            TAG_JPEGQUALITY => {
+                (*tif_inner(tif)).codec_state.jpeg_quality = DEFAULT_JPEG_QUALITY;
+                1
+            }
+            TAG_JPEGCOLORMODE => {
+                set_jpeg_color_mode(tif, JPEGCOLORMODE_RAW);
+                1
+            }
+            _ => 0,
         }
-        TAG_JPEGCOLORMODE => {
-            set_jpeg_color_mode(tif, JPEGCOLORMODE_RAW);
-            1
-        }
-        _ => 0,
     }
 }
 
@@ -312,7 +334,7 @@ fn howmany_u32(value: u32, divisor: u32) -> Option<u32> {
     }
 }
 
-unsafe fn tile_crop_origin(tif: *mut TIFF, tile: u32) -> Option<(u32, u32)> {
+fn tile_crop_origin(tif: *mut TIFF, tile: u32) -> Option<(u32, u32)> {
     let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0);
     let tile_width = tag_u32(tif, TAG_TILEWIDTH, false, 0);
     let tile_length = tag_u32(tif, TAG_TILELENGTH, false, 0);
@@ -320,10 +342,13 @@ unsafe fn tile_crop_origin(tif: *mut TIFF, tile: u32) -> Option<(u32, u32)> {
         return None;
     }
     let tiles_across = howmany_u32(width, tile_width)?;
-    Some(((tile % tiles_across) * tile_width, (tile / tiles_across) * tile_length))
+    Some((
+        (tile % tiles_across) * tile_width,
+        (tile / tiles_across) * tile_length,
+    ))
 }
 
-unsafe fn strip_crop_origin(tif: *mut TIFF, strip: u32) -> Option<(u32, u32)> {
+fn strip_crop_origin(tif: *mut TIFF, strip: u32) -> Option<(u32, u32)> {
     let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0);
     let rows_per_strip = tag_u32(tif, TAG_ROWSPERSTRIP, true, height);
     if height == 0 || rows_per_strip == 0 {
@@ -332,7 +357,7 @@ unsafe fn strip_crop_origin(tif: *mut TIFF, strip: u32) -> Option<(u32, u32)> {
     Some((0, strip.saturating_mul(rows_per_strip)))
 }
 
-unsafe fn read_all_strile_payloads(tif: *mut TIFF, is_tile: bool) -> Option<Vec<u8>> {
+fn read_all_strile_payloads(tif: *mut TIFF, is_tile: bool) -> Option<Vec<u8>> {
     let (offset_tag, bytecount_tag, label) = if is_tile {
         (TAG_TILEOFFSETS, TAG_TILEBYTECOUNTS, "OJPEG tile")
     } else {
@@ -363,153 +388,156 @@ unsafe fn read_all_strile_payloads(tif: *mut TIFF, is_tile: bool) -> Option<Vec<
     Some(out)
 }
 
-unsafe fn build_synthetic_ojpeg_header(tif: *mut TIFF) -> Option<Vec<u8>> {
-    let label = "OJPEG";
-    let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0);
-    let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0);
-    let samples_per_pixel = tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 3);
-    let bits_per_sample = tag_u16(tif, TAG_BITSPERSAMPLE, true, 8);
-    let jpeg_proc = tag_u16(tif, TAG_JPEGPROC, true, 1);
-    let restart_interval = tag_u16(tif, TAG_JPEGRESTARTINTERVAL, true, 0);
-    let subsampling = get_tag_raw(tif, TAG_YCBCRSUBSAMPLING, true)
-        .and_then(|(type_, count, data)| {
-            if data.is_null() || count < 2 || type_.0 != TIFFDataType::TIFF_SHORT.0 {
-                None
-            } else {
-                let values = slice::from_raw_parts(data.cast::<u16>(), count);
-                Some((values[0], values[1]))
+fn build_synthetic_ojpeg_header(tif: *mut TIFF) -> Option<Vec<u8>> {
+    unsafe {
+        let label = "OJPEG";
+        let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0);
+        let height = tag_u32(tif, TAG_IMAGELENGTH, true, 0);
+        let samples_per_pixel = tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 3);
+        let bits_per_sample = tag_u16(tif, TAG_BITSPERSAMPLE, true, 8);
+        let jpeg_proc = tag_u16(tif, TAG_JPEGPROC, true, 1);
+        let restart_interval = tag_u16(tif, TAG_JPEGRESTARTINTERVAL, true, 0);
+        let subsampling = get_tag_raw(tif, TAG_YCBCRSUBSAMPLING, true)
+            .and_then(|(type_, count, data)| {
+                if data.is_null() || count < 2 || type_.0 != TIFFDataType::TIFF_SHORT.0 {
+                    None
+                } else {
+                    let values = slice::from_raw_parts(data.cast::<u16>(), count);
+                    Some((values[0], values[1]))
+                }
+            })
+            .unwrap_or((2, 2));
+        let q_offsets = copy_u64_array_tag(tif, TAG_JPEGQTABLES)?;
+        let dc_offsets = copy_u64_array_tag(tif, TAG_JPEGDCTABLES)?;
+        let ac_offsets = copy_u64_array_tag(tif, TAG_JPEGACTABLES)?;
+
+        if width == 0 || height == 0 || bits_per_sample == 0 || samples_per_pixel == 0 {
+            emit_error_message(tif, label, "Malformed OJPEG image geometry");
+            return None;
+        }
+        if bits_per_sample > 12 {
+            emit_error_message(tif, label, "Unsupported OJPEG bit depth");
+            return None;
+        }
+        if samples_per_pixel != 1 && samples_per_pixel != 3 {
+            emit_error_message(tif, label, "Unsupported OJPEG sample layout");
+            return None;
+        }
+        if subsampling.0 == 0 || subsampling.1 == 0 {
+            emit_error_message(tif, label, "Invalid OJPEG YCbCr subsampling");
+            return None;
+        }
+        if q_offsets.is_empty() || dc_offsets.is_empty() || ac_offsets.is_empty() {
+            emit_error_message(tif, label, "OJPEG table offsets are missing");
+            return None;
+        }
+
+        let mut out = Vec::new();
+        out.extend_from_slice(&[0xff, 0xd8]);
+
+        if jpeg_proc == 1 {
+            let _ = push_marker(
+                &mut out,
+                0xe0,
+                &[b'J', b'F', b'I', b'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0],
+            );
+        }
+
+        for (index, offset) in q_offsets.iter().enumerate() {
+            let table = read_table_at(tif, *offset, 64, label)?;
+            let mut payload = Vec::with_capacity(65);
+            payload.push(index as u8);
+            payload.extend_from_slice(&table);
+            if !push_marker(&mut out, 0xdb, &payload) {
+                emit_error_message(tif, label, "OJPEG quantization table is too large");
+                return None;
             }
-        })
-        .unwrap_or((2, 2));
-    let q_offsets = copy_u64_array_tag(tif, TAG_JPEGQTABLES)?;
-    let dc_offsets = copy_u64_array_tag(tif, TAG_JPEGDCTABLES)?;
-    let ac_offsets = copy_u64_array_tag(tif, TAG_JPEGACTABLES)?;
+        }
 
-    if width == 0 || height == 0 || bits_per_sample == 0 || samples_per_pixel == 0 {
-        emit_error_message(tif, label, "Malformed OJPEG image geometry");
-        return None;
-    }
-    if bits_per_sample > 12 {
-        emit_error_message(tif, label, "Unsupported OJPEG bit depth");
-        return None;
-    }
-    if samples_per_pixel != 1 && samples_per_pixel != 3 {
-        emit_error_message(tif, label, "Unsupported OJPEG sample layout");
-        return None;
-    }
-    if subsampling.0 == 0 || subsampling.1 == 0 {
-        emit_error_message(tif, label, "Invalid OJPEG YCbCr subsampling");
-        return None;
-    }
-    if q_offsets.is_empty() || dc_offsets.is_empty() || ac_offsets.is_empty() {
-        emit_error_message(tif, label, "OJPEG table offsets are missing");
-        return None;
-    }
-
-    let mut out = Vec::new();
-    out.extend_from_slice(&[0xff, 0xd8]);
-
-    if jpeg_proc == 1 {
-        let _ = push_marker(&mut out, 0xe0, &[b'J', b'F', b'I', b'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]);
-    }
-
-    for (index, offset) in q_offsets.iter().enumerate() {
-        let table = read_table_at(tif, *offset, 64, label)?;
-        let mut payload = Vec::with_capacity(65);
-        payload.push(index as u8);
-        payload.extend_from_slice(&table);
-        if !push_marker(&mut out, 0xdb, &payload) {
-            emit_error_message(tif, label, "OJPEG quantization table is too large");
+        let mut sof = Vec::new();
+        sof.push(bits_per_sample as u8);
+        sof.extend_from_slice(&(height as u16).to_be_bytes());
+        sof.extend_from_slice(&(width as u16).to_be_bytes());
+        sof.push(samples_per_pixel as u8);
+        if samples_per_pixel == 1 {
+            sof.push(1);
+            sof.push(0x11);
+            sof.push(0);
+        } else {
+            let q1 = min(q_offsets.len().saturating_sub(1), 1) as u8;
+            let q2 = min(q_offsets.len().saturating_sub(1), 2) as u8;
+            sof.push(1);
+            sof.push(((subsampling.0 as u8) << 4) | (subsampling.1 as u8));
+            sof.push(0);
+            sof.push(2);
+            sof.push(0x11);
+            sof.push(q1);
+            sof.push(3);
+            sof.push(0x11);
+            sof.push(q2);
+        }
+        if !push_marker(&mut out, 0xc0, &sof) {
+            emit_error_message(tif, label, "Malformed OJPEG SOF payload");
             return None;
         }
-    }
 
-    let mut sof = Vec::new();
-    sof.push(bits_per_sample as u8);
-    sof.extend_from_slice(&(height as u16).to_be_bytes());
-    sof.extend_from_slice(&(width as u16).to_be_bytes());
-    sof.push(samples_per_pixel as u8);
-    if samples_per_pixel == 1 {
-        sof.push(1);
-        sof.push(0x11);
-        sof.push(0);
-    } else {
-        let q1 = min(q_offsets.len().saturating_sub(1), 1) as u8;
-        let q2 = min(q_offsets.len().saturating_sub(1), 2) as u8;
-        sof.push(1);
-        sof.push(((subsampling.0 as u8) << 4) | (subsampling.1 as u8));
-        sof.push(0);
-        sof.push(2);
-        sof.push(0x11);
-        sof.push(q1);
-        sof.push(3);
-        sof.push(0x11);
-        sof.push(q2);
-    }
-    if !push_marker(&mut out, 0xc0, &sof) {
-        emit_error_message(tif, label, "Malformed OJPEG SOF payload");
-        return None;
-    }
+        if restart_interval != 0 {
+            let _ = push_marker(&mut out, 0xdd, &restart_interval.to_be_bytes());
+        }
 
-    if restart_interval != 0 {
-        let _ = push_marker(&mut out, 0xdd, &restart_interval.to_be_bytes());
-    }
+        for (index, offset) in dc_offsets.iter().enumerate() {
+            let counts = read_table_at(tif, *offset, 16, label)?;
+            let values_len: usize = counts.iter().map(|value| usize::from(*value)).sum();
+            let table = read_table_at(tif, offset.checked_add(16)?, values_len, label)?;
+            let mut payload = Vec::with_capacity(17 + table.len());
+            payload.push(index as u8);
+            payload.extend_from_slice(&counts);
+            payload.extend_from_slice(&table);
+            if !push_marker(&mut out, 0xc4, &payload) {
+                emit_error_message(tif, label, "OJPEG DC table is too large");
+                return None;
+            }
+        }
+        for (index, offset) in ac_offsets.iter().enumerate() {
+            let counts = read_table_at(tif, *offset, 16, label)?;
+            let values_len: usize = counts.iter().map(|value| usize::from(*value)).sum();
+            let table = read_table_at(tif, offset.checked_add(16)?, values_len, label)?;
+            let mut payload = Vec::with_capacity(17 + table.len());
+            payload.push(0x10 | index as u8);
+            payload.extend_from_slice(&counts);
+            payload.extend_from_slice(&table);
+            if !push_marker(&mut out, 0xc4, &payload) {
+                emit_error_message(tif, label, "OJPEG AC table is too large");
+                return None;
+            }
+        }
 
-    for (index, offset) in dc_offsets.iter().enumerate() {
-        let counts = read_table_at(tif, *offset, 16, label)?;
-        let values_len: usize = counts.iter().map(|value| usize::from(*value)).sum();
-        let table = read_table_at(tif, offset.checked_add(16)?, values_len, label)?;
-        let mut payload = Vec::with_capacity(17 + table.len());
-        payload.push(index as u8);
-        payload.extend_from_slice(&counts);
-        payload.extend_from_slice(&table);
-        if !push_marker(&mut out, 0xc4, &payload) {
-            emit_error_message(tif, label, "OJPEG DC table is too large");
+        let mut sos = Vec::new();
+        sos.push(samples_per_pixel as u8);
+        if samples_per_pixel == 1 {
+            sos.push(1);
+            sos.push(0x00);
+        } else {
+            let table1 = min(dc_offsets.len().saturating_sub(1), 1) as u8;
+            let table2 = min(dc_offsets.len().saturating_sub(1), 2) as u8;
+            sos.push(1);
+            sos.push(0x00);
+            sos.push(2);
+            sos.push((table1 << 4) | table1);
+            sos.push(3);
+            sos.push((table2 << 4) | table2);
+        }
+        sos.extend_from_slice(&[0, 63, 0]);
+        if !push_marker(&mut out, 0xda, &sos) {
+            emit_error_message(tif, label, "Malformed OJPEG SOS payload");
             return None;
         }
-    }
-    for (index, offset) in ac_offsets.iter().enumerate() {
-        let counts = read_table_at(tif, *offset, 16, label)?;
-        let values_len: usize = counts.iter().map(|value| usize::from(*value)).sum();
-        let table = read_table_at(tif, offset.checked_add(16)?, values_len, label)?;
-        let mut payload = Vec::with_capacity(17 + table.len());
-        payload.push(0x10 | index as u8);
-        payload.extend_from_slice(&counts);
-        payload.extend_from_slice(&table);
-        if !push_marker(&mut out, 0xc4, &payload) {
-            emit_error_message(tif, label, "OJPEG AC table is too large");
-            return None;
-        }
-    }
 
-    let mut sos = Vec::new();
-    sos.push(samples_per_pixel as u8);
-    if samples_per_pixel == 1 {
-        sos.push(1);
-        sos.push(0x00);
-    } else {
-        let table1 = min(dc_offsets.len().saturating_sub(1), 1) as u8;
-        let table2 = min(dc_offsets.len().saturating_sub(1), 2) as u8;
-        sos.push(1);
-        sos.push(0x00);
-        sos.push(2);
-        sos.push((table1 << 4) | table1);
-        sos.push(3);
-        sos.push((table2 << 4) | table2);
+        Some(out)
     }
-    sos.extend_from_slice(&[0, 63, 0]);
-    if !push_marker(&mut out, 0xda, &sos) {
-        emit_error_message(tif, label, "Malformed OJPEG SOS payload");
-        return None;
-    }
-
-    Some(out)
 }
 
-unsafe fn maybe_reconstruct_abbreviated_jpeg_stream(
-    tif: *mut TIFF,
-    input: &[u8],
-) -> Option<Vec<u8>> {
+fn maybe_reconstruct_abbreviated_jpeg_stream(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
     if input.len() >= 2 && input[0] == 0xff && input[1] == 0xd8 {
         let mut bytes = input.to_vec();
         ensure_eoi(&mut bytes);
@@ -532,7 +560,7 @@ unsafe fn maybe_reconstruct_abbreviated_jpeg_stream(
     Some(bytes)
 }
 
-pub(crate) unsafe fn maybe_reconstruct_jpeg_stream(
+pub(crate) fn maybe_reconstruct_jpeg_stream(
     tif: *mut TIFF,
     input: &[u8],
     is_tile: bool,
@@ -546,7 +574,11 @@ pub(crate) unsafe fn maybe_reconstruct_jpeg_stream(
 
     if tag_u16(tif, TAG_COMPRESSION, true, 0) == COMPRESSION_JPEG {
         let bytes = maybe_reconstruct_abbreviated_jpeg_stream(tif, input).or_else(|| {
-            emit_error_message(tif, "JPEG", "Missing JPEGTables for abbreviated JPEG stream");
+            emit_error_message(
+                tif,
+                "JPEG",
+                "Missing JPEGTables for abbreviated JPEG stream",
+            );
             None
         })?;
         return Some(JpegStream {
@@ -616,36 +648,42 @@ pub(crate) unsafe fn maybe_reconstruct_jpeg_stream(
     })
 }
 
-unsafe fn decode_full_rgb_stream(tif: *mut TIFF, stream: &JpegStream) -> Option<Vec<u8>> {
-    let full_width = usize::try_from(stream.full_width).ok()?;
-    let full_height = usize::try_from(stream.full_height).ok()?;
-    let full_len = full_width.checked_mul(full_height)?.checked_mul(3)?;
-    let mut full = vec![0u8; full_len];
-    let mut errbuf = [0 as c_char; 256];
-    let mut decoded_width = 0u32;
-    let mut decoded_height = 0u32;
-    if safe_tiff_jpeg_decode_rgb(
-        stream.bytes.as_ptr(),
-        stream.bytes.len(),
-        full.as_mut_ptr(),
-        full.len(),
-        &mut decoded_width,
-        &mut decoded_height,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_error_message(tif, "JPEG", jpeg_helper_error(&errbuf));
-        return None;
+fn decode_full_rgb_stream(tif: *mut TIFF, stream: &JpegStream) -> Option<Vec<u8>> {
+    unsafe {
+        let full_width = usize::try_from(stream.full_width).ok()?;
+        let full_height = usize::try_from(stream.full_height).ok()?;
+        let full_len = full_width.checked_mul(full_height)?.checked_mul(3)?;
+        let mut full = vec![0u8; full_len];
+        let mut errbuf = [0 as c_char; 256];
+        let mut decoded_width = 0u32;
+        let mut decoded_height = 0u32;
+        if safe_tiff_jpeg_decode_rgb(
+            stream.bytes.as_ptr(),
+            stream.bytes.len(),
+            full.as_mut_ptr(),
+            full.len(),
+            &mut decoded_width,
+            &mut decoded_height,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_error_message(tif, "JPEG", jpeg_helper_error(&errbuf));
+            return None;
+        }
+        if decoded_width != stream.full_width || decoded_height != stream.full_height {
+            emit_error_message(
+                tif,
+                "JPEG",
+                "Decoded JPEG dimensions do not match TIFF geometry",
+            );
+            return None;
+        }
+        Some(full)
     }
-    if decoded_width != stream.full_width || decoded_height != stream.full_height {
-        emit_error_message(tif, "JPEG", "Decoded JPEG dimensions do not match TIFF geometry");
-        return None;
-    }
-    Some(full)
 }
 
-unsafe fn decode_rgb_stream(
+fn decode_rgb_stream(
     tif: *mut TIFF,
     stream: &JpegStream,
     geometry: CodecGeometry,
@@ -669,9 +707,13 @@ unsafe fn decode_rgb_stream(
     Some(out)
 }
 
-pub(crate) unsafe fn ojpeg_decode_full_rgb_image(tif: *mut TIFF) -> Option<Vec<u8>> {
+pub(crate) fn ojpeg_decode_full_rgb_image(tif: *mut TIFF) -> Option<Vec<u8>> {
     if tag_u16(tif, TAG_COMPRESSION, true, 0) != COMPRESSION_OJPEG {
-        emit_error_message(tif, "OJPEG", "Full-image OJPEG decode requires OJPEG compression");
+        emit_error_message(
+            tif,
+            "OJPEG",
+            "Full-image OJPEG decode requires OJPEG compression",
+        );
         return None;
     }
 
@@ -685,13 +727,13 @@ pub(crate) unsafe fn ojpeg_decode_full_rgb_image(tif: *mut TIFF) -> Option<Vec<u
         rows: full_height,
         width,
     };
-    let is_tile = tag_u32(tif, TAG_TILEWIDTH, false, 0) != 0
-        && tag_u32(tif, TAG_TILELENGTH, false, 0) != 0;
+    let is_tile =
+        tag_u32(tif, TAG_TILEWIDTH, false, 0) != 0 && tag_u32(tif, TAG_TILELENGTH, false, 0) != 0;
     let stream = maybe_reconstruct_jpeg_stream(tif, &[], is_tile, 0, geometry)?;
     decode_full_rgb_stream(tif, &stream)
 }
 
-pub(crate) unsafe fn jpeg_decode_bytes(
+pub(crate) fn jpeg_decode_bytes(
     tif: *mut TIFF,
     input: &[u8],
     is_tile: bool,
@@ -699,42 +741,45 @@ pub(crate) unsafe fn jpeg_decode_bytes(
     geometry: CodecGeometry,
     expected_size: usize,
 ) -> Option<Vec<u8>> {
-    let stream = maybe_reconstruct_jpeg_stream(tif, input, is_tile, strile, geometry)?;
-    if jpeg_color_mode(tif) == JPEGCOLORMODE_RGB || tag_u16(tif, TAG_COMPRESSION, true, 0) == COMPRESSION_OJPEG
-    {
-        return decode_rgb_stream(tif, &stream, geometry, expected_size);
-    }
+    unsafe {
+        let stream = maybe_reconstruct_jpeg_stream(tif, input, is_tile, strile, geometry)?;
+        if jpeg_color_mode(tif) == JPEGCOLORMODE_RGB
+            || tag_u16(tif, TAG_COMPRESSION, true, 0) == COMPRESSION_OJPEG
+        {
+            return decode_rgb_stream(tif, &stream, geometry, expected_size);
+        }
 
-    let (h, v) = get_tag_raw(tif, TAG_YCBCRSUBSAMPLING, true)
-        .and_then(|(type_, count, data)| {
-            if data.is_null() || count < 2 || type_.0 != TIFFDataType::TIFF_SHORT.0 {
-                None
-            } else {
-                let values = slice::from_raw_parts(data.cast::<u16>(), count);
-                Some((u32::from(values[0]), u32::from(values[1])))
-            }
-        })
-        .unwrap_or((2, 2));
-    let mut out = vec![0u8; expected_size];
-    let mut errbuf = [0 as c_char; 256];
-    if safe_tiff_jpeg_decode_raw_ycbcr(
-        stream.bytes.as_ptr(),
-        stream.bytes.len(),
-        out.as_mut_ptr(),
-        out.len(),
-        h,
-        v,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_error_message(tif, "JPEG", jpeg_helper_error(&errbuf));
-        return None;
+        let (h, v) = get_tag_raw(tif, TAG_YCBCRSUBSAMPLING, true)
+            .and_then(|(type_, count, data)| {
+                if data.is_null() || count < 2 || type_.0 != TIFFDataType::TIFF_SHORT.0 {
+                    None
+                } else {
+                    let values = slice::from_raw_parts(data.cast::<u16>(), count);
+                    Some((u32::from(values[0]), u32::from(values[1])))
+                }
+            })
+            .unwrap_or((2, 2));
+        let mut out = vec![0u8; expected_size];
+        let mut errbuf = [0 as c_char; 256];
+        if safe_tiff_jpeg_decode_raw_ycbcr(
+            stream.bytes.as_ptr(),
+            stream.bytes.len(),
+            out.as_mut_ptr(),
+            out.len(),
+            h,
+            v,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_error_message(tif, "JPEG", jpeg_helper_error(&errbuf));
+            return None;
+        }
+        Some(out)
     }
-    Some(out)
 }
 
-pub(crate) unsafe fn jpeg_encode_bytes(
+pub(crate) fn jpeg_encode_bytes(
     _tif: *mut TIFF,
     _input: &[u8],
     _geometry: CodecGeometry,

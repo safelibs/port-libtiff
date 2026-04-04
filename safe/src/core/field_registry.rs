@@ -1,9 +1,7 @@
-use super::field_tables::{
-    TIFF_FIELD_ARRAY_EXIF, TIFF_FIELD_ARRAY_GPS, TIFF_FIELD_ARRAY_IMAGE,
-};
+use super::field_tables::{TIFF_FIELD_ARRAY_EXIF, TIFF_FIELD_ARRAY_GPS, TIFF_FIELD_ARRAY_IMAGE};
 use crate::abi::{
-    TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldInfo,
-    TIFFSetGetFieldType, TIFFTagMethods,
+    TIFFDataType, TIFFExtendProc, TIFFField, TIFFFieldArray, TIFFFieldInfo, TIFFSetGetFieldType,
+    TIFFTagMethods,
 };
 use crate::{emit_error_message, emit_warning_message, tif_inner, TIFF};
 use libc::{c_char, c_int, c_void};
@@ -61,164 +59,178 @@ impl Default for FieldRegistryState {
     }
 }
 
-unsafe fn registry_state(tif: *mut TIFF) -> &'static FieldRegistryState {
-    &(*tif_inner(tif)).field_registry
+fn registry_state(tif: *mut TIFF) -> &'static FieldRegistryState {
+    unsafe { &(*tif_inner(tif)).field_registry }
 }
 
-unsafe fn registry_state_mut(tif: *mut TIFF) -> &'static mut FieldRegistryState {
-    &mut (*tif_inner(tif)).field_registry
+fn registry_state_mut(tif: *mut TIFF) -> &'static mut FieldRegistryState {
+    unsafe { &mut (*tif_inner(tif)).field_registry }
 }
 
-unsafe fn sort_fields(state: &mut FieldRegistryState) {
-    state.fields.sort_unstable_by(|lhs, rhs| tag_compare(*lhs, *rhs));
+fn sort_fields(state: &mut FieldRegistryState) {
+    state
+        .fields
+        .sort_unstable_by(|lhs, rhs| tag_compare(*lhs, *rhs));
 }
 
-unsafe fn tag_compare(lhs: *const TIFFField, rhs: *const TIFFField) -> Ordering {
-    let lhs = &*lhs;
-    let rhs = &*rhs;
-    if lhs.field_tag != rhs.field_tag {
-        lhs.field_tag.cmp(&rhs.field_tag)
-    } else if lhs.field_type.0 == TIFF_ANY.0 {
-        Ordering::Equal
-    } else {
-        rhs.field_type.0.cmp(&lhs.field_type.0)
-    }
-}
-
-unsafe fn compare_key_to_field(tag: u32, dt: TIFFDataType, field: *const TIFFField) -> Ordering {
-    let field = &*field;
-    if tag != field.field_tag {
-        tag.cmp(&field.field_tag)
-    } else if dt.0 == TIFF_ANY.0 {
-        Ordering::Equal
-    } else {
-        field.field_type.0.cmp(&dt.0)
-    }
-}
-
-unsafe fn find_field_impl(
-    state: &mut FieldRegistryState,
-    tag: u32,
-    dt: TIFFDataType,
-) -> *const TIFFField {
-    if !state.foundfield.is_null() {
-        let cached = &*state.foundfield;
-        if cached.field_tag == tag && (dt.0 == TIFF_ANY.0 || cached.field_type.0 == dt.0) {
-            return state.foundfield;
+fn tag_compare(lhs: *const TIFFField, rhs: *const TIFFField) -> Ordering {
+    unsafe {
+        let lhs = &*lhs;
+        let rhs = &*rhs;
+        if lhs.field_tag != rhs.field_tag {
+            lhs.field_tag.cmp(&rhs.field_tag)
+        } else if lhs.field_type.0 == TIFF_ANY.0 {
+            Ordering::Equal
+        } else {
+            rhs.field_type.0.cmp(&lhs.field_type.0)
         }
     }
+}
 
-    let mut left = 0usize;
-    let mut right = state.fields.len();
-    while left < right {
-        let mid = left + (right - left) / 2;
-        match compare_key_to_field(tag, dt, state.fields[mid]) {
-            Ordering::Less => {
-                right = mid;
-            }
-            Ordering::Greater => {
-                left = mid + 1;
-            }
-            Ordering::Equal => {
-                state.foundfield = state.fields[mid];
+fn compare_key_to_field(tag: u32, dt: TIFFDataType, field: *const TIFFField) -> Ordering {
+    unsafe {
+        let field = &*field;
+        if tag != field.field_tag {
+            tag.cmp(&field.field_tag)
+        } else if dt.0 == TIFF_ANY.0 {
+            Ordering::Equal
+        } else {
+            field.field_type.0.cmp(&dt.0)
+        }
+    }
+}
+
+fn find_field_impl(state: &mut FieldRegistryState, tag: u32, dt: TIFFDataType) -> *const TIFFField {
+    unsafe {
+        if !state.foundfield.is_null() {
+            let cached = &*state.foundfield;
+            if cached.field_tag == tag && (dt.0 == TIFF_ANY.0 || cached.field_type.0 == dt.0) {
                 return state.foundfield;
             }
         }
-    }
 
-    state.foundfield = ptr::null();
-    ptr::null()
+        let mut left = 0usize;
+        let mut right = state.fields.len();
+        while left < right {
+            let mid = left + (right - left) / 2;
+            match compare_key_to_field(tag, dt, state.fields[mid]) {
+                Ordering::Less => {
+                    right = mid;
+                }
+                Ordering::Greater => {
+                    left = mid + 1;
+                }
+                Ordering::Equal => {
+                    state.foundfield = state.fields[mid];
+                    return state.foundfield;
+                }
+            }
+        }
+
+        state.foundfield = ptr::null();
+        ptr::null()
+    }
 }
 
-unsafe fn find_field_by_name_impl(
+fn find_field_by_name_impl(
     state: &mut FieldRegistryState,
     field_name: *const c_char,
     dt: TIFFDataType,
 ) -> *const TIFFField {
-    if field_name.is_null() {
+    unsafe {
+        if field_name.is_null() {
+            state.foundfield = ptr::null();
+            return ptr::null();
+        }
+
+        if !state.foundfield.is_null() {
+            let cached = &*state.foundfield;
+            if !cached.field_name.is_null()
+                && libc::strcmp(cached.field_name, field_name) == 0
+                && (dt.0 == TIFF_ANY.0 || cached.field_type.0 == dt.0)
+            {
+                return state.foundfield;
+            }
+        }
+
+        for field in &state.fields {
+            let candidate = &**field;
+            if !candidate.field_name.is_null()
+                && libc::strcmp(candidate.field_name, field_name) == 0
+                && (dt.0 == TIFF_ANY.0 || candidate.field_type.0 == dt.0)
+            {
+                state.foundfield = *field;
+                return state.foundfield;
+            }
+        }
+
         state.foundfield = ptr::null();
-        return ptr::null();
+        ptr::null()
     }
-
-    if !state.foundfield.is_null() {
-        let cached = &*state.foundfield;
-        if !cached.field_name.is_null()
-            && libc::strcmp(cached.field_name, field_name) == 0
-            && (dt.0 == TIFF_ANY.0 || cached.field_type.0 == dt.0)
-        {
-            return state.foundfield;
-        }
-    }
-
-    for field in &state.fields {
-        let candidate = &**field;
-        if !candidate.field_name.is_null()
-            && libc::strcmp(candidate.field_name, field_name) == 0
-            && (dt.0 == TIFF_ANY.0 || candidate.field_type.0 == dt.0)
-        {
-            state.foundfield = *field;
-            return state.foundfield;
-        }
-    }
-
-    state.foundfield = ptr::null();
-    ptr::null()
 }
 
-unsafe fn setup_fields_impl(tif: *mut TIFF, infoarray: *const TIFFFieldArray) -> bool {
-    if tif.is_null() || infoarray.is_null() {
-        return false;
-    }
+fn setup_fields_impl(tif: *mut TIFF, infoarray: *const TIFFFieldArray) -> bool {
+    unsafe {
+        if tif.is_null() || infoarray.is_null() {
+            return false;
+        }
 
-    let state = registry_state_mut(tif);
-    state.fields.clear();
-    state.anonymous_fields.clear();
-    state.foundfield = ptr::null();
+        let state = registry_state_mut(tif);
+        state.fields.clear();
+        state.anonymous_fields.clear();
+        state.foundfield = ptr::null();
 
-    let fields = std::slice::from_raw_parts((*infoarray).fields, (*infoarray).count as usize);
-    for field in fields {
-        state.fields.push(field as *const TIFFField as *mut TIFFField);
+        let fields = std::slice::from_raw_parts((*infoarray).fields, (*infoarray).count as usize);
+        for field in fields {
+            state
+                .fields
+                .push(field as *const TIFFField as *mut TIFFField);
+        }
+        sort_fields(state);
+        true
     }
-    sort_fields(state);
-    true
 }
 
-pub(crate) unsafe fn reset_field_registry_with_array(
+pub(crate) fn reset_field_registry_with_array(
     tif: *mut TIFF,
     infoarray: *const TIFFFieldArray,
 ) -> bool {
-    if tif.is_null() || infoarray.is_null() {
-        return false;
+    unsafe {
+        if tif.is_null() || infoarray.is_null() {
+            return false;
+        }
+        {
+            let state = registry_state_mut(tif);
+            state.compat_arrays.clear();
+            state.anonymous_fields.clear();
+            state.tagmethods = TIFFTagMethods::default();
+            safe_tiff_initialize_tag_methods(&mut state.tagmethods);
+            state.foundfield = ptr::null();
+            state.tag_list.clear();
+        }
+        setup_fields_impl(tif, infoarray)
     }
-    {
+}
+
+fn record_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
+    unsafe {
+        if tif.is_null() {
+            return 0;
+        }
+        let _ = initialize_field_registry(tif);
         let state = registry_state_mut(tif);
-        state.compat_arrays.clear();
-        state.anonymous_fields.clear();
-        state.tagmethods = TIFFTagMethods::default();
-        safe_tiff_initialize_tag_methods(&mut state.tagmethods);
-        state.foundfield = ptr::null();
-        state.tag_list.clear();
+        let field = find_field_impl(state, tag, TIFF_ANY);
+        if field.is_null() || (*field).field_bit != FIELD_CUSTOM {
+            return 1;
+        }
+        if !state.tag_list.contains(&tag) {
+            state.tag_list.push(tag);
+        }
+        1
     }
-    setup_fields_impl(tif, infoarray)
 }
 
-unsafe fn record_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
-    if tif.is_null() {
-        return 0;
-    }
-    let _ = initialize_field_registry(tif);
-    let state = registry_state_mut(tif);
-    let field = find_field_impl(state, tag, TIFF_ANY);
-    if field.is_null() || (*field).field_bit != FIELD_CUSTOM {
-        return 1;
-    }
-    if !state.tag_list.contains(&tag) {
-        state.tag_list.push(tag);
-    }
-    1
-}
-
-unsafe fn remove_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
+fn remove_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
     if tif.is_null() {
         return 0;
     }
@@ -227,25 +239,29 @@ unsafe fn remove_custom_tag_impl(tif: *mut TIFF, tag: u32) -> c_int {
     1
 }
 
-unsafe fn merge_fields_impl(tif: *mut TIFF, info: *const TIFFField, n: u32) -> c_int {
-    if tif.is_null() {
-        return 0;
-    }
-    if info.is_null() && n != 0 {
-        emit_error_message(tif, "_TIFFMergeFields", "Failed to allocate fields array");
-        return 0;
-    }
-
-    let state = registry_state_mut(tif);
-    state.foundfield = ptr::null();
-    let fields = std::slice::from_raw_parts(info, n as usize);
-    for field in fields {
-        if find_field_impl(state, field.field_tag, TIFF_ANY).is_null() {
-            state.fields.push(field as *const TIFFField as *mut TIFFField);
+fn merge_fields_impl(tif: *mut TIFF, info: *const TIFFField, n: u32) -> c_int {
+    unsafe {
+        if tif.is_null() {
+            return 0;
         }
+        if info.is_null() && n != 0 {
+            emit_error_message(tif, "_TIFFMergeFields", "Failed to allocate fields array");
+            return 0;
+        }
+
+        let state = registry_state_mut(tif);
+        state.foundfield = ptr::null();
+        let fields = std::slice::from_raw_parts(info, n as usize);
+        for field in fields {
+            if find_field_impl(state, field.field_tag, TIFF_ANY).is_null() {
+                state
+                    .fields
+                    .push(field as *const TIFFField as *mut TIFFField);
+            }
+        }
+        sort_fields(state);
+        n as c_int
     }
-    sort_fields(state);
-    n as c_int
 }
 
 fn set_get_type(type_: TIFFDataType, count: i16, passcount: u8) -> TIFFSetGetFieldType {
@@ -442,7 +458,7 @@ fn create_anonymous_field(tag: u32, field_type: TIFFDataType) -> AnonymousField 
     AnonymousField { field, _name: name }
 }
 
-pub(crate) unsafe fn initialize_field_registry(tif: *mut TIFF) -> bool {
+pub(crate) fn initialize_field_registry(tif: *mut TIFF) -> bool {
     if tif.is_null() {
         return false;
     }
@@ -453,17 +469,19 @@ pub(crate) unsafe fn initialize_field_registry(tif: *mut TIFF) -> bool {
     }
 }
 
-pub(crate) unsafe fn reset_default_directory(tif: *mut TIFF) -> bool {
-    if tif.is_null() {
-        return false;
+pub(crate) fn reset_default_directory(tif: *mut TIFF) -> bool {
+    unsafe {
+        if tif.is_null() {
+            return false;
+        }
+        if !reset_field_registry_with_array(tif, &TIFF_FIELD_ARRAY_IMAGE) {
+            return false;
+        }
+        if let Some(extender) = *TAG_EXTENDER.lock().expect("tag extender mutex") {
+            extender(tif);
+        }
+        true
     }
-    if !reset_field_registry_with_array(tif, &TIFF_FIELD_ARRAY_IMAGE) {
-        return false;
-    }
-    if let Some(extender) = *TAG_EXTENDER.lock().expect("tag extender mutex") {
-        extender(tif);
-    }
-    true
 }
 
 #[no_mangle]
@@ -489,28 +507,32 @@ pub extern "C" fn TIFFDataWidth(type_: TIFFDataType) -> c_int {
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldSetGetSize(fip: *const TIFFField) -> c_int {
-    if fip.is_null() {
-        return 0;
-    }
-    match (*fip).set_field_type.0 {
-        0 | 1 | 15 | 27 | 39 | 51 => 1,
-        2 | 3 | 16 | 17 | 28 | 29 | 40 | 41 => 1,
-        4 | 5 | 18 | 19 | 30 | 31 | 42 | 43 => 2,
-        13 | 6 | 7 | 10 | 14 | 20 | 21 | 24 | 32 | 33 | 36 | 44 | 45 | 48 => 4,
-        8 | 9 | 11 | 12 | 22 | 23 | 25 | 26 | 34 | 35 | 37 | 38 | 46 | 47 | 49 | 50 => 8,
-        _ => 0,
+    unsafe {
+        if fip.is_null() {
+            return 0;
+        }
+        match (*fip).set_field_type.0 {
+            0 | 1 | 15 | 27 | 39 | 51 => 1,
+            2 | 3 | 16 | 17 | 28 | 29 | 40 | 41 => 1,
+            4 | 5 | 18 | 19 | 30 | 31 | 42 | 43 => 2,
+            13 | 6 | 7 | 10 | 14 | 20 | 21 | 24 | 32 | 33 | 36 | 44 | 45 | 48 => 4,
+            8 | 9 | 11 | 12 | 22 | 23 | 25 | 26 | 34 | 35 | 37 | 38 | 46 | 47 | 49 | 50 => 8,
+            _ => 0,
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldSetGetCountSize(fip: *const TIFFField) -> c_int {
-    if fip.is_null() {
-        return 0;
-    }
-    match (*fip).set_field_type.0 {
-        27..=38 => 2,
-        39..=50 => 4,
-        _ => 0,
+    unsafe {
+        if fip.is_null() {
+            return 0;
+        }
+        match (*fip).set_field_type.0 {
+            27..=38 => 2,
+            39..=50 => 4,
+            _ => 0,
+        }
     }
 }
 
@@ -529,15 +551,17 @@ pub unsafe extern "C" fn TIFFFindField(
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldWithTag(tif: *mut TIFF, tag: u32) -> *const TIFFField {
-    let fip = TIFFFindField(tif, tag, TIFF_ANY);
-    if fip.is_null() && !tif.is_null() {
-        emit_warning_message(
-            tif,
-            "TIFFFieldWithTag",
-            format!("Warning, unknown tag 0x{:x}", tag),
-        );
+    unsafe {
+        let fip = TIFFFindField(tif, tag, TIFF_ANY);
+        if fip.is_null() && !tif.is_null() {
+            emit_warning_message(
+                tif,
+                "TIFFFieldWithTag",
+                format!("Warning, unknown tag 0x{:x}", tag),
+            );
+        }
+        fip
     }
-    fip
 }
 
 #[no_mangle]
@@ -562,64 +586,78 @@ pub unsafe extern "C" fn TIFFFieldWithName(
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldTag(fip: *const TIFFField) -> u32 {
-    if fip.is_null() {
-        0
-    } else {
-        (*fip).field_tag
+    unsafe {
+        if fip.is_null() {
+            0
+        } else {
+            (*fip).field_tag
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldName(fip: *const TIFFField) -> *const c_char {
-    if fip.is_null() {
-        ptr::null()
-    } else {
-        (*fip).field_name
+    unsafe {
+        if fip.is_null() {
+            ptr::null()
+        } else {
+            (*fip).field_name
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldDataType(fip: *const TIFFField) -> TIFFDataType {
-    if fip.is_null() {
-        TIFF_ANY
-    } else {
-        (*fip).field_type
+    unsafe {
+        if fip.is_null() {
+            TIFF_ANY
+        } else {
+            (*fip).field_type
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldPassCount(fip: *const TIFFField) -> c_int {
-    if fip.is_null() {
-        0
-    } else {
-        (*fip).field_passcount as c_int
+    unsafe {
+        if fip.is_null() {
+            0
+        } else {
+            (*fip).field_passcount as c_int
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldReadCount(fip: *const TIFFField) -> c_int {
-    if fip.is_null() {
-        0
-    } else {
-        (*fip).field_readcount as c_int
+    unsafe {
+        if fip.is_null() {
+            0
+        } else {
+            (*fip).field_readcount as c_int
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldWriteCount(fip: *const TIFFField) -> c_int {
-    if fip.is_null() {
-        0
-    } else {
-        (*fip).field_writecount as c_int
+    unsafe {
+        if fip.is_null() {
+            0
+        } else {
+            (*fip).field_writecount as c_int
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFieldIsAnonymous(fip: *const TIFFField) -> c_int {
-    if fip.is_null() {
-        0
-    } else {
-        (*fip).field_anonymous as c_int
+    unsafe {
+        if fip.is_null() {
+            0
+        } else {
+            (*fip).field_anonymous as c_int
+        }
     }
 }
 
@@ -654,43 +692,44 @@ pub unsafe extern "C" fn TIFFAccessTagMethods(tif: *mut TIFF) -> *mut TIFFTagMet
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn TIFFGetClientInfo(
-    tif: *mut TIFF,
-    name: *const c_char,
-) -> *mut c_void {
-    if tif.is_null() || name.is_null() {
-        return ptr::null_mut();
-    }
-    for entry in &registry_state(tif).client_info {
-        if libc::strcmp(entry.name.as_ptr(), name) == 0 {
-            return entry.data;
+pub unsafe extern "C" fn TIFFGetClientInfo(tif: *mut TIFF, name: *const c_char) -> *mut c_void {
+    unsafe {
+        if tif.is_null() || name.is_null() {
+            return ptr::null_mut();
         }
+        for entry in &registry_state(tif).client_info {
+            if libc::strcmp(entry.name.as_ptr(), name) == 0 {
+                return entry.data;
+            }
+        }
+        ptr::null_mut()
     }
-    ptr::null_mut()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn TIFFSetClientInfo(
-    tif: *mut TIFF,
-    data: *mut c_void,
-    name: *const c_char,
-) {
-    if tif.is_null() || name.is_null() {
-        return;
-    }
-
-    let state = registry_state_mut(tif);
-    for entry in &mut state.client_info {
-        if libc::strcmp(entry.name.as_ptr(), name) == 0 {
-            entry.data = data;
+pub unsafe extern "C" fn TIFFSetClientInfo(tif: *mut TIFF, data: *mut c_void, name: *const c_char) {
+    unsafe {
+        if tif.is_null() || name.is_null() {
             return;
         }
-    }
 
-    let owned_name = CString::new(CStr::from_ptr(name).to_bytes()).expect("client info name");
-    state
-        .client_info
-        .insert(0, ClientInfoEntry { data, name: owned_name });
+        let state = registry_state_mut(tif);
+        for entry in &mut state.client_info {
+            if libc::strcmp(entry.name.as_ptr(), name) == 0 {
+                entry.data = data;
+                return;
+            }
+        }
+
+        let owned_name = CString::new(CStr::from_ptr(name).to_bytes()).expect("client info name");
+        state.client_info.insert(
+            0,
+            ClientInfoEntry {
+                data,
+                name: owned_name,
+            },
+        );
+    }
 }
 
 #[no_mangle]
@@ -699,54 +738,59 @@ pub unsafe extern "C" fn TIFFMergeFieldInfo(
     info: *const TIFFFieldInfo,
     n: u32,
 ) -> c_int {
-    if tif.is_null() || (info.is_null() && n != 0) {
-        return -1;
-    }
-    let _ = initialize_field_registry(tif);
-
-    let mut merged = Vec::with_capacity(n as usize);
-    for index in 0..n as usize {
-        let source = &*info.add(index);
-        if source.field_name.is_null() {
-            emit_error_message(
-                tif,
-                "TIFFMergeFieldInfo",
-                format!("Field_name of {}.th allocation tag {} is NULL", index, source.field_tag),
-            );
+    unsafe {
+        if tif.is_null() || (info.is_null() && n != 0) {
             return -1;
         }
-        merged.push(TIFFField {
-            field_tag: source.field_tag,
-            field_readcount: source.field_readcount,
-            field_writecount: source.field_writecount,
-            field_type: source.field_type,
-            field_anonymous: 0,
-            set_field_type: set_get_type(
-                source.field_type,
-                source.field_readcount,
-                source.field_passcount,
-            ),
-            get_field_type: set_get_type(
-                source.field_type,
-                source.field_readcount,
-                source.field_passcount,
-            ),
-            field_bit: source.field_bit,
-            field_oktochange: source.field_oktochange,
-            field_passcount: source.field_passcount,
-            field_name: source.field_name,
-            field_subfields: ptr::null_mut(),
-        });
-    }
+        let _ = initialize_field_registry(tif);
 
-    let boxed = merged.into_boxed_slice();
-    let merged_ptr = boxed.as_ptr() as *mut TIFFField;
-    registry_state_mut(tif).compat_arrays.push(boxed);
-    if merge_fields_impl(tif, merged_ptr, n) == 0 && n != 0 {
-        emit_error_message(tif, "TIFFMergeFieldInfo", "Setting up field info failed");
-        return -1;
+        let mut merged = Vec::with_capacity(n as usize);
+        for index in 0..n as usize {
+            let source = &*info.add(index);
+            if source.field_name.is_null() {
+                emit_error_message(
+                    tif,
+                    "TIFFMergeFieldInfo",
+                    format!(
+                        "Field_name of {}.th allocation tag {} is NULL",
+                        index, source.field_tag
+                    ),
+                );
+                return -1;
+            }
+            merged.push(TIFFField {
+                field_tag: source.field_tag,
+                field_readcount: source.field_readcount,
+                field_writecount: source.field_writecount,
+                field_type: source.field_type,
+                field_anonymous: 0,
+                set_field_type: set_get_type(
+                    source.field_type,
+                    source.field_readcount,
+                    source.field_passcount,
+                ),
+                get_field_type: set_get_type(
+                    source.field_type,
+                    source.field_readcount,
+                    source.field_passcount,
+                ),
+                field_bit: source.field_bit,
+                field_oktochange: source.field_oktochange,
+                field_passcount: source.field_passcount,
+                field_name: source.field_name,
+                field_subfields: ptr::null_mut(),
+            });
+        }
+
+        let boxed = merged.into_boxed_slice();
+        let merged_ptr = boxed.as_ptr() as *mut TIFFField;
+        registry_state_mut(tif).compat_arrays.push(boxed);
+        if merge_fields_impl(tif, merged_ptr, n) == 0 && n != 0 {
+            emit_error_message(tif, "TIFFMergeFieldInfo", "Setting up field info failed");
+            return -1;
+        }
+        0
     }
-    0
 }
 
 #[no_mangle]
@@ -780,11 +824,7 @@ pub unsafe extern "C" fn _TIFFSetupFields(tif: *mut TIFF, infoarray: *const TIFF
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn _TIFFMergeFields(
-    tif: *mut TIFF,
-    info: *const TIFFField,
-    n: u32,
-) -> c_int {
+pub unsafe extern "C" fn _TIFFMergeFields(tif: *mut TIFF, info: *const TIFFField, n: u32) -> c_int {
     merge_fields_impl(tif, info, n)
 }
 
@@ -794,19 +834,21 @@ pub unsafe extern "C" fn _TIFFFindOrRegisterField(
     tag: u32,
     dt: TIFFDataType,
 ) -> *const TIFFField {
-    if tif.is_null() {
-        return ptr::null();
+    unsafe {
+        if tif.is_null() {
+            return ptr::null();
+        }
+        let _ = initialize_field_registry(tif);
+        let field = TIFFFindField(tif, tag, dt);
+        if !field.is_null() {
+            return field;
+        }
+        let field = _TIFFCreateAnonField(tif, tag, dt);
+        if field.is_null() || _TIFFMergeFields(tif, field, 1) == 0 {
+            return ptr::null();
+        }
+        field
     }
-    let _ = initialize_field_registry(tif);
-    let field = TIFFFindField(tif, tag, dt);
-    if !field.is_null() {
-        return field;
-    }
-    let field = _TIFFCreateAnonField(tif, tag, dt);
-    if field.is_null() || _TIFFMergeFields(tif, field, 1) == 0 {
-        return ptr::null();
-    }
-    field
 }
 
 #[no_mangle]

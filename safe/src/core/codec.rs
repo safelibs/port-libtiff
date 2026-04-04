@@ -1,8 +1,7 @@
 use super::{
     jpeg_decode_bytes, jpeg_encode_bytes, reset_jpeg_state, safe_tiff_set_field_marshaled_nondirty,
     safe_tiff_uv_decode, safe_tiff_uv_encode, set_jpeg_color_mode, sgilog24_decode_row,
-    unset_jpeg_pseudo_tag, COMPRESSION_JPEG, COMPRESSION_OJPEG, TAG_JPEGCOLORMODE,
-    TAG_JPEGQUALITY,
+    unset_jpeg_pseudo_tag, COMPRESSION_JPEG, COMPRESSION_OJPEG, TAG_JPEGCOLORMODE, TAG_JPEGQUALITY,
 };
 use crate::abi::{TIFFCodec, TIFFDataType, TIFFInitMethod};
 use crate::strile::{
@@ -118,8 +117,7 @@ const SGILOG_U_NEU: f64 = 0.210526316;
 const SGILOG_V_NEU: f64 = 0.473684211;
 const SGILOG_L16_BYTES_PER_PIXEL: usize = size_of::<i16>();
 const SGILOG_LUV48_COMPONENTS: usize = 3;
-const SGILOG_LUV48_BYTES_PER_PIXEL: usize =
-    SGILOG_LUV48_COMPONENTS * size_of::<i16>();
+const SGILOG_LUV48_BYTES_PER_PIXEL: usize = SGILOG_LUV48_COMPONENTS * size_of::<i16>();
 
 const NAME_NONE: &[u8] = b"None\0";
 const NAME_LZW: &[u8] = b"LZW\0";
@@ -349,129 +347,141 @@ fn codec_errbuf() -> [c_char; 256] {
     [0; 256]
 }
 
-unsafe fn emit_codec_error(tif: *mut TIFF, module: &str, errbuf: &[c_char], fallback: &str) {
-    if errbuf.first().copied().unwrap_or_default() == 0 {
-        emit_error_message(tif, module, fallback);
-    } else if let Ok(message) = CStr::from_ptr(errbuf.as_ptr()).to_str() {
-        emit_error_message(tif, module, message);
-    } else {
-        emit_error_message(tif, module, fallback);
-    }
-}
-
-unsafe fn owned_bytes_from_external(ptr: *mut u8, len: usize) -> Option<Vec<u8>> {
-    if ptr.is_null() {
-        return None;
-    }
-    let bytes = slice::from_raw_parts(ptr.cast_const(), len).to_vec();
-    safe_tiff_external_codec_free(ptr.cast());
-    Some(bytes)
-}
-
-unsafe fn parse_i32_value(storage_type: TIFFDataType, data: *const c_void) -> Option<c_int> {
-    if data.is_null() {
-        return None;
-    }
-    match storage_type.0 {
-        x if x == TIFFDataType::TIFF_SLONG.0 => Some(*data.cast::<c_int>()),
-        x if x == TIFFDataType::TIFF_LONG.0 => i32::try_from(*data.cast::<u32>()).ok(),
-        x if x == TIFFDataType::TIFF_SHORT.0 => Some(i32::from(*data.cast::<u16>())),
-        _ => None,
-    }
-}
-
-unsafe fn parse_f64_value(storage_type: TIFFDataType, data: *const c_void) -> Option<f64> {
-    if data.is_null() {
-        return None;
-    }
-    match storage_type.0 {
-        x if x == TIFFDataType::TIFF_DOUBLE.0
-            || x == TIFFDataType::TIFF_RATIONAL.0
-            || x == TIFFDataType::TIFF_SRATIONAL.0 =>
-        {
-            Some(*data.cast::<f64>())
+fn emit_codec_error(tif: *mut TIFF, module: &str, errbuf: &[c_char], fallback: &str) {
+    unsafe {
+        if errbuf.first().copied().unwrap_or_default() == 0 {
+            emit_error_message(tif, module, fallback);
+        } else if let Ok(message) = CStr::from_ptr(errbuf.as_ptr()).to_str() {
+            emit_error_message(tif, module, message);
+        } else {
+            emit_error_message(tif, module, fallback);
         }
-        x if x == TIFFDataType::TIFF_FLOAT.0 => Some(f64::from(*data.cast::<f32>())),
-        x if x == TIFFDataType::TIFF_SLONG.0 => Some(f64::from(*data.cast::<c_int>())),
-        x if x == TIFFDataType::TIFF_LONG.0 => Some(f64::from(*data.cast::<u32>())),
-        x if x == TIFFDataType::TIFF_SHORT.0 => Some(f64::from(*data.cast::<u16>())),
-        _ => None,
     }
 }
 
-unsafe fn parse_u32_pair(
-    storage_type: TIFFDataType,
-    count: u64,
-    data: *const c_void,
-) -> Option<[u32; 2]> {
-    if data.is_null() || count < 2 {
-        return None;
-    }
-    match storage_type.0 {
-        x if x == TIFFDataType::TIFF_LONG.0 => {
-            let values = slice::from_raw_parts(data.cast::<u32>(), count as usize);
-            Some([values[0], values[1]])
+fn owned_bytes_from_external(ptr: *mut u8, len: usize) -> Option<Vec<u8>> {
+    unsafe {
+        if ptr.is_null() {
+            return None;
         }
-        x if x == TIFFDataType::TIFF_SLONG.0 => {
-            let values = slice::from_raw_parts(data.cast::<c_int>(), count as usize);
-            Some([
-                u32::try_from(values[0]).ok()?,
-                u32::try_from(values[1]).ok()?,
-            ])
-        }
-        x if x == TIFFDataType::TIFF_SHORT.0 => {
-            let values = slice::from_raw_parts(data.cast::<u16>(), count as usize);
-            Some([u32::from(values[0]), u32::from(values[1])])
-        }
-        _ => None,
+        let bytes = slice::from_raw_parts(ptr.cast_const(), len).to_vec();
+        safe_tiff_external_codec_free(ptr.cast());
+        Some(bytes)
     }
 }
 
-unsafe fn tag_u16_values(tif: *mut TIFF, tag: u32, defaulted: bool) -> Option<Vec<u16>> {
-    let (type_, count, data) = get_tag_raw(tif, tag, defaulted)?;
-    if type_.0 != TIFFDataType::TIFF_SHORT.0 || data.is_null() {
-        return None;
+fn parse_i32_value(storage_type: TIFFDataType, data: *const c_void) -> Option<c_int> {
+    unsafe {
+        if data.is_null() {
+            return None;
+        }
+        match storage_type.0 {
+            x if x == TIFFDataType::TIFF_SLONG.0 => Some(*data.cast::<c_int>()),
+            x if x == TIFFDataType::TIFF_LONG.0 => i32::try_from(*data.cast::<u32>()).ok(),
+            x if x == TIFFDataType::TIFF_SHORT.0 => Some(i32::from(*data.cast::<u16>())),
+            _ => None,
+        }
     }
-    Some(slice::from_raw_parts(data.cast::<u16>(), count).to_vec())
 }
 
-unsafe fn tag_u32_pair(tif: *mut TIFF, tag: u32, defaulted: bool) -> Option<[u32; 2]> {
+fn parse_f64_value(storage_type: TIFFDataType, data: *const c_void) -> Option<f64> {
+    unsafe {
+        if data.is_null() {
+            return None;
+        }
+        match storage_type.0 {
+            x if x == TIFFDataType::TIFF_DOUBLE.0
+                || x == TIFFDataType::TIFF_RATIONAL.0
+                || x == TIFFDataType::TIFF_SRATIONAL.0 =>
+            {
+                Some(*data.cast::<f64>())
+            }
+            x if x == TIFFDataType::TIFF_FLOAT.0 => Some(f64::from(*data.cast::<f32>())),
+            x if x == TIFFDataType::TIFF_SLONG.0 => Some(f64::from(*data.cast::<c_int>())),
+            x if x == TIFFDataType::TIFF_LONG.0 => Some(f64::from(*data.cast::<u32>())),
+            x if x == TIFFDataType::TIFF_SHORT.0 => Some(f64::from(*data.cast::<u16>())),
+            _ => None,
+        }
+    }
+}
+
+fn parse_u32_pair(storage_type: TIFFDataType, count: u64, data: *const c_void) -> Option<[u32; 2]> {
+    unsafe {
+        if data.is_null() || count < 2 {
+            return None;
+        }
+        match storage_type.0 {
+            x if x == TIFFDataType::TIFF_LONG.0 => {
+                let values = slice::from_raw_parts(data.cast::<u32>(), count as usize);
+                Some([values[0], values[1]])
+            }
+            x if x == TIFFDataType::TIFF_SLONG.0 => {
+                let values = slice::from_raw_parts(data.cast::<c_int>(), count as usize);
+                Some([
+                    u32::try_from(values[0]).ok()?,
+                    u32::try_from(values[1]).ok()?,
+                ])
+            }
+            x if x == TIFFDataType::TIFF_SHORT.0 => {
+                let values = slice::from_raw_parts(data.cast::<u16>(), count as usize);
+                Some([u32::from(values[0]), u32::from(values[1])])
+            }
+            _ => None,
+        }
+    }
+}
+
+fn tag_u16_values(tif: *mut TIFF, tag: u32, defaulted: bool) -> Option<Vec<u16>> {
+    unsafe {
+        let (type_, count, data) = get_tag_raw(tif, tag, defaulted)?;
+        if type_.0 != TIFFDataType::TIFF_SHORT.0 || data.is_null() {
+            return None;
+        }
+        Some(slice::from_raw_parts(data.cast::<u16>(), count).to_vec())
+    }
+}
+
+fn tag_u32_pair(tif: *mut TIFF, tag: u32, defaulted: bool) -> Option<[u32; 2]> {
     let (type_, count, data) = get_tag_raw(tif, tag, defaulted)?;
     parse_u32_pair(type_, count as u64, data)
 }
 
-unsafe fn has_unassociated_alpha(tif: *mut TIFF) -> bool {
+fn has_unassociated_alpha(tif: *mut TIFF) -> bool {
     let Some(values) = tag_u16_values(tif, TAG_EXTRASAMPLES, false) else {
         return false;
     };
     values.last().copied() == Some(EXTRASAMPLE_UNASSALPHA)
 }
 
-unsafe fn lerc_effective_parameters(tif: *mut TIFF) -> (c_int, c_int) {
-    if let Some([version, additional]) = tag_u32_pair(tif, TAG_LERC_PARAMETERS, false) {
-        (
-            i32::try_from(version).unwrap_or(LERC_VERSION_2_4),
-            i32::try_from(additional).unwrap_or(LERC_ADD_COMPRESSION_NONE),
-        )
-    } else {
-        let state = &(*(*tif).inner).codec_state;
-        (state.lerc_version, state.lerc_add_compression)
+fn lerc_effective_parameters(tif: *mut TIFF) -> (c_int, c_int) {
+    unsafe {
+        if let Some([version, additional]) = tag_u32_pair(tif, TAG_LERC_PARAMETERS, false) {
+            (
+                i32::try_from(version).unwrap_or(LERC_VERSION_2_4),
+                i32::try_from(additional).unwrap_or(LERC_ADD_COMPRESSION_NONE),
+            )
+        } else {
+            let state = &(*(*tif).inner).codec_state;
+            (state.lerc_version, state.lerc_add_compression)
+        }
     }
 }
 
-unsafe fn sync_lerc_parameters_tag(tif: *mut TIFF) -> c_int {
-    let state = &(*(*tif).inner).codec_state;
-    let params = [state.lerc_version as u32, state.lerc_add_compression as u32];
-    safe_tiff_set_field_marshaled_nondirty(
-        tif,
-        TAG_LERC_PARAMETERS,
-        TIFFDataType::TIFF_LONG,
-        2,
-        params.as_ptr().cast(),
-    )
+fn sync_lerc_parameters_tag(tif: *mut TIFF) -> c_int {
+    unsafe {
+        let state = &(*(*tif).inner).codec_state;
+        let params = [state.lerc_version as u32, state.lerc_add_compression as u32];
+        safe_tiff_set_field_marshaled_nondirty(
+            tif,
+            TAG_LERC_PARAMETERS,
+            TIFFDataType::TIFF_LONG,
+            2,
+            params.as_ptr().cast(),
+        )
+    }
 }
 
-unsafe fn lerc_mask_mode(tif: *mut TIFF, data_type: u32) -> c_int {
+fn lerc_mask_mode(tif: *mut TIFF, data_type: u32) -> c_int {
     if planar_config(tif) == PLANARCONFIG_CONTIG
         && data_type == 1
         && bits_per_sample(tif) == 8
@@ -489,7 +499,7 @@ unsafe fn lerc_mask_mode(tif: *mut TIFF, data_type: u32) -> c_int {
     }
 }
 
-unsafe fn lerc_data_type(tif: *mut TIFF) -> Option<u32> {
+fn lerc_data_type(tif: *mut TIFF) -> Option<u32> {
     match (sample_format(tif), bits_per_sample(tif)) {
         (SAMPLEFORMAT_INT, 8) => Some(0),
         (SAMPLEFORMAT_UINT, 8) => Some(1),
@@ -503,7 +513,7 @@ unsafe fn lerc_data_type(tif: *mut TIFF) -> Option<u32> {
     }
 }
 
-unsafe fn lerc_dimensions(tif: *mut TIFF) -> Option<(c_int, c_int)> {
+fn lerc_dimensions(tif: *mut TIFF) -> Option<(c_int, c_int)> {
     let spp = i32::from(samples_per_pixel(tif).max(1));
     let depth = if planar_config(tif) == PLANARCONFIG_CONTIG {
         spp
@@ -513,23 +523,25 @@ unsafe fn lerc_dimensions(tif: *mut TIFF) -> Option<(c_int, c_int)> {
     Some((depth, 1))
 }
 
-unsafe fn validate_jbig_layout(tif: *mut TIFF, module: &str, is_tile: bool) -> bool {
-    if is_tile {
-        emit_error_message(tif, module, "JBIG does not support tiled images");
-        return false;
+fn validate_jbig_layout(tif: *mut TIFF, module: &str, is_tile: bool) -> bool {
+    unsafe {
+        if is_tile {
+            emit_error_message(tif, module, "JBIG does not support tiled images");
+            return false;
+        }
+        if TIFFNumberOfStrips(tif) != 1 {
+            emit_error_message(tif, module, "JBIG requires single-strip images");
+            return false;
+        }
+        if bits_per_sample(tif) != 1 || samples_per_pixel(tif) != 1 {
+            emit_error_message(tif, module, "JBIG requires 1-bit grayscale data");
+            return false;
+        }
+        true
     }
-    if TIFFNumberOfStrips(tif) != 1 {
-        emit_error_message(tif, module, "JBIG requires single-strip images");
-        return false;
-    }
-    if bits_per_sample(tif) != 1 || samples_per_pixel(tif) != 1 {
-        emit_error_message(tif, module, "JBIG requires 1-bit grayscale data");
-        return false;
-    }
-    true
 }
 
-unsafe fn validate_webp_layout(tif: *mut TIFF, module: &str, geometry: CodecGeometry) -> bool {
+fn validate_webp_layout(tif: *mut TIFF, module: &str, geometry: CodecGeometry) -> bool {
     let samples = samples_per_pixel(tif);
     if planar_config(tif) != PLANARCONFIG_CONTIG {
         emit_error_message(tif, module, "WebP requires contiguous samples");
@@ -550,49 +562,55 @@ unsafe fn validate_webp_layout(tif: *mut TIFF, module: &str, geometry: CodecGeom
     true
 }
 
-pub(crate) unsafe fn set_default_codec_methods(tif: *mut TIFF) {
-    (*tif).tif_setupdecode = Some(stub_bool_method);
-    (*tif).tif_predecode = Some(stub_predecode_method);
-    (*tif).tif_decoderow = Some(stub_decoderow_method);
-    (*tif).tif_close = Some(stub_void_method);
-    (*tif).tif_cleanup = Some(stub_void_method);
-    (*(*tif).inner).codec_state.raw_fax_decoder = None;
-}
-
-pub(crate) unsafe fn safe_tiff_codec_reset_for_current_directory(tif: *mut TIFF, scheme: u16) {
-    let inner = (*tif).inner;
-    (*inner).codec_state.active_scheme = scheme;
-    (*inner).codec_state.decoded_cache = None;
-    (*inner).codec_state.pending_striles.clear();
-    (*inner).codec_state.fax_mode = FAXMODE_CLASSIC;
-    (*inner).codec_state.zip_quality = 0;
-    (*inner).codec_state.lzma_preset = LZMA_PRESET_DEFAULT;
-    (*inner).codec_state.zstd_level = ZSTD_LEVEL_DEFAULT;
-    (*inner).codec_state.lerc_version = LERC_VERSION_2_4;
-    (*inner).codec_state.lerc_add_compression = LERC_ADD_COMPRESSION_NONE;
-    (*inner).codec_state.lerc_maxzerror = 0.0;
-    (*inner).codec_state.webp_level = WEBP_LEVEL_DEFAULT;
-    (*inner).codec_state.webp_lossless = WEBP_LOSSLESS_DEFAULT;
-    (*inner).codec_state.webp_lossless_exact = WEBP_LOSSLESS_EXACT_DEFAULT;
-    (*inner).codec_state.deflate_subcodec = DEFLATE_SUBCODEC_ZLIB;
-    (*inner).codec_state.raw_fax_decoder = None;
-    (*tif).tif_flags &= !TIFF_NOBITREV;
-    reset_jpeg_state(tif);
-}
-
-pub(crate) unsafe fn safe_tiff_codec_set_scheme(tif: *mut TIFF, scheme: c_int) -> c_int {
-    if tif.is_null() {
-        return 0;
+pub(crate) fn set_default_codec_methods(tif: *mut TIFF) {
+    unsafe {
+        (*tif).tif_setupdecode = Some(stub_bool_method);
+        (*tif).tif_predecode = Some(stub_predecode_method);
+        (*tif).tif_decoderow = Some(stub_decoderow_method);
+        (*tif).tif_close = Some(stub_void_method);
+        (*tif).tif_cleanup = Some(stub_void_method);
+        (*(*tif).inner).codec_state.raw_fax_decoder = None;
     }
-    set_default_codec_methods(tif);
-    safe_tiff_codec_reset_for_current_directory(tif, scheme as u16);
-    let codec = TIFFFindCODEC(scheme as u16);
-    if codec.is_null() {
-        1
-    } else if let Some(init) = (*codec).init {
-        init(tif, scheme)
-    } else {
-        1
+}
+
+pub(crate) fn safe_tiff_codec_reset_for_current_directory(tif: *mut TIFF, scheme: u16) {
+    unsafe {
+        let inner = (*tif).inner;
+        (*inner).codec_state.active_scheme = scheme;
+        (*inner).codec_state.decoded_cache = None;
+        (*inner).codec_state.pending_striles.clear();
+        (*inner).codec_state.fax_mode = FAXMODE_CLASSIC;
+        (*inner).codec_state.zip_quality = 0;
+        (*inner).codec_state.lzma_preset = LZMA_PRESET_DEFAULT;
+        (*inner).codec_state.zstd_level = ZSTD_LEVEL_DEFAULT;
+        (*inner).codec_state.lerc_version = LERC_VERSION_2_4;
+        (*inner).codec_state.lerc_add_compression = LERC_ADD_COMPRESSION_NONE;
+        (*inner).codec_state.lerc_maxzerror = 0.0;
+        (*inner).codec_state.webp_level = WEBP_LEVEL_DEFAULT;
+        (*inner).codec_state.webp_lossless = WEBP_LOSSLESS_DEFAULT;
+        (*inner).codec_state.webp_lossless_exact = WEBP_LOSSLESS_EXACT_DEFAULT;
+        (*inner).codec_state.deflate_subcodec = DEFLATE_SUBCODEC_ZLIB;
+        (*inner).codec_state.raw_fax_decoder = None;
+        (*tif).tif_flags &= !TIFF_NOBITREV;
+        reset_jpeg_state(tif);
+    }
+}
+
+pub(crate) fn safe_tiff_codec_set_scheme(tif: *mut TIFF, scheme: c_int) -> c_int {
+    unsafe {
+        if tif.is_null() {
+            return 0;
+        }
+        set_default_codec_methods(tif);
+        safe_tiff_codec_reset_for_current_directory(tif, scheme as u16);
+        let codec = TIFFFindCODEC(scheme as u16);
+        if codec.is_null() {
+            1
+        } else if let Some(init) = (*codec).init {
+            init(tif, scheme)
+        } else {
+            1
+        }
     }
 }
 
@@ -615,7 +633,7 @@ fn is_pseudo_tag(tag: u32) -> bool {
     )
 }
 
-pub(crate) unsafe fn safe_tiff_codec_default_tag_value(
+pub(crate) fn safe_tiff_codec_default_tag_value(
     tif: *mut TIFF,
     tag: u32,
     out_type: *mut TIFFDataType,
@@ -628,208 +646,118 @@ pub(crate) unsafe fn safe_tiff_codec_default_tag_value(
     safe_tiff_codec_get_tag_value(tif, tag, out_type, out_count, out_data)
 }
 
-pub(crate) unsafe fn safe_tiff_codec_get_tag_value(
+pub(crate) fn safe_tiff_codec_get_tag_value(
     tif: *mut TIFF,
     tag: u32,
     out_type: *mut TIFFDataType,
     out_count: *mut u64,
     out_data: *mut *const c_void,
 ) -> c_int {
-    if tif.is_null() || !is_pseudo_tag(tag) {
-        return 0;
-    }
-    let state = &(*(*tif).inner).codec_state;
-    *out_count = 1;
-    match tag {
-        TAG_FAXMODE => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.fax_mode as *const c_int).cast();
-            1
+    unsafe {
+        if tif.is_null() || !is_pseudo_tag(tag) {
+            return 0;
         }
-        TAG_ZIPQUALITY => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.zip_quality as *const c_int).cast();
-            1
+        let state = &(*(*tif).inner).codec_state;
+        *out_count = 1;
+        match tag {
+            TAG_FAXMODE => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.fax_mode as *const c_int).cast();
+                1
+            }
+            TAG_ZIPQUALITY => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.zip_quality as *const c_int).cast();
+                1
+            }
+            TAG_LZMAPRESET => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.lzma_preset as *const c_int).cast();
+                1
+            }
+            TAG_ZSTD_LEVEL => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.zstd_level as *const c_int).cast();
+                1
+            }
+            TAG_LERC_VERSION => {
+                *out_type = TIFFDataType::TIFF_LONG;
+                *out_data = (&state.lerc_version as *const c_int).cast();
+                1
+            }
+            TAG_LERC_ADD_COMPRESSION => {
+                *out_type = TIFFDataType::TIFF_LONG;
+                *out_data = (&state.lerc_add_compression as *const c_int).cast();
+                1
+            }
+            TAG_LERC_MAXZERROR => {
+                *out_type = TIFFDataType::TIFF_DOUBLE;
+                *out_data = (&state.lerc_maxzerror as *const f64).cast();
+                1
+            }
+            TAG_WEBP_LEVEL => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.webp_level as *const c_int).cast();
+                1
+            }
+            TAG_WEBP_LOSSLESS => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.webp_lossless as *const c_int).cast();
+                1
+            }
+            TAG_JPEGQUALITY => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.jpeg_quality as *const c_int).cast();
+                1
+            }
+            TAG_JPEGCOLORMODE => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.jpeg_colormode as *const c_int).cast();
+                1
+            }
+            TAG_DEFLATE_SUBCODEC => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.deflate_subcodec as *const c_int).cast();
+                1
+            }
+            TAG_WEBP_LOSSLESS_EXACT => {
+                *out_type = TIFFDataType::TIFF_SLONG;
+                *out_data = (&state.webp_lossless_exact as *const c_int).cast();
+                1
+            }
+            _ => 0,
         }
-        TAG_LZMAPRESET => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.lzma_preset as *const c_int).cast();
-            1
-        }
-        TAG_ZSTD_LEVEL => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.zstd_level as *const c_int).cast();
-            1
-        }
-        TAG_LERC_VERSION => {
-            *out_type = TIFFDataType::TIFF_LONG;
-            *out_data = (&state.lerc_version as *const c_int).cast();
-            1
-        }
-        TAG_LERC_ADD_COMPRESSION => {
-            *out_type = TIFFDataType::TIFF_LONG;
-            *out_data = (&state.lerc_add_compression as *const c_int).cast();
-            1
-        }
-        TAG_LERC_MAXZERROR => {
-            *out_type = TIFFDataType::TIFF_DOUBLE;
-            *out_data = (&state.lerc_maxzerror as *const f64).cast();
-            1
-        }
-        TAG_WEBP_LEVEL => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.webp_level as *const c_int).cast();
-            1
-        }
-        TAG_WEBP_LOSSLESS => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.webp_lossless as *const c_int).cast();
-            1
-        }
-        TAG_JPEGQUALITY => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.jpeg_quality as *const c_int).cast();
-            1
-        }
-        TAG_JPEGCOLORMODE => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.jpeg_colormode as *const c_int).cast();
-            1
-        }
-        TAG_DEFLATE_SUBCODEC => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.deflate_subcodec as *const c_int).cast();
-            1
-        }
-        TAG_WEBP_LOSSLESS_EXACT => {
-            *out_type = TIFFDataType::TIFF_SLONG;
-            *out_data = (&state.webp_lossless_exact as *const c_int).cast();
-            1
-        }
-        _ => 0,
     }
 }
 
-pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
+pub(crate) fn safe_tiff_codec_set_field_marshaled(
     tif: *mut TIFF,
     tag: u32,
     storage_type: TIFFDataType,
     count: u64,
     data: *const c_void,
 ) -> c_int {
-    if tif.is_null() || data.is_null() {
-        return 0;
-    }
-    let state = &mut (*(*tif).inner).codec_state;
-
-    if tag == TAG_LERC_PARAMETERS {
-        let Some([version, additional]) = parse_u32_pair(storage_type, count, data) else {
-            emit_error_message(tif, "_TIFFVSetField", "Invalid LercParameters value");
-            return -1;
-        };
-        if version != LERC_VERSION_2_4 as u32 {
-            emit_error_message(
-                tif,
-                "_TIFFVSetField",
-                format!("Invalid value {} for LercVersion", version),
-            );
-            return -1;
+    unsafe {
+        if tif.is_null() || data.is_null() {
+            return 0;
         }
-        if !matches!(
-            additional as c_int,
-            LERC_ADD_COMPRESSION_NONE | LERC_ADD_COMPRESSION_DEFLATE | LERC_ADD_COMPRESSION_ZSTD
-        ) {
-            emit_error_message(
-                tif,
-                "_TIFFVSetField",
-                format!("Invalid value {} for LercAdditionalCompression", additional),
-            );
-            return -1;
-        }
-        state.lerc_version = version as c_int;
-        state.lerc_add_compression = additional as c_int;
-        return 0;
-    }
+        let state = &mut (*(*tif).inner).codec_state;
 
-    if !is_pseudo_tag(tag) {
-        return 0;
-    }
-    if count != 1 {
-        emit_error_message(
-            tif,
-            "_TIFFVSetField",
-            format!("Tag {} expects a single value", tag),
-        );
-        return -1;
-    }
-
-    match tag {
-        TAG_FAXMODE => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(tif, "_TIFFVSetField", "FaxMode expects an integer value");
+        if tag == TAG_LERC_PARAMETERS {
+            let Some([version, additional]) = parse_u32_pair(storage_type, count, data) else {
+                emit_error_message(tif, "_TIFFVSetField", "Invalid LercParameters value");
                 return -1;
             };
-            state.fax_mode = value;
-        }
-        TAG_ZIPQUALITY => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(tif, "_TIFFVSetField", "ZipQuality expects an integer value");
-                return -1;
-            };
-            state.zip_quality = value;
-        }
-        TAG_LZMAPRESET => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
+            if version != LERC_VERSION_2_4 as u32 {
                 emit_error_message(
                     tif,
                     "_TIFFVSetField",
-                    "LZMA preset expects an integer value",
-                );
-                return -1;
-            };
-            state.lzma_preset = value;
-        }
-        TAG_ZSTD_LEVEL => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(tif, "_TIFFVSetField", "ZSTD level expects an integer value");
-                return -1;
-            };
-            state.zstd_level = value;
-        }
-        TAG_LERC_VERSION => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "LercVersion expects an integer value",
-                );
-                return -1;
-            };
-            if value != LERC_VERSION_2_4 {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    format!("Invalid value {} for LercVersion", value),
+                    format!("Invalid value {} for LercVersion", version),
                 );
                 return -1;
             }
-            state.lerc_version = value;
-            if sync_lerc_parameters_tag(tif) == 0 {
-                emit_error_message(tif, "_TIFFVSetField", "Failed to update LercParameters");
-                return -1;
-            }
-        }
-        TAG_LERC_ADD_COMPRESSION => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "LercAdditionalCompression expects an integer value",
-                );
-                return -1;
-            };
             if !matches!(
-                value,
+                additional as c_int,
                 LERC_ADD_COMPRESSION_NONE
                     | LERC_ADD_COMPRESSION_DEFLATE
                     | LERC_ADD_COMPRESSION_ZSTD
@@ -837,101 +765,209 @@ pub(crate) unsafe fn safe_tiff_codec_set_field_marshaled(
                 emit_error_message(
                     tif,
                     "_TIFFVSetField",
-                    format!("Invalid value {} for LercAdditionalCompression", value),
+                    format!("Invalid value {} for LercAdditionalCompression", additional),
                 );
                 return -1;
             }
-            state.lerc_add_compression = value;
-            if sync_lerc_parameters_tag(tif) == 0 {
-                emit_error_message(tif, "_TIFFVSetField", "Failed to update LercParameters");
-                return -1;
+            state.lerc_version = version as c_int;
+            state.lerc_add_compression = additional as c_int;
+            return 0;
+        }
+
+        if !is_pseudo_tag(tag) {
+            return 0;
+        }
+        if count != 1 {
+            emit_error_message(
+                tif,
+                "_TIFFVSetField",
+                format!("Tag {} expects a single value", tag),
+            );
+            return -1;
+        }
+
+        match tag {
+            TAG_FAXMODE => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(tif, "_TIFFVSetField", "FaxMode expects an integer value");
+                    return -1;
+                };
+                state.fax_mode = value;
             }
-        }
-        TAG_LERC_MAXZERROR => {
-            let Some(value) = parse_f64_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "LercMaximumError expects a floating-point value",
-                );
-                return -1;
-            };
-            if !value.is_finite() || value < 0.0 {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    format!("Invalid value {} for LercMaximumError", value),
-                );
-                return -1;
+            TAG_ZIPQUALITY => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "ZipQuality expects an integer value",
+                    );
+                    return -1;
+                };
+                state.zip_quality = value;
             }
-            state.lerc_maxzerror = value;
+            TAG_LZMAPRESET => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "LZMA preset expects an integer value",
+                    );
+                    return -1;
+                };
+                state.lzma_preset = value;
+            }
+            TAG_ZSTD_LEVEL => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "ZSTD level expects an integer value",
+                    );
+                    return -1;
+                };
+                state.zstd_level = value;
+            }
+            TAG_LERC_VERSION => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "LercVersion expects an integer value",
+                    );
+                    return -1;
+                };
+                if value != LERC_VERSION_2_4 {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        format!("Invalid value {} for LercVersion", value),
+                    );
+                    return -1;
+                }
+                state.lerc_version = value;
+                if sync_lerc_parameters_tag(tif) == 0 {
+                    emit_error_message(tif, "_TIFFVSetField", "Failed to update LercParameters");
+                    return -1;
+                }
+            }
+            TAG_LERC_ADD_COMPRESSION => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "LercAdditionalCompression expects an integer value",
+                    );
+                    return -1;
+                };
+                if !matches!(
+                    value,
+                    LERC_ADD_COMPRESSION_NONE
+                        | LERC_ADD_COMPRESSION_DEFLATE
+                        | LERC_ADD_COMPRESSION_ZSTD
+                ) {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        format!("Invalid value {} for LercAdditionalCompression", value),
+                    );
+                    return -1;
+                }
+                state.lerc_add_compression = value;
+                if sync_lerc_parameters_tag(tif) == 0 {
+                    emit_error_message(tif, "_TIFFVSetField", "Failed to update LercParameters");
+                    return -1;
+                }
+            }
+            TAG_LERC_MAXZERROR => {
+                let Some(value) = parse_f64_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "LercMaximumError expects a floating-point value",
+                    );
+                    return -1;
+                };
+                if !value.is_finite() || value < 0.0 {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        format!("Invalid value {} for LercMaximumError", value),
+                    );
+                    return -1;
+                }
+                state.lerc_maxzerror = value;
+            }
+            TAG_WEBP_LEVEL => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "WEBP level expects an integer value",
+                    );
+                    return -1;
+                };
+                state.webp_level = value;
+            }
+            TAG_WEBP_LOSSLESS => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "WEBP lossless expects an integer value",
+                    );
+                    return -1;
+                };
+                state.webp_lossless = value;
+            }
+            TAG_JPEGQUALITY => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "JPEGQuality expects an integer value",
+                    );
+                    return -1;
+                };
+                state.jpeg_quality = value;
+            }
+            TAG_JPEGCOLORMODE => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "JPEGColorMode expects an integer value",
+                    );
+                    return -1;
+                };
+                set_jpeg_color_mode(tif, value);
+            }
+            TAG_DEFLATE_SUBCODEC => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "DeflateSubCodec expects an integer value",
+                    );
+                    return -1;
+                };
+                state.deflate_subcodec = value;
+            }
+            TAG_WEBP_LOSSLESS_EXACT => {
+                let Some(value) = parse_i32_value(storage_type, data) else {
+                    emit_error_message(
+                        tif,
+                        "_TIFFVSetField",
+                        "WEBP exact lossless expects an integer value",
+                    );
+                    return -1;
+                };
+                state.webp_lossless_exact = value;
+            }
+            _ => return 0,
         }
-        TAG_WEBP_LEVEL => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(tif, "_TIFFVSetField", "WEBP level expects an integer value");
-                return -1;
-            };
-            state.webp_level = value;
-        }
-        TAG_WEBP_LOSSLESS => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "WEBP lossless expects an integer value",
-                );
-                return -1;
-            };
-            state.webp_lossless = value;
-        }
-        TAG_JPEGQUALITY => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "JPEGQuality expects an integer value",
-                );
-                return -1;
-            };
-            state.jpeg_quality = value;
-        }
-        TAG_JPEGCOLORMODE => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "JPEGColorMode expects an integer value",
-                );
-                return -1;
-            };
-            set_jpeg_color_mode(tif, value);
-        }
-        TAG_DEFLATE_SUBCODEC => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "DeflateSubCodec expects an integer value",
-                );
-                return -1;
-            };
-            state.deflate_subcodec = value;
-        }
-        TAG_WEBP_LOSSLESS_EXACT => {
-            let Some(value) = parse_i32_value(storage_type, data) else {
-                emit_error_message(
-                    tif,
-                    "_TIFFVSetField",
-                    "WEBP exact lossless expects an integer value",
-                );
-                return -1;
-            };
-            state.webp_lossless_exact = value;
-        }
-        _ => return 0,
+        (*tif).tif_flags |= TIFF_DIRTYDIRECT;
+        1
     }
-    (*tif).tif_flags |= TIFF_DIRTYDIRECT;
-    1
 }
 
 struct TrackingWriter {
@@ -980,41 +1016,43 @@ fn sync_to_eol(reader: &mut CcittBitReader<'_>, max_skip: usize) -> bool {
     false
 }
 
-pub(crate) unsafe fn safe_tiff_codec_unset_field(tif: *mut TIFF, tag: u32) -> c_int {
-    if tif.is_null() || !is_pseudo_tag(tag) {
-        return 0;
-    }
-    let state = &mut (*(*tif).inner).codec_state;
-    match tag {
-        TAG_FAXMODE => state.fax_mode = FAXMODE_CLASSIC,
-        TAG_JPEGQUALITY | TAG_JPEGCOLORMODE => return unset_jpeg_pseudo_tag(tif, tag),
-        TAG_ZIPQUALITY => state.zip_quality = 0,
-        TAG_LZMAPRESET => state.lzma_preset = LZMA_PRESET_DEFAULT,
-        TAG_ZSTD_LEVEL => state.zstd_level = ZSTD_LEVEL_DEFAULT,
-        TAG_LERC_VERSION => {
-            state.lerc_version = LERC_VERSION_2_4;
-            if sync_lerc_parameters_tag(tif) == 0 {
-                return 0;
-            }
+pub(crate) fn safe_tiff_codec_unset_field(tif: *mut TIFF, tag: u32) -> c_int {
+    unsafe {
+        if tif.is_null() || !is_pseudo_tag(tag) {
+            return 0;
         }
-        TAG_LERC_ADD_COMPRESSION => {
-            state.lerc_add_compression = LERC_ADD_COMPRESSION_NONE;
-            if sync_lerc_parameters_tag(tif) == 0 {
-                return 0;
+        let state = &mut (*(*tif).inner).codec_state;
+        match tag {
+            TAG_FAXMODE => state.fax_mode = FAXMODE_CLASSIC,
+            TAG_JPEGQUALITY | TAG_JPEGCOLORMODE => return unset_jpeg_pseudo_tag(tif, tag),
+            TAG_ZIPQUALITY => state.zip_quality = 0,
+            TAG_LZMAPRESET => state.lzma_preset = LZMA_PRESET_DEFAULT,
+            TAG_ZSTD_LEVEL => state.zstd_level = ZSTD_LEVEL_DEFAULT,
+            TAG_LERC_VERSION => {
+                state.lerc_version = LERC_VERSION_2_4;
+                if sync_lerc_parameters_tag(tif) == 0 {
+                    return 0;
+                }
             }
+            TAG_LERC_ADD_COMPRESSION => {
+                state.lerc_add_compression = LERC_ADD_COMPRESSION_NONE;
+                if sync_lerc_parameters_tag(tif) == 0 {
+                    return 0;
+                }
+            }
+            TAG_LERC_MAXZERROR => state.lerc_maxzerror = 0.0,
+            TAG_WEBP_LEVEL => state.webp_level = WEBP_LEVEL_DEFAULT,
+            TAG_WEBP_LOSSLESS => state.webp_lossless = WEBP_LOSSLESS_DEFAULT,
+            TAG_DEFLATE_SUBCODEC => state.deflate_subcodec = DEFLATE_SUBCODEC_ZLIB,
+            TAG_WEBP_LOSSLESS_EXACT => state.webp_lossless_exact = WEBP_LOSSLESS_EXACT_DEFAULT,
+            _ => return 0,
         }
-        TAG_LERC_MAXZERROR => state.lerc_maxzerror = 0.0,
-        TAG_WEBP_LEVEL => state.webp_level = WEBP_LEVEL_DEFAULT,
-        TAG_WEBP_LOSSLESS => state.webp_lossless = WEBP_LOSSLESS_DEFAULT,
-        TAG_DEFLATE_SUBCODEC => state.deflate_subcodec = DEFLATE_SUBCODEC_ZLIB,
-        TAG_WEBP_LOSSLESS_EXACT => state.webp_lossless_exact = WEBP_LOSSLESS_EXACT_DEFAULT,
-        _ => return 0,
+        (*tif).tif_flags |= TIFF_DIRTYDIRECT;
+        1
     }
-    (*tif).tif_flags |= TIFF_DIRTYDIRECT;
-    1
 }
 
-unsafe fn get_tag_raw(
+fn get_tag_raw(
     tif: *mut TIFF,
     tag: u32,
     defaulted: bool,
@@ -1029,92 +1067,100 @@ unsafe fn get_tag_raw(
     Some((type_, usize::try_from(count).ok()?, data))
 }
 
-unsafe fn tag_u16(tif: *mut TIFF, tag: u32, defaulted: bool, default: u16) -> u16 {
-    let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
-        return default;
-    };
-    if count == 0 || data.is_null() {
-        return default;
-    }
-    match type_.0 {
-        x if x == TIFFDataType::TIFF_SHORT.0 => *data.cast::<u16>(),
-        x if x == TIFFDataType::TIFF_LONG.0 => {
-            u16::try_from(*data.cast::<u32>()).unwrap_or(default)
+fn tag_u16(tif: *mut TIFF, tag: u32, defaulted: bool, default: u16) -> u16 {
+    unsafe {
+        let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
+            return default;
+        };
+        if count == 0 || data.is_null() {
+            return default;
         }
-        x if x == TIFFDataType::TIFF_SLONG.0 => {
-            u16::try_from(*data.cast::<i32>()).unwrap_or(default)
+        match type_.0 {
+            x if x == TIFFDataType::TIFF_SHORT.0 => *data.cast::<u16>(),
+            x if x == TIFFDataType::TIFF_LONG.0 => {
+                u16::try_from(*data.cast::<u32>()).unwrap_or(default)
+            }
+            x if x == TIFFDataType::TIFF_SLONG.0 => {
+                u16::try_from(*data.cast::<i32>()).unwrap_or(default)
+            }
+            _ => default,
         }
-        _ => default,
     }
 }
 
-unsafe fn tag_u32(tif: *mut TIFF, tag: u32, defaulted: bool, default: u32) -> u32 {
-    let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
-        return default;
-    };
-    if count == 0 || data.is_null() {
-        return default;
-    }
-    match type_.0 {
-        x if x == TIFFDataType::TIFF_SHORT.0 => u32::from(*data.cast::<u16>()),
-        x if x == TIFFDataType::TIFF_LONG.0 => *data.cast::<u32>(),
-        x if x == TIFFDataType::TIFF_SLONG.0 => {
-            u32::try_from(*data.cast::<i32>()).unwrap_or(default)
+fn tag_u32(tif: *mut TIFF, tag: u32, defaulted: bool, default: u32) -> u32 {
+    unsafe {
+        let Some((type_, count, data)) = get_tag_raw(tif, tag, defaulted) else {
+            return default;
+        };
+        if count == 0 || data.is_null() {
+            return default;
         }
-        _ => default,
+        match type_.0 {
+            x if x == TIFFDataType::TIFF_SHORT.0 => u32::from(*data.cast::<u16>()),
+            x if x == TIFFDataType::TIFF_LONG.0 => *data.cast::<u32>(),
+            x if x == TIFFDataType::TIFF_SLONG.0 => {
+                u32::try_from(*data.cast::<i32>()).unwrap_or(default)
+            }
+            _ => default,
+        }
     }
 }
 
-unsafe fn active_scheme(tif: *mut TIFF) -> u16 {
-    let state = &(*(*tif).inner).codec_state;
-    if state.active_scheme != 0 {
-        state.active_scheme
-    } else {
-        tag_u16(tif, TAG_COMPRESSION, true, COMPRESSION_NONE)
+fn active_scheme(tif: *mut TIFF) -> u16 {
+    unsafe {
+        let state = &(*(*tif).inner).codec_state;
+        if state.active_scheme != 0 {
+            state.active_scheme
+        } else {
+            tag_u16(tif, TAG_COMPRESSION, true, COMPRESSION_NONE)
+        }
     }
 }
 
-unsafe fn fax_mode(tif: *mut TIFF) -> i32 {
-    (*(*tif).inner).codec_state.fax_mode
+fn fax_mode(tif: *mut TIFF) -> i32 {
+    unsafe { (*(*tif).inner).codec_state.fax_mode }
 }
 
-unsafe fn predictor(tif: *mut TIFF) -> u16 {
+fn predictor(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_PREDICTOR, true, PREDICTOR_NONE)
 }
 
-unsafe fn bits_per_sample(tif: *mut TIFF) -> u16 {
+fn bits_per_sample(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_BITSPERSAMPLE, true, 1)
 }
 
-unsafe fn samples_per_pixel(tif: *mut TIFF) -> u16 {
+fn samples_per_pixel(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1)
 }
 
-unsafe fn sample_format(tif: *mut TIFF) -> u16 {
+fn sample_format(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_SAMPLEFORMAT, true, 1)
 }
 
-unsafe fn planar_config(tif: *mut TIFF) -> u16 {
+fn planar_config(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG)
 }
 
-unsafe fn fill_order(tif: *mut TIFF) -> u16 {
+fn fill_order(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_FILLORDER, true, FILLORDER_MSB2LSB)
 }
 
-unsafe fn photometric(tif: *mut TIFF) -> u16 {
+fn photometric(tif: *mut TIFF) -> u16 {
     tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISWHITE)
 }
 
-unsafe fn memory_fillorder_lsb(tif: *mut TIFF) -> bool {
-    ((*tif).tif_flags & TIFF_FILLORDER_MASK) == u32::from(FILLORDER_LSB2MSB)
+fn memory_fillorder_lsb(tif: *mut TIFF) -> bool {
+    unsafe { ((*tif).tif_flags & TIFF_FILLORDER_MASK) == u32::from(FILLORDER_LSB2MSB) }
 }
 
-unsafe fn should_reverse_bits(tif: *mut TIFF) -> bool {
-    let order = fill_order(tif);
-    (order == FILLORDER_MSB2LSB || order == FILLORDER_LSB2MSB)
-        && ((*tif).tif_flags & TIFF_NOBITREV) == 0
-        && ((*tif).tif_flags & u32::from(order)) == 0
+fn should_reverse_bits(tif: *mut TIFF) -> bool {
+    unsafe {
+        let order = fill_order(tif);
+        (order == FILLORDER_MSB2LSB || order == FILLORDER_LSB2MSB)
+            && ((*tif).tif_flags & TIFF_NOBITREV) == 0
+            && ((*tif).tif_flags & u32::from(order)) == 0
+    }
 }
 
 fn reverse_byte(mut value: u8) -> u8 {
@@ -1132,35 +1178,37 @@ fn reverse_bits_in_place(bytes: &mut [u8]) {
     }
 }
 
-unsafe fn apply_swab_in_place(tif: *mut TIFF, bytes: &mut [u8]) {
-    if ((*tif).tif_flags & TIFF_SWAB) == 0 {
-        return;
-    }
-    match bits_per_sample(tif) {
-        8 => {}
-        16 => TIFFSwabArrayOfShort(
-            bytes.as_mut_ptr().cast::<u16>(),
-            (bytes.len() / 2) as crate::Tmsize,
-        ),
-        24 => TIFFSwabArrayOfTriples(bytes.as_mut_ptr(), (bytes.len() / 3) as crate::Tmsize),
-        32 => TIFFSwabArrayOfLong(
-            bytes.as_mut_ptr().cast::<u32>(),
-            (bytes.len() / 4) as crate::Tmsize,
-        ),
-        64 => {
-            if sample_format(tif) == SAMPLEFORMAT_IEEEFP {
-                TIFFSwabArrayOfDouble(
-                    bytes.as_mut_ptr().cast::<f64>(),
-                    (bytes.len() / 8) as crate::Tmsize,
-                )
-            } else {
-                TIFFSwabArrayOfLong8(
-                    bytes.as_mut_ptr().cast::<u64>(),
-                    (bytes.len() / 8) as crate::Tmsize,
-                )
-            }
+fn apply_swab_in_place(tif: *mut TIFF, bytes: &mut [u8]) {
+    unsafe {
+        if ((*tif).tif_flags & TIFF_SWAB) == 0 {
+            return;
         }
-        _ => {}
+        match bits_per_sample(tif) {
+            8 => {}
+            16 => TIFFSwabArrayOfShort(
+                bytes.as_mut_ptr().cast::<u16>(),
+                (bytes.len() / 2) as crate::Tmsize,
+            ),
+            24 => TIFFSwabArrayOfTriples(bytes.as_mut_ptr(), (bytes.len() / 3) as crate::Tmsize),
+            32 => TIFFSwabArrayOfLong(
+                bytes.as_mut_ptr().cast::<u32>(),
+                (bytes.len() / 4) as crate::Tmsize,
+            ),
+            64 => {
+                if sample_format(tif) == SAMPLEFORMAT_IEEEFP {
+                    TIFFSwabArrayOfDouble(
+                        bytes.as_mut_ptr().cast::<f64>(),
+                        (bytes.len() / 8) as crate::Tmsize,
+                    )
+                } else {
+                    TIFFSwabArrayOfLong8(
+                        bytes.as_mut_ptr().cast::<u64>(),
+                        (bytes.len() / 8) as crate::Tmsize,
+                    )
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -1328,7 +1376,7 @@ fn floating_differentiate(
     true
 }
 
-unsafe fn predictor_stride(tif: *mut TIFF) -> usize {
+fn predictor_stride(tif: *mut TIFF) -> usize {
     if planar_config(tif) == PLANARCONFIG_CONTIG {
         usize::from(samples_per_pixel(tif).max(1))
     } else {
@@ -1336,11 +1384,7 @@ unsafe fn predictor_stride(tif: *mut TIFF) -> usize {
     }
 }
 
-unsafe fn decode_predictor_bytes(
-    tif: *mut TIFF,
-    geometry: CodecGeometry,
-    bytes: &mut [u8],
-) -> bool {
+fn decode_predictor_bytes(tif: *mut TIFF, geometry: CodecGeometry, bytes: &mut [u8]) -> bool {
     let predictor = predictor(tif);
     if active_scheme(tif) == COMPRESSION_CCITTRLE
         || active_scheme(tif) == COMPRESSION_CCITTRLEW
@@ -1387,7 +1431,7 @@ unsafe fn decode_predictor_bytes(
     }
 }
 
-unsafe fn encode_predictor_bytes(
+fn encode_predictor_bytes(
     tif: *mut TIFF,
     geometry: CodecGeometry,
     input: &[u8],
@@ -1721,330 +1765,342 @@ fn encode_deflate(input: &[u8]) -> Option<Vec<u8>> {
     encoder.finish().ok()
 }
 
-unsafe fn decode_jbig_bytes(
+fn decode_jbig_bytes(
     tif: *mut TIFF,
     input: &[u8],
     is_tile: bool,
     geometry: CodecGeometry,
     expected_size: usize,
 ) -> Option<Vec<u8>> {
-    let module = "JBIGDecode";
-    let mut output = vec![0u8; expected_size];
-    let mut errbuf = codec_errbuf();
-    if !validate_jbig_layout(tif, module, is_tile) {
-        return None;
-    }
-    if safe_tiff_jbig_decode(
-        input.as_ptr(),
-        input.len(),
-        (fill_order(tif) == FILLORDER_LSB2MSB) as c_int,
-        output.as_mut_ptr(),
-        output.len(),
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "JBIG decode failed");
-        return None;
-    }
-    if geometry.row_size.checked_mul(geometry.rows)? != expected_size {
-        return None;
-    }
-    Some(output)
-}
-
-unsafe fn encode_jbig_bytes(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
-    let module = "JBIGEncode";
-    let mut errbuf = codec_errbuf();
-    let mut out_ptr = ptr::null_mut();
-    let mut out_len = 0usize;
-    if !validate_jbig_layout(tif, module, false) {
-        return None;
-    }
-    if safe_tiff_jbig_encode(
-        input.as_ptr(),
-        geometry.width,
-        geometry.rows as u32,
-        (fill_order(tif) == FILLORDER_LSB2MSB) as c_int,
-        &mut out_ptr,
-        &mut out_len,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "JBIG encode failed");
-        return None;
-    }
-    owned_bytes_from_external(out_ptr, out_len)
-}
-
-unsafe fn decode_lzma_bytes(tif: *mut TIFF, input: &[u8], expected_size: usize) -> Option<Vec<u8>> {
-    let module = "LZMADecode";
-    let mut output = vec![0u8; expected_size];
-    let mut errbuf = codec_errbuf();
-    if safe_tiff_lzma_decode(
-        input.as_ptr(),
-        input.len(),
-        output.as_mut_ptr(),
-        output.len(),
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "LZMA decode failed");
-        return None;
-    }
-    Some(output)
-}
-
-unsafe fn encode_lzma_bytes(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
-    let module = "LZMAEncode";
-    let mut errbuf = codec_errbuf();
-    let mut out_ptr = ptr::null_mut();
-    let mut out_len = 0usize;
-    let preset = (*(*tif).inner).codec_state.lzma_preset.max(0) as u32;
-    if safe_tiff_lzma_encode(
-        input.as_ptr(),
-        input.len(),
-        preset,
-        &mut out_ptr,
-        &mut out_len,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "LZMA encode failed");
-        return None;
-    }
-    owned_bytes_from_external(out_ptr, out_len)
-}
-
-unsafe fn effective_zstd_level(tif: *mut TIFF) -> c_int {
-    let requested = (*(*tif).inner).codec_state.zstd_level;
-    let max_level = safe_tiff_zstd_max_c_level().max(1);
-    if requested <= 0 {
-        ZSTD_LEVEL_DEFAULT.min(max_level)
-    } else {
-        requested.min(max_level)
-    }
-}
-
-unsafe fn decode_zstd_bytes(tif: *mut TIFF, input: &[u8], expected_size: usize) -> Option<Vec<u8>> {
-    let module = "ZSTDDecode";
-    let mut output = vec![0u8; expected_size];
-    let mut errbuf = codec_errbuf();
-    if safe_tiff_zstd_decode(
-        input.as_ptr(),
-        input.len(),
-        output.as_mut_ptr(),
-        output.len(),
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "ZSTD decode failed");
-        return None;
-    }
-    Some(output)
-}
-
-unsafe fn decode_zstd_alloc_bytes(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
-    let module = "ZSTDDecode";
-    let mut errbuf = codec_errbuf();
-    let mut out_ptr = ptr::null_mut();
-    let mut out_len = 0usize;
-    if safe_tiff_zstd_decode_alloc(
-        input.as_ptr(),
-        input.len(),
-        &mut out_ptr,
-        &mut out_len,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "ZSTD decode failed");
-        return None;
-    }
-    owned_bytes_from_external(out_ptr, out_len)
-}
-
-unsafe fn encode_zstd_bytes(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
-    let module = "ZSTDEncode";
-    let mut errbuf = codec_errbuf();
-    let mut out_ptr = ptr::null_mut();
-    let mut out_len = 0usize;
-    if safe_tiff_zstd_encode(
-        input.as_ptr(),
-        input.len(),
-        effective_zstd_level(tif),
-        &mut out_ptr,
-        &mut out_len,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "ZSTD encode failed");
-        return None;
-    }
-    owned_bytes_from_external(out_ptr, out_len)
-}
-
-unsafe fn decode_webp_bytes(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-    expected_size: usize,
-) -> Option<Vec<u8>> {
-    let module = "WebPDecode";
-    let samples = samples_per_pixel(tif);
-    let mut output = vec![0u8; expected_size];
-    let mut errbuf = codec_errbuf();
-    if !validate_webp_layout(tif, module, geometry) {
-        return None;
-    }
-    if safe_tiff_webp_decode(
-        input.as_ptr(),
-        input.len(),
-        i32::from(samples),
-        geometry.width,
-        geometry.rows as u32,
-        output.as_mut_ptr(),
-        output.len(),
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "WebP decode failed");
-        return None;
-    }
-    Some(output)
-}
-
-unsafe fn encode_webp_bytes(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
-    let module = "WebPEncode";
-    let state = &(*(*tif).inner).codec_state;
-    let mut errbuf = codec_errbuf();
-    let mut out_ptr = ptr::null_mut();
-    let mut out_len = 0usize;
-    if !validate_webp_layout(tif, module, geometry) {
-        return None;
-    }
-    if safe_tiff_webp_encode(
-        input.as_ptr(),
-        geometry.width,
-        geometry.rows as u32,
-        i32::from(samples_per_pixel(tif)),
-        state.webp_level.clamp(1, 100) as f32,
-        state.webp_lossless,
-        state.webp_lossless_exact,
-        &mut out_ptr,
-        &mut out_len,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "WebP encode failed");
-        return None;
-    }
-    owned_bytes_from_external(out_ptr, out_len)
-}
-
-unsafe fn decode_lerc_bytes(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-    expected_size: usize,
-) -> Option<Vec<u8>> {
-    let module = "LERCDecode";
-    let data_type = lerc_data_type(tif)?;
-    let (depth, bands) = lerc_dimensions(tif)?;
-    let mask_mode = lerc_mask_mode(tif, data_type);
-    let (_, additional) = lerc_effective_parameters(tif);
-    let payload = match additional {
-        LERC_ADD_COMPRESSION_NONE => input.to_vec(),
-        LERC_ADD_COMPRESSION_DEFLATE => decode_deflate(input)?,
-        LERC_ADD_COMPRESSION_ZSTD => decode_zstd_alloc_bytes(tif, input)?,
-        _ => {
-            emit_error_message(tif, module, "Unsupported LERC additional compression");
+    unsafe {
+        let module = "JBIGDecode";
+        let mut output = vec![0u8; expected_size];
+        let mut errbuf = codec_errbuf();
+        if !validate_jbig_layout(tif, module, is_tile) {
             return None;
         }
-    };
-    let mut output = vec![0u8; expected_size];
-    let mut errbuf = codec_errbuf();
-    if safe_tiff_lerc_decode(
-        payload.as_ptr(),
-        payload.len(),
-        data_type,
-        geometry.width as c_int,
-        geometry.rows as c_int,
-        depth,
-        bands,
-        mask_mode,
-        (bits_per_sample(tif) / 8) as c_int,
-        i32::from(samples_per_pixel(tif).max(1)),
-        output.as_mut_ptr(),
-        output.len(),
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "LERC decode failed");
-        return None;
+        if safe_tiff_jbig_decode(
+            input.as_ptr(),
+            input.len(),
+            (fill_order(tif) == FILLORDER_LSB2MSB) as c_int,
+            output.as_mut_ptr(),
+            output.len(),
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "JBIG decode failed");
+            return None;
+        }
+        if geometry.row_size.checked_mul(geometry.rows)? != expected_size {
+            return None;
+        }
+        Some(output)
     }
-    Some(output)
 }
 
-unsafe fn encode_lerc_bytes(
+fn encode_jbig_bytes(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "JBIGEncode";
+        let mut errbuf = codec_errbuf();
+        let mut out_ptr = ptr::null_mut();
+        let mut out_len = 0usize;
+        if !validate_jbig_layout(tif, module, false) {
+            return None;
+        }
+        if safe_tiff_jbig_encode(
+            input.as_ptr(),
+            geometry.width,
+            geometry.rows as u32,
+            (fill_order(tif) == FILLORDER_LSB2MSB) as c_int,
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "JBIG encode failed");
+            return None;
+        }
+        owned_bytes_from_external(out_ptr, out_len)
+    }
+}
+
+fn decode_lzma_bytes(tif: *mut TIFF, input: &[u8], expected_size: usize) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "LZMADecode";
+        let mut output = vec![0u8; expected_size];
+        let mut errbuf = codec_errbuf();
+        if safe_tiff_lzma_decode(
+            input.as_ptr(),
+            input.len(),
+            output.as_mut_ptr(),
+            output.len(),
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "LZMA decode failed");
+            return None;
+        }
+        Some(output)
+    }
+}
+
+fn encode_lzma_bytes(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "LZMAEncode";
+        let mut errbuf = codec_errbuf();
+        let mut out_ptr = ptr::null_mut();
+        let mut out_len = 0usize;
+        let preset = (*(*tif).inner).codec_state.lzma_preset.max(0) as u32;
+        if safe_tiff_lzma_encode(
+            input.as_ptr(),
+            input.len(),
+            preset,
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "LZMA encode failed");
+            return None;
+        }
+        owned_bytes_from_external(out_ptr, out_len)
+    }
+}
+
+fn effective_zstd_level(tif: *mut TIFF) -> c_int {
+    unsafe {
+        let requested = (*(*tif).inner).codec_state.zstd_level;
+        let max_level = safe_tiff_zstd_max_c_level().max(1);
+        if requested <= 0 {
+            ZSTD_LEVEL_DEFAULT.min(max_level)
+        } else {
+            requested.min(max_level)
+        }
+    }
+}
+
+fn decode_zstd_bytes(tif: *mut TIFF, input: &[u8], expected_size: usize) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "ZSTDDecode";
+        let mut output = vec![0u8; expected_size];
+        let mut errbuf = codec_errbuf();
+        if safe_tiff_zstd_decode(
+            input.as_ptr(),
+            input.len(),
+            output.as_mut_ptr(),
+            output.len(),
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "ZSTD decode failed");
+            return None;
+        }
+        Some(output)
+    }
+}
+
+fn decode_zstd_alloc_bytes(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "ZSTDDecode";
+        let mut errbuf = codec_errbuf();
+        let mut out_ptr = ptr::null_mut();
+        let mut out_len = 0usize;
+        if safe_tiff_zstd_decode_alloc(
+            input.as_ptr(),
+            input.len(),
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "ZSTD decode failed");
+            return None;
+        }
+        owned_bytes_from_external(out_ptr, out_len)
+    }
+}
+
+fn encode_zstd_bytes(tif: *mut TIFF, input: &[u8]) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "ZSTDEncode";
+        let mut errbuf = codec_errbuf();
+        let mut out_ptr = ptr::null_mut();
+        let mut out_len = 0usize;
+        if safe_tiff_zstd_encode(
+            input.as_ptr(),
+            input.len(),
+            effective_zstd_level(tif),
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "ZSTD encode failed");
+            return None;
+        }
+        owned_bytes_from_external(out_ptr, out_len)
+    }
+}
+
+fn decode_webp_bytes(
     tif: *mut TIFF,
     input: &[u8],
     geometry: CodecGeometry,
+    expected_size: usize,
 ) -> Option<Vec<u8>> {
-    let module = "LERCEncode";
-    let data_type = lerc_data_type(tif)?;
-    let (depth, bands) = lerc_dimensions(tif)?;
-    let mask_mode = lerc_mask_mode(tif, data_type);
-    let (version, additional) = lerc_effective_parameters(tif);
-    let mut errbuf = codec_errbuf();
-    let mut out_ptr = ptr::null_mut();
-    let mut out_len = 0usize;
-    if safe_tiff_lerc_encode(
-        input.as_ptr(),
-        input.len(),
-        version,
-        data_type,
-        geometry.width as c_int,
-        geometry.rows as c_int,
-        depth,
-        bands,
-        (*(*tif).inner).codec_state.lerc_maxzerror,
-        mask_mode,
-        (bits_per_sample(tif) / 8) as c_int,
-        i32::from(samples_per_pixel(tif).max(1)),
-        &mut out_ptr,
-        &mut out_len,
-        errbuf.as_mut_ptr(),
-        errbuf.len(),
-    ) == 0
-    {
-        emit_codec_error(tif, module, &errbuf, "LERC encode failed");
-        return None;
+    unsafe {
+        let module = "WebPDecode";
+        let samples = samples_per_pixel(tif);
+        let mut output = vec![0u8; expected_size];
+        let mut errbuf = codec_errbuf();
+        if !validate_webp_layout(tif, module, geometry) {
+            return None;
+        }
+        if safe_tiff_webp_decode(
+            input.as_ptr(),
+            input.len(),
+            i32::from(samples),
+            geometry.width,
+            geometry.rows as u32,
+            output.as_mut_ptr(),
+            output.len(),
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "WebP decode failed");
+            return None;
+        }
+        Some(output)
     }
-    let raw_lerc = owned_bytes_from_external(out_ptr, out_len)?;
-    match additional {
-        LERC_ADD_COMPRESSION_NONE => Some(raw_lerc),
-        LERC_ADD_COMPRESSION_DEFLATE => encode_deflate(&raw_lerc),
-        LERC_ADD_COMPRESSION_ZSTD => encode_zstd_bytes(tif, &raw_lerc),
-        _ => {
-            emit_error_message(tif, module, "Unsupported LERC additional compression");
-            None
+}
+
+fn encode_webp_bytes(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "WebPEncode";
+        let state = &(*(*tif).inner).codec_state;
+        let mut errbuf = codec_errbuf();
+        let mut out_ptr = ptr::null_mut();
+        let mut out_len = 0usize;
+        if !validate_webp_layout(tif, module, geometry) {
+            return None;
+        }
+        if safe_tiff_webp_encode(
+            input.as_ptr(),
+            geometry.width,
+            geometry.rows as u32,
+            i32::from(samples_per_pixel(tif)),
+            state.webp_level.clamp(1, 100) as f32,
+            state.webp_lossless,
+            state.webp_lossless_exact,
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "WebP encode failed");
+            return None;
+        }
+        owned_bytes_from_external(out_ptr, out_len)
+    }
+}
+
+fn decode_lerc_bytes(
+    tif: *mut TIFF,
+    input: &[u8],
+    geometry: CodecGeometry,
+    expected_size: usize,
+) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "LERCDecode";
+        let data_type = lerc_data_type(tif)?;
+        let (depth, bands) = lerc_dimensions(tif)?;
+        let mask_mode = lerc_mask_mode(tif, data_type);
+        let (_, additional) = lerc_effective_parameters(tif);
+        let payload = match additional {
+            LERC_ADD_COMPRESSION_NONE => input.to_vec(),
+            LERC_ADD_COMPRESSION_DEFLATE => decode_deflate(input)?,
+            LERC_ADD_COMPRESSION_ZSTD => decode_zstd_alloc_bytes(tif, input)?,
+            _ => {
+                emit_error_message(tif, module, "Unsupported LERC additional compression");
+                return None;
+            }
+        };
+        let mut output = vec![0u8; expected_size];
+        let mut errbuf = codec_errbuf();
+        if safe_tiff_lerc_decode(
+            payload.as_ptr(),
+            payload.len(),
+            data_type,
+            geometry.width as c_int,
+            geometry.rows as c_int,
+            depth,
+            bands,
+            mask_mode,
+            (bits_per_sample(tif) / 8) as c_int,
+            i32::from(samples_per_pixel(tif).max(1)),
+            output.as_mut_ptr(),
+            output.len(),
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "LERC decode failed");
+            return None;
+        }
+        Some(output)
+    }
+}
+
+fn encode_lerc_bytes(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+    unsafe {
+        let module = "LERCEncode";
+        let data_type = lerc_data_type(tif)?;
+        let (depth, bands) = lerc_dimensions(tif)?;
+        let mask_mode = lerc_mask_mode(tif, data_type);
+        let (version, additional) = lerc_effective_parameters(tif);
+        let mut errbuf = codec_errbuf();
+        let mut out_ptr = ptr::null_mut();
+        let mut out_len = 0usize;
+        if safe_tiff_lerc_encode(
+            input.as_ptr(),
+            input.len(),
+            version,
+            data_type,
+            geometry.width as c_int,
+            geometry.rows as c_int,
+            depth,
+            bands,
+            (*(*tif).inner).codec_state.lerc_maxzerror,
+            mask_mode,
+            (bits_per_sample(tif) / 8) as c_int,
+            i32::from(samples_per_pixel(tif).max(1)),
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_codec_error(tif, module, &errbuf, "LERC encode failed");
+            return None;
+        }
+        let raw_lerc = owned_bytes_from_external(out_ptr, out_len)?;
+        match additional {
+            LERC_ADD_COMPRESSION_NONE => Some(raw_lerc),
+            LERC_ADD_COMPRESSION_DEFLATE => encode_deflate(&raw_lerc),
+            LERC_ADD_COMPRESSION_ZSTD => encode_zstd_bytes(tif, &raw_lerc),
+            _ => {
+                emit_error_message(tif, module, "Unsupported LERC additional compression");
+                None
+            }
         }
     }
 }
@@ -2329,11 +2385,11 @@ fn pack_fax_row(
 }
 
 fn group3_fillbits(tif: *mut TIFF) -> bool {
-    unsafe { (tag_u32(tif, TAG_GROUP3OPTIONS, true, 0) & GROUP3OPT_FILLBITS) != 0 }
+    (tag_u32(tif, TAG_GROUP3OPTIONS, true, 0) & GROUP3OPT_FILLBITS) != 0
 }
 
 fn prepared_fax_input<'a>(tif: *mut TIFF, input: &'a [u8]) -> Cow<'a, [u8]> {
-    if unsafe { fill_order(tif) } == FILLORDER_LSB2MSB {
+    if fill_order(tif) == FILLORDER_LSB2MSB {
         let mut bytes = input.to_vec();
         reverse_bits_in_place(&mut bytes);
         Cow::Owned(bytes)
@@ -2347,16 +2403,12 @@ fn prepare_fax_input(tif: *mut TIFF, input: &[u8]) -> Vec<u8> {
 }
 
 fn finalize_fax_output(tif: *mut TIFF, output: &mut Vec<u8>) {
-    if unsafe { fill_order(tif) } == FILLORDER_LSB2MSB {
+    if fill_order(tif) == FILLORDER_LSB2MSB {
         reverse_bits_in_place(output);
     }
 }
 
-unsafe fn decode_group3_1d(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
+fn decode_group3_1d(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     if (fax_mode(tif) & FAXMODE_NOEOL) != 0 {
         let bytes = prepared_fax_input(tif, input);
         let mut reader = CcittBitReader::new(bytes.as_ref(), 0);
@@ -2412,7 +2464,7 @@ unsafe fn decode_group3_1d(
     Some(output)
 }
 
-unsafe fn decode_group3_rows(tif: *mut TIFF, input: &[u8], width: u32) -> Option<Vec<Vec<u8>>> {
+fn decode_group3_rows(tif: *mut TIFF, input: &[u8], width: u32) -> Option<Vec<Vec<u8>>> {
     let row_size = usize::try_from((width + 7) / 8).ok()?;
     let bytes = prepared_fax_input(tif, input);
     let mut reader = CcittBitReader::new(bytes.as_ref(), 0);
@@ -2436,7 +2488,7 @@ unsafe fn decode_group3_rows(tif: *mut TIFF, input: &[u8], width: u32) -> Option
     }
 }
 
-unsafe fn decode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+fn decode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     let bytes = prepared_fax_input(tif, input);
     let mut output = vec![0u8; geometry.row_size.checked_mul(geometry.rows)?];
     let mut row_index = 0usize;
@@ -2453,8 +2505,8 @@ unsafe fn decode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -
                 &mut output[start..start + geometry.row_size],
                 geometry.width,
                 transitions,
-                unsafe { photometric(tif) },
-                unsafe { memory_fillorder_lsb(tif) },
+                photometric(tif),
+                memory_fillorder_lsb(tif),
             );
             row_index += 1;
         },
@@ -2462,11 +2514,7 @@ unsafe fn decode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -
     (row_index == geometry.rows).then_some(output)
 }
 
-unsafe fn encode_group3_1d(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
+fn encode_group3_1d(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     let mut bits = TrackingWriter::with_capacity(input.len().checked_mul(12)?);
     let mode = fax_mode(tif);
     for row_index in 0..geometry.rows {
@@ -2501,7 +2549,7 @@ unsafe fn encode_group3_1d(
     Some(output)
 }
 
-unsafe fn encode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
+fn encode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     let mut encoder =
         fax::encoder::Encoder::new(TrackingWriter::with_capacity(input.len().checked_mul(8)?));
     for row_index in 0..geometry.rows {
@@ -2533,7 +2581,7 @@ fn push_i16_ne(buffer: &mut Vec<u8>, value: i16) {
     buffer.extend_from_slice(&value.to_ne_bytes());
 }
 
-unsafe fn validate_sgilog_layout(
+fn validate_sgilog_layout(
     tif: *mut TIFF,
     module: &str,
     expected_photometric: u16,
@@ -2558,11 +2606,7 @@ unsafe fn validate_sgilog_layout(
         return None;
     }
     if bits_per_sample(tif) != 16 {
-        emit_error_message(
-            tif,
-            module,
-            "SGILog currently requires 16-bit sample data",
-        );
+        emit_error_message(tif, module, "SGILog currently requires 16-bit sample data");
         return None;
     }
     if samples_per_pixel(tif) != expected_samples {
@@ -2577,11 +2621,7 @@ unsafe fn validate_sgilog_layout(
         sample_format(tif),
         SAMPLEFORMAT_INT | SAMPLEFORMAT_UINT | SAMPLEFORMAT_VOID
     ) {
-        emit_error_message(
-            tif,
-            module,
-            "SGILog currently requires integer sample data",
-        );
+        emit_error_message(tif, module, "SGILog currently requires integer sample data");
         return None;
     }
     let pixels = usize::try_from(geometry.width).ok()?;
@@ -2690,9 +2730,7 @@ fn encode_sgilog_plane(plane: &[u8], output: &mut Vec<u8>) {
             run_start += run_len;
         }
 
-        if run_start.saturating_sub(index) > 1
-            && run_start.saturating_sub(index) < SGILOG_MIN_RUN
-        {
+        if run_start.saturating_sub(index) > 1 && run_start.saturating_sub(index) < SGILOG_MIN_RUN {
             let value = plane[index];
             let mut short_run_end = index + 1;
             while short_run_end < run_start && plane[short_run_end] == value {
@@ -2723,7 +2761,10 @@ fn encode_sgilog_plane(plane: &[u8], output: &mut Vec<u8>) {
 fn encode_sgilog16_row(values: &[u16]) -> Vec<u8> {
     let mut output = Vec::new();
     for shift in [8u16, 0] {
-        let plane: Vec<u8> = values.iter().map(|value| ((value >> shift) & 0xff) as u8).collect();
+        let plane: Vec<u8> = values
+            .iter()
+            .map(|value| ((value >> shift) & 0xff) as u8)
+            .collect();
         encode_sgilog_plane(&plane, &mut output);
     }
     output
@@ -2732,27 +2773,33 @@ fn encode_sgilog16_row(values: &[u16]) -> Vec<u8> {
 fn encode_sgilog32_row(values: &[u32]) -> Vec<u8> {
     let mut output = Vec::new();
     for shift in [24u32, 16, 8, 0] {
-        let plane: Vec<u8> = values.iter().map(|value| ((value >> shift) & 0xff) as u8).collect();
+        let plane: Vec<u8> = values
+            .iter()
+            .map(|value| ((value >> shift) & 0xff) as u8)
+            .collect();
         encode_sgilog_plane(&plane, &mut output);
     }
     output
 }
 
-unsafe fn decode_logluv24_to_luv48_row(packed: &[u32]) -> Option<Vec<u8>> {
-    let mut output = Vec::with_capacity(packed.len().checked_mul(SGILOG_LUV48_BYTES_PER_PIXEL)?);
-    for value in packed.iter().copied() {
-        let l = (((value >> 12) & 0xffd) + 13314) as i16;
-        let mut u = SGILOG_U_NEU;
-        let mut v = SGILOG_V_NEU;
-        if safe_tiff_uv_decode(&mut u, &mut v, (value & 0x3fff) as c_int) < 0 {
-            u = SGILOG_U_NEU;
-            v = SGILOG_V_NEU;
+fn decode_logluv24_to_luv48_row(packed: &[u32]) -> Option<Vec<u8>> {
+    unsafe {
+        let mut output =
+            Vec::with_capacity(packed.len().checked_mul(SGILOG_LUV48_BYTES_PER_PIXEL)?);
+        for value in packed.iter().copied() {
+            let l = (((value >> 12) & 0xffd) + 13314) as i16;
+            let mut u = SGILOG_U_NEU;
+            let mut v = SGILOG_V_NEU;
+            if safe_tiff_uv_decode(&mut u, &mut v, (value & 0x3fff) as c_int) < 0 {
+                u = SGILOG_U_NEU;
+                v = SGILOG_V_NEU;
+            }
+            push_i16_ne(&mut output, l);
+            push_i16_ne(&mut output, (u * f64::from(1u32 << 15)) as i16);
+            push_i16_ne(&mut output, (v * f64::from(1u32 << 15)) as i16);
         }
-        push_i16_ne(&mut output, l);
-        push_i16_ne(&mut output, (u * f64::from(1u32 << 15)) as i16);
-        push_i16_ne(&mut output, (v * f64::from(1u32 << 15)) as i16);
+        Some(output)
     }
-    Some(output)
 }
 
 fn decode_logluv32_to_luv48_row(packed: &[u32]) -> Option<Vec<u8>> {
@@ -2828,7 +2875,7 @@ fn encode_logluv32_from_luv48_row(row: &[u8], method: c_int) -> Option<Vec<u8>> 
     Some(encode_sgilog32_row(&packed))
 }
 
-unsafe fn decode_sgilog_bytes(
+fn decode_sgilog_bytes(
     tif: *mut TIFF,
     input: &[u8],
     geometry: CodecGeometry,
@@ -2895,17 +2942,17 @@ unsafe fn decode_sgilog_bytes(
         }
     }
     if output.len() != expected_size {
-        emit_error_message(tif, module, "Decoded SGILog payload size did not match geometry");
+        emit_error_message(
+            tif,
+            module,
+            "Decoded SGILog payload size did not match geometry",
+        );
         return None;
     }
     Some(output)
 }
 
-unsafe fn encode_sgilog_bytes(
-    tif: *mut TIFF,
-    input: &[u8],
-    geometry: CodecGeometry,
-) -> Option<Vec<u8>> {
+fn encode_sgilog_bytes(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     let module = "SGILogEncode";
     let mut output = Vec::new();
     let method = if active_scheme(tif) == COMPRESSION_SGILOG24 {
@@ -2969,7 +3016,7 @@ unsafe fn encode_sgilog_bytes(
     Some(output)
 }
 
-pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
+pub(crate) fn safe_tiff_codec_decode_bytes(
     tif: *mut TIFF,
     input: &[u8],
     is_tile: bool,
@@ -3020,7 +3067,7 @@ pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
     Some(decoded)
 }
 
-pub(crate) unsafe fn safe_tiff_codec_encode_bytes(
+pub(crate) fn safe_tiff_codec_encode_bytes(
     tif: *mut TIFF,
     input: &[u8],
     geometry: CodecGeometry,
@@ -3083,24 +3130,26 @@ fn group3_rtc_is_available(bytes: &[u8], bit_pos: usize, allow_fillbits: bool) -
     true
 }
 
-unsafe fn raw_group3_predecode(tif: *mut TIFF) -> c_int {
-    if (*tif).tif_rawdata.is_null() || (*tif).tif_rawcc <= 0 {
-        return 0;
+fn raw_group3_predecode(tif: *mut TIFF) -> c_int {
+    unsafe {
+        if (*tif).tif_rawdata.is_null() || (*tif).tif_rawcc <= 0 {
+            return 0;
+        }
+        let raw = slice::from_raw_parts((*tif).tif_rawdata, (*tif).tif_rawcc as usize);
+        let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0);
+        let rows = decode_group3_rows(tif, raw, width).unwrap_or_default();
+        (*(*tif).inner).codec_state.raw_fax_decoder = Some(RawFaxDecoderState {
+            rows,
+            next_row: 0,
+            bytes: prepare_fax_input(tif, raw),
+            bit_pos: 0,
+            width,
+            photometric: photometric(tif),
+            memory_lsb: memory_fillorder_lsb(tif),
+            ended: false,
+        });
+        1
     }
-    let raw = slice::from_raw_parts((*tif).tif_rawdata, (*tif).tif_rawcc as usize);
-    let width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0);
-    let rows = decode_group3_rows(tif, raw, width).unwrap_or_default();
-    (*(*tif).inner).codec_state.raw_fax_decoder = Some(RawFaxDecoderState {
-        rows,
-        next_row: 0,
-        bytes: prepare_fax_input(tif, raw),
-        bit_pos: 0,
-        width,
-        photometric: photometric(tif),
-        memory_lsb: memory_fillorder_lsb(tif),
-        ended: false,
-    });
-    1
 }
 
 unsafe extern "C" fn fax3_setupdecode(_: *mut TIFF) -> c_int {
@@ -3117,69 +3166,71 @@ unsafe extern "C" fn fax3_decoderow(
     cc: crate::Tmsize,
     _: u16,
 ) -> c_int {
-    if tif.is_null() || buf.is_null() || cc <= 0 {
-        return 0;
-    }
-    let state = &mut (*(*tif).inner).codec_state;
-    let Some(raw) = state.raw_fax_decoder.as_mut() else {
-        return 0;
-    };
-    if raw.next_row < raw.rows.len() {
-        let row = &raw.rows[raw.next_row];
-        if row.len() > cc as usize {
-            (*tif).tif_rawcc = 0;
-            raw.ended = true;
+    unsafe {
+        if tif.is_null() || buf.is_null() || cc <= 0 {
             return 0;
         }
-        slice::from_raw_parts_mut(buf, row.len()).copy_from_slice(row);
-        raw.next_row += 1;
-        raw.ended = raw.next_row >= raw.rows.len();
-        (*tif).tif_rawcp = (*tif).tif_rawdata;
-        (*tif).tif_rawcc = if raw.ended { 0 } else { 1 };
-        return 1;
+        let state = &mut (*(*tif).inner).codec_state;
+        let Some(raw) = state.raw_fax_decoder.as_mut() else {
+            return 0;
+        };
+        if raw.next_row < raw.rows.len() {
+            let row = &raw.rows[raw.next_row];
+            if row.len() > cc as usize {
+                (*tif).tif_rawcc = 0;
+                raw.ended = true;
+                return 0;
+            }
+            slice::from_raw_parts_mut(buf, row.len()).copy_from_slice(row);
+            raw.next_row += 1;
+            raw.ended = raw.next_row >= raw.rows.len();
+            (*tif).tif_rawcp = (*tif).tif_rawdata;
+            (*tif).tif_rawcc = if raw.ended { 0 } else { 1 };
+            return 1;
+        }
+        if raw.ended || raw.width == 0 {
+            (*tif).tif_rawcc = 0;
+            return 0;
+        }
+        let row_size = ((raw.width + 7) / 8) as usize;
+        if row_size > cc as usize {
+            raw.ended = true;
+            (*tif).tif_rawcc = 0;
+            return 0;
+        }
+        let mut reader = CcittBitReader::new(&raw.bytes, raw.bit_pos);
+        if !sync_to_eol(&mut reader, 16) {
+            raw.ended = true;
+            (*tif).tif_rawcc = 0;
+            return 0;
+        }
+        let Some(transitions) = decode_fax_1d_line(&mut reader, raw.width as u16) else {
+            raw.ended = true;
+            (*tif).tif_rawcc = 0;
+            return 0;
+        };
+        let out = slice::from_raw_parts_mut(buf, row_size);
+        pack_fax_row(
+            out,
+            raw.width,
+            &transitions,
+            raw.photometric,
+            raw.memory_lsb,
+        );
+        raw.bit_pos = reader.bit_pos;
+        raw.ended = group3_rtc_is_available(&raw.bytes, raw.bit_pos, group3_fillbits(tif))
+            || !group3_eol_is_available(&raw.bytes, raw.bit_pos, group3_fillbits(tif));
+        let consumed_bytes = raw.bit_pos / 8;
+        (*tif).tif_rawcp = (*tif)
+            .tif_rawdata
+            .add(consumed_bytes.min((*tif).tif_rawcc.max(0) as usize));
+        (*tif).tif_rawcc = if raw.ended {
+            0
+        } else {
+            raw.bytes.len().saturating_sub(consumed_bytes) as crate::Tmsize
+        };
+        1
     }
-    if raw.ended || raw.width == 0 {
-        (*tif).tif_rawcc = 0;
-        return 0;
-    }
-    let row_size = ((raw.width + 7) / 8) as usize;
-    if row_size > cc as usize {
-        raw.ended = true;
-        (*tif).tif_rawcc = 0;
-        return 0;
-    }
-    let mut reader = CcittBitReader::new(&raw.bytes, raw.bit_pos);
-    if !sync_to_eol(&mut reader, 16) {
-        raw.ended = true;
-        (*tif).tif_rawcc = 0;
-        return 0;
-    }
-    let Some(transitions) = decode_fax_1d_line(&mut reader, raw.width as u16) else {
-        raw.ended = true;
-        (*tif).tif_rawcc = 0;
-        return 0;
-    };
-    let out = slice::from_raw_parts_mut(buf, row_size);
-    pack_fax_row(
-        out,
-        raw.width,
-        &transitions,
-        raw.photometric,
-        raw.memory_lsb,
-    );
-    raw.bit_pos = reader.bit_pos;
-    raw.ended = group3_rtc_is_available(&raw.bytes, raw.bit_pos, group3_fillbits(tif))
-        || !group3_eol_is_available(&raw.bytes, raw.bit_pos, group3_fillbits(tif));
-    let consumed_bytes = raw.bit_pos / 8;
-    (*tif).tif_rawcp = (*tif)
-        .tif_rawdata
-        .add(consumed_bytes.min((*tif).tif_rawcc.max(0) as usize));
-    (*tif).tif_rawcc = if raw.ended {
-        0
-    } else {
-        raw.bytes.len().saturating_sub(consumed_bytes) as crate::Tmsize
-    };
-    1
 }
 
 unsafe extern "C" fn init_dump_mode(_: *mut TIFF, _: c_int) -> c_int {
@@ -3195,33 +3246,43 @@ unsafe extern "C" fn init_sgilog_codec(_: *mut TIFF, _: c_int) -> c_int {
 }
 
 unsafe extern "C" fn init_ccitt_fax3(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*tif).tif_setupdecode = Some(fax3_setupdecode);
-        (*tif).tif_predecode = Some(fax3_predecode);
-        (*tif).tif_decoderow = Some(fax3_decoderow);
+    unsafe {
+        if !tif.is_null() {
+            (*tif).tif_setupdecode = Some(fax3_setupdecode);
+            (*tif).tif_predecode = Some(fax3_predecode);
+            (*tif).tif_decoderow = Some(fax3_decoderow);
+        }
+        1
     }
-    1
 }
 
 unsafe extern "C" fn init_ccitt_rle(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC | FAXMODE_NOEOL | FAXMODE_BYTEALIGN;
+    unsafe {
+        if !tif.is_null() {
+            (*(*tif).inner).codec_state.fax_mode =
+                FAXMODE_NORTC | FAXMODE_NOEOL | FAXMODE_BYTEALIGN;
+        }
+        1
     }
-    1
 }
 
 unsafe extern "C" fn init_ccitt_rlew(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC | FAXMODE_NOEOL | FAXMODE_WORDALIGN;
+    unsafe {
+        if !tif.is_null() {
+            (*(*tif).inner).codec_state.fax_mode =
+                FAXMODE_NORTC | FAXMODE_NOEOL | FAXMODE_WORDALIGN;
+        }
+        1
     }
-    1
 }
 
 unsafe extern "C" fn init_ccitt_fax4(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC;
+    unsafe {
+        if !tif.is_null() {
+            (*(*tif).inner).codec_state.fax_mode = FAXMODE_NORTC;
+        }
+        1
     }
-    1
 }
 
 unsafe extern "C" fn thunderscan_setupdecode(tif: *mut TIFF) -> c_int {
@@ -3229,10 +3290,12 @@ unsafe extern "C" fn thunderscan_setupdecode(tif: *mut TIFF) -> c_int {
 }
 
 unsafe extern "C" fn init_thunderscan(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*tif).tif_setupdecode = Some(thunderscan_setupdecode);
+    unsafe {
+        if !tif.is_null() {
+            (*tif).tif_setupdecode = Some(thunderscan_setupdecode);
+        }
+        1
     }
-    1
 }
 
 unsafe extern "C" fn next_predecode(tif: *mut TIFF, _: u16) -> c_int {
@@ -3240,10 +3303,12 @@ unsafe extern "C" fn next_predecode(tif: *mut TIFF, _: u16) -> c_int {
 }
 
 unsafe extern "C" fn init_next(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*tif).tif_predecode = Some(next_predecode);
+    unsafe {
+        if !tif.is_null() {
+            (*tif).tif_predecode = Some(next_predecode);
+        }
+        1
     }
-    1
 }
 
 unsafe extern "C" fn init_jpeg_codec(tif: *mut TIFF, _: c_int) -> c_int {
@@ -3254,10 +3319,12 @@ unsafe extern "C" fn init_jpeg_codec(tif: *mut TIFF, _: c_int) -> c_int {
 }
 
 unsafe extern "C" fn init_jbig_codec(tif: *mut TIFF, _: c_int) -> c_int {
-    if !tif.is_null() {
-        (*tif).tif_flags |= TIFF_NOBITREV;
+    unsafe {
+        if !tif.is_null() {
+            (*tif).tif_flags |= TIFF_NOBITREV;
+        }
+        1
     }
-    1
 }
 
 fn is_configured_init(init: TIFFInitMethod) -> bool {
@@ -3400,22 +3467,24 @@ static BUILTIN_CODECS: [TIFFCodec; 21] = [
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFFindCODEC(scheme: u16) -> *const TIFFCodec {
-    let registry = registry().lock().expect("codec registry lock");
-    for entry in registry.codecs.iter().rev() {
-        let codec = &(**entry).codec;
-        if codec.scheme == scheme {
-            return codec as *const TIFFCodec;
+    unsafe {
+        let registry = registry().lock().expect("codec registry lock");
+        for entry in registry.codecs.iter().rev() {
+            let codec = &(**entry).codec;
+            if codec.scheme == scheme {
+                return codec as *const TIFFCodec;
+            }
         }
+        for codec in &BUILTIN_CODECS {
+            if codec.name.is_null() {
+                break;
+            }
+            if codec.scheme == scheme {
+                return codec as *const TIFFCodec;
+            }
+        }
+        ptr::null()
     }
-    for codec in &BUILTIN_CODECS {
-        if codec.name.is_null() {
-            break;
-        }
-        if codec.scheme == scheme {
-            return codec as *const TIFFCodec;
-        }
-    }
-    ptr::null()
 }
 
 #[no_mangle]
@@ -3424,86 +3493,94 @@ pub unsafe extern "C" fn TIFFRegisterCODEC(
     name: *const c_char,
     init: TIFFInitMethod,
 ) -> *mut TIFFCodec {
-    if name.is_null() {
-        return ptr::null_mut();
+    unsafe {
+        if name.is_null() {
+            return ptr::null_mut();
+        }
+        let Ok(name) = CString::new(std::ffi::CStr::from_ptr(name).to_bytes()) else {
+            return ptr::null_mut();
+        };
+        let mut registration = Box::new(RegisteredCodec {
+            codec: TIFFCodec {
+                name: ptr::null_mut(),
+                scheme,
+                init,
+            },
+            name,
+        });
+        registration.codec.name = registration.name.as_ptr() as *mut c_char;
+        let raw = Box::into_raw(registration);
+        let codec = ptr::addr_of_mut!((*raw).codec);
+        let mut registry = registry().lock().expect("codec registry lock");
+        registry.codecs.push(raw);
+        codec
     }
-    let Ok(name) = CString::new(std::ffi::CStr::from_ptr(name).to_bytes()) else {
-        return ptr::null_mut();
-    };
-    let mut registration = Box::new(RegisteredCodec {
-        codec: TIFFCodec {
-            name: ptr::null_mut(),
-            scheme,
-            init,
-        },
-        name,
-    });
-    registration.codec.name = registration.name.as_ptr() as *mut c_char;
-    let raw = Box::into_raw(registration);
-    let codec = ptr::addr_of_mut!((*raw).codec);
-    let mut registry = registry().lock().expect("codec registry lock");
-    registry.codecs.push(raw);
-    codec
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFUnRegisterCODEC(codec: *mut TIFFCodec) {
-    if codec.is_null() {
-        return;
-    }
-    let mut registry = registry().lock().expect("codec registry lock");
-    if let Some(index) = registry
-        .codecs
-        .iter()
-        .position(|entry| ptr::addr_of!((**entry).codec).cast_mut() == codec)
-    {
-        let raw = registry.codecs.remove(index);
-        drop(Box::from_raw(raw));
+    unsafe {
+        if codec.is_null() {
+            return;
+        }
+        let mut registry = registry().lock().expect("codec registry lock");
+        if let Some(index) = registry
+            .codecs
+            .iter()
+            .position(|entry| ptr::addr_of!((**entry).codec).cast_mut() == codec)
+        {
+            let raw = registry.codecs.remove(index);
+            drop(Box::from_raw(raw));
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFIsCODECConfigured(scheme: u16) -> c_int {
-    let codec = TIFFFindCODEC(scheme);
-    if codec.is_null() {
-        return 0;
-    }
-    if BUILTIN_CODECS
-        .iter()
-        .take_while(|entry| !entry.name.is_null())
-        .any(|entry| std::ptr::eq(entry, codec))
-    {
-        builtin_codec_configured((*codec).scheme) as c_int
-    } else {
-        is_configured_init((*codec).init) as c_int
+    unsafe {
+        let codec = TIFFFindCODEC(scheme);
+        if codec.is_null() {
+            return 0;
+        }
+        if BUILTIN_CODECS
+            .iter()
+            .take_while(|entry| !entry.name.is_null())
+            .any(|entry| std::ptr::eq(entry, codec))
+        {
+            builtin_codec_configured((*codec).scheme) as c_int
+        } else {
+            is_configured_init((*codec).init) as c_int
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn TIFFGetConfiguredCODECs() -> *mut TIFFCodec {
-    let registry = registry().lock().expect("codec registry lock");
-    let mut codecs = Vec::with_capacity(registry.codecs.len() + BUILTIN_CODECS.len());
-    for entry in &registry.codecs {
-        codecs.push((**entry).codec);
-    }
-    for codec in &BUILTIN_CODECS {
-        if codec.name.is_null() {
-            break;
+    unsafe {
+        let registry = registry().lock().expect("codec registry lock");
+        let mut codecs = Vec::with_capacity(registry.codecs.len() + BUILTIN_CODECS.len());
+        for entry in &registry.codecs {
+            codecs.push((**entry).codec);
         }
-        if builtin_codec_configured(codec.scheme) {
-            codecs.push(*codec);
+        for codec in &BUILTIN_CODECS {
+            if codec.name.is_null() {
+                break;
+            }
+            if builtin_codec_configured(codec.scheme) {
+                codecs.push(*codec);
+            }
         }
+        codecs.push(TIFFCodec {
+            name: ptr::null_mut(),
+            scheme: 0,
+            init: None,
+        });
+        let bytes = codecs.len() * std::mem::size_of::<TIFFCodec>();
+        let ptr = crate::_TIFFmalloc(bytes as crate::Tmsize).cast::<TIFFCodec>();
+        if ptr.is_null() {
+            return ptr::null_mut();
+        }
+        ptr::copy_nonoverlapping(codecs.as_ptr(), ptr, codecs.len());
+        ptr
     }
-    codecs.push(TIFFCodec {
-        name: ptr::null_mut(),
-        scheme: 0,
-        init: None,
-    });
-    let bytes = codecs.len() * std::mem::size_of::<TIFFCodec>();
-    let ptr = crate::_TIFFmalloc(bytes as crate::Tmsize).cast::<TIFFCodec>();
-    if ptr.is_null() {
-        return ptr::null_mut();
-    }
-    ptr::copy_nonoverlapping(codecs.as_ptr(), ptr, codecs.len());
-    ptr
 }
