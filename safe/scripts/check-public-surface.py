@@ -1033,8 +1033,14 @@ def main() -> int:
     inputs_path = Path(args.inputs_path)
     exclusions_path = Path(args.platform_excluded_path)
 
+    explicit_generate = args.mode == "generate"
     validate_mode = args.validate or args.check or args.mode in {"validate", "check"}
     validate_mode = validate_mode or args.validate_existing_inventory
+    assertion_mode = bool(
+        must_contain or must_record_version or must_record_linux_exclusion
+    )
+    if assertion_mode and not explicit_generate:
+        validate_mode = True
     if validate_mode:
         result = validate_outputs(
             inventory_text,
