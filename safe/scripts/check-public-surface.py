@@ -819,6 +819,16 @@ def run_assertions(
     return 0
 
 
+def flatten_cli_values(raw_values: List[object]) -> List[str]:
+    flattened: List[str] = []
+    for value in raw_values:
+        if isinstance(value, list):
+            flattened.extend(str(item) for item in value)
+        else:
+            flattened.append(str(value))
+    return flattened
+
+
 def platform_matches(requested_platform: str, platform: Dict[str, str]) -> bool:
     requested = requested_platform.strip().lower()
     if not requested:
@@ -953,22 +963,29 @@ def main() -> int:
     parser.add_argument(
         "--must-contain",
         action="append",
+        nargs="+",
         default=[],
-        help="Assert that the inventory contains the specified symbol name or base name.",
+        help="Assert that the inventory contains the specified symbol names or base names.",
     )
     parser.add_argument(
         "--must-record-version",
         action="append",
+        nargs="+",
         default=[],
-        help="Assert that SYMBOL=VERSION is recorded in the inventory.",
+        help="Assert that the listed SYMBOL=VERSION assertions are recorded in the inventory.",
     )
     parser.add_argument(
         "--must-record-linux-exclusion",
         action="append",
+        nargs="+",
         default=[],
-        help="Assert that the inventory and Linux exclusions file record the specified symbol.",
+        help="Assert that the inventory and Linux exclusions file record the listed symbols.",
     )
     args = parser.parse_args()
+
+    must_contain = flatten_cli_values(args.must_contain)
+    must_record_version = flatten_cli_values(args.must_record_version)
+    must_record_linux_exclusion = flatten_cli_values(args.must_record_linux_exclusion)
 
     source_config = apply_source_overrides(args)
     inventory, manifest, platform_excluded_lines = collect_inventory(source_config)
@@ -1006,9 +1023,9 @@ def main() -> int:
         return run_assertions(
             inventory_data,
             exclusions_path,
-            args.must_contain,
-            args.must_record_version,
-            args.must_record_linux_exclusion,
+            must_contain,
+            must_record_version,
+            must_record_linux_exclusion,
         )
 
     write_if_changed(inventory_path, inventory_text)
@@ -1017,9 +1034,9 @@ def main() -> int:
     return run_assertions(
         inventory,
         exclusions_path,
-        args.must_contain,
-        args.must_record_version,
-        args.must_record_linux_exclusion,
+        must_contain,
+        must_record_version,
+        must_record_linux_exclusion,
     )
 
 
