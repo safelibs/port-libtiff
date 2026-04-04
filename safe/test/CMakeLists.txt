@@ -261,6 +261,11 @@ target_sources(dirwrite_regressions PRIVATE dirwrite_regressions.c)
 target_link_libraries(dirwrite_regressions PRIVATE tiff tiff_port)
 list(APPEND simple_tests dirwrite_regressions)
 
+add_executable(strile_regressions ../placeholder.h)
+target_sources(strile_regressions PRIVATE strile_regressions.c)
+target_link_libraries(strile_regressions PRIVATE tiff tiff_port)
+list(APPEND simple_tests strile_regressions)
+
 if(WEBP_SUPPORT AND EMSCRIPTEN)
   # Emscripten is pretty finnicky about linker flags.
   # It needs --shared-memory if and only if atomics or bulk-memory is used.
