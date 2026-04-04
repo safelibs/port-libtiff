@@ -54,10 +54,19 @@ def tool_env(build_dir: pathlib.Path) -> dict[str, str]:
     return env
 
 
-def configure_safe_build(root: pathlib.Path, manifest: dict, jobs: int) -> pathlib.Path:
+def configure_safe_build(
+    root: pathlib.Path,
+    manifest: dict,
+    jobs: int,
+    build_dir_override: pathlib.Path | None = None,
+) -> pathlib.Path:
     safe_build = manifest["safe_build"]
     source_dir = resolve_repo_path(root, safe_build["source_dir"])
-    build_dir = resolve_repo_path(root, safe_build["build_dir"])
+    build_dir = (
+        build_dir_override
+        if build_dir_override is not None
+        else resolve_repo_path(root, safe_build["build_dir"])
+    )
     cmake_args = ["cmake", "-S", str(source_dir), "-B", str(build_dir), *safe_build["cmake_args"]]
     subprocess.run(cmake_args, cwd=str(root), check=True)
     subprocess.run(
@@ -334,28 +343,55 @@ def parse_args() -> argparse.Namespace:
     default_manifest = root / "safe" / "perf" / "workloads.json"
     default_output = root / "safe" / "perf" / "latest.json"
     parser = argparse.ArgumentParser()
-    parser.add_argument("--manifest", type=pathlib.Path, default=default_manifest)
+    parser.add_argument("--manifest", type=pathlib.Path, default=None)
+    parser.add_argument("--workloads", type=pathlib.Path, default=None)
     parser.add_argument("--output", type=pathlib.Path, default=default_output)
+    parser.add_argument("--original-build", type=pathlib.Path, default=None)
+    parser.add_argument("--safe-build", type=pathlib.Path, default=None)
+    parser.add_argument("--max-slowdown", type=float, default=None)
+    parser.add_argument("--suite-median-max", type=float, default=None)
     parser.add_argument("--warmup-runs", type=int, default=None)
     parser.add_argument("--timed-runs", type=int, default=None)
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--keep-temp", action="store_true")
     parser.add_argument("--skip-build", action="store_true")
+    parser.set_defaults(default_manifest=default_manifest)
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     root = repo_root()
-    manifest = load_manifest(args.manifest)
-    thresholds = manifest["thresholds"]
+    manifest_path = resolve_repo_path(
+        root,
+        str(args.workloads or args.manifest or args.default_manifest),
+    )
+    manifest = load_manifest(manifest_path)
+    thresholds = dict(manifest["thresholds"])
+    if args.max_slowdown is not None:
+        thresholds["max_workload_slowdown"] = args.max_slowdown
+    if args.suite_median_max is not None:
+        thresholds["max_suite_median_slowdown"] = args.suite_median_max
     warmup_runs = args.warmup_runs if args.warmup_runs is not None else manifest["warmup_runs"]
     timed_runs = args.timed_runs if args.timed_runs is not None else manifest["timed_runs"]
-    original_build_dir = resolve_repo_path(root, manifest["baseline"]["build_dir"])
-    safe_build_dir = resolve_repo_path(root, manifest["safe_build"]["build_dir"])
+    original_build_dir = (
+        resolve_repo_path(root, str(args.original_build))
+        if args.original_build is not None
+        else resolve_repo_path(root, manifest["baseline"]["build_dir"])
+    )
+    safe_build_dir = (
+        resolve_repo_path(root, str(args.safe_build))
+        if args.safe_build is not None
+        else resolve_repo_path(root, manifest["safe_build"]["build_dir"])
+    )
 
     if not args.skip_build:
-        safe_build_dir = configure_safe_build(root, manifest, args.jobs)
+        safe_build_dir = configure_safe_build(
+            root,
+            manifest,
+            args.jobs,
+            build_dir_override=safe_build_dir,
+        )
 
     temp_dir_obj = tempfile.TemporaryDirectory(prefix="libtiff-perf-")
     temp_root = pathlib.Path(temp_dir_obj.name)
@@ -375,7 +411,7 @@ def main() -> int:
         suite_ok, suite_median = suite_passes(results, thresholds)
         report = {
             "version": manifest["version"],
-            "manifest": str(args.manifest),
+            "manifest": str(manifest_path),
             "safe_build_dir": str(safe_build_dir),
             "original_build_dir": str(original_build_dir),
             "warmup_runs": warmup_runs,
