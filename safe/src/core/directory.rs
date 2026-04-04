@@ -75,6 +75,8 @@ const TIFF_FILLORDER: u32 = 0x00003;
 const TIFF_DIRTYDIRECT: u32 = 0x00008;
 const TIFF_BEENWRITING: u32 = 0x00040;
 const TIFF_DIRTYSTRIP: u32 = 0x200000;
+const TIFF_DEFERSTRILELOAD: u32 = 0x1000000;
+const TIFF_LAZYSTRILELOAD: u32 = 0x2000000;
 
 static DEFAULT_WHITEPOINT: [f32; 2] = [0.34570292, 0.3585386];
 static DEFAULT_YCBCR_COEFFICIENTS: [f32; 3] = [0.299, 0.587, 0.114];
@@ -120,6 +122,19 @@ struct CurrentDirectory {
     offset: u64,
     next_offset: u64,
     tags: Vec<ParsedTag>,
+    deferred_strip_offset_entry: Option<DeferredStrileEntry>,
+    deferred_strip_bytecount_entry: Option<DeferredStrileEntry>,
+    deferred_tile_offset_entry: Option<DeferredStrileEntry>,
+    deferred_tile_bytecount_entry: Option<DeferredStrileEntry>,
+}
+
+#[derive(Clone, Copy)]
+struct DeferredStrileEntry {
+    actual_type: TIFFDataType,
+    count: u64,
+    value_offset: u64,
+    inline_len: usize,
+    inline_bytes: [u8; 8],
 }
 
 struct PendingSubifdWrite {
@@ -459,6 +474,17 @@ unsafe fn read_entry_payload(
         );
         None
     }
+}
+
+fn is_strile_tag(tag: u32) -> bool {
+    matches!(
+        tag,
+        TAG_STRIPOFFSETS | TAG_STRIPBYTECOUNTS | TAG_TILEOFFSETS | TAG_TILEBYTECOUNTS
+    )
+}
+
+unsafe fn should_defer_strile_entry_loading(tif: *mut TIFF, tag: u32) -> bool {
+    is_strile_tag(tag) && ((*tif).tif_flags & TIFF_DEFERSTRILELOAD) != 0
 }
 
 fn parse_integer_value(bytes: &[u8], actual_type: TIFFDataType, big_endian: bool) -> Option<i128> {
@@ -969,6 +995,10 @@ unsafe fn load_directory(
     let mut seen_tags = HashSet::new();
     let mut warned_order = false;
     let mut previous_tag = 0u16;
+    let mut deferred_strip_offset_entry = None;
+    let mut deferred_strip_bytecount_entry = None;
+    let mut deferred_tile_offset_entry = None;
+    let mut deferred_tile_bytecount_entry = None;
 
     for index in 0..entry_count as usize {
         let entry = &entries_buf[index * entry_size..(index + 1) * entry_size];
@@ -1047,6 +1077,25 @@ unsafe fn load_directory(
         }
 
         let field_type = (*field).field_type;
+        if should_defer_strile_entry_loading(tif, tag_u32) {
+            let mut inline_bytes = [0u8; 8];
+            inline_bytes[..inline_size].copy_from_slice(inline_slice);
+            let deferred_entry = DeferredStrileEntry {
+                actual_type,
+                count,
+                value_offset,
+                inline_len: inline_size,
+                inline_bytes,
+            };
+            match tag_u32 {
+                TAG_STRIPOFFSETS => deferred_strip_offset_entry = Some(deferred_entry),
+                TAG_STRIPBYTECOUNTS => deferred_strip_bytecount_entry = Some(deferred_entry),
+                TAG_TILEOFFSETS => deferred_tile_offset_entry = Some(deferred_entry),
+                TAG_TILEBYTECOUNTS => deferred_tile_bytecount_entry = Some(deferred_entry),
+                _ => {}
+            }
+            continue;
+        }
         let payload = match read_entry_payload(
             tif,
             module_name,
@@ -1090,6 +1139,10 @@ unsafe fn load_directory(
         offset,
         next_offset,
         tags,
+        deferred_strip_offset_entry,
+        deferred_strip_bytecount_entry,
+        deferred_tile_offset_entry,
+        deferred_tile_bytecount_entry,
     })
 }
 
@@ -1690,6 +1743,10 @@ pub(crate) unsafe fn get_tag_value(
         return 0;
     }
 
+    if is_strile_tag(tag) && !materialize_deferred_strile_tag(tif, tag) {
+        return 0;
+    }
+
     if let Some(current) = directory_state(tif).current.as_ref() {
         if let Some(entry) = current.find_tag(tag) {
             *out_type = entry.canonical_type;
@@ -1765,6 +1822,10 @@ unsafe fn initialize_writable_directory(tif: *mut TIFF, kind: DirectoryKind) -> 
             offset: 0,
             next_offset: 0,
             tags,
+            deferred_strip_offset_entry: None,
+            deferred_strip_bytecount_entry: None,
+            deferred_tile_offset_entry: None,
+            deferred_tile_bytecount_entry: None,
         },
         ActiveChain::None,
         TIFF_NON_EXISTENT_DIR_NUMBER,
@@ -1805,6 +1866,10 @@ unsafe fn ensure_writable_directory(tif: *mut TIFF) -> bool {
                 offset: 0,
                 next_offset: 0,
                 tags: default_main_directory_tags(),
+                deferred_strip_offset_entry: None,
+                deferred_strip_bytecount_entry: None,
+                deferred_tile_offset_entry: None,
+                deferred_tile_bytecount_entry: None,
             },
             ActiveChain::None,
             TIFF_NON_EXISTENT_DIR_NUMBER,
@@ -1819,6 +1884,197 @@ unsafe fn ensure_writable_directory(tif: *mut TIFF) -> bool {
 
 unsafe fn current_directory_mut(tif: *mut TIFF) -> Option<&'static mut CurrentDirectory> {
     directory_state_mut(tif).current.as_mut()
+}
+
+fn deferred_strile_entry_for_tag(
+    current: &CurrentDirectory,
+    tag: u32,
+) -> Option<DeferredStrileEntry> {
+    match tag {
+        TAG_STRIPOFFSETS => current.deferred_strip_offset_entry,
+        TAG_STRIPBYTECOUNTS => current.deferred_strip_bytecount_entry,
+        TAG_TILEOFFSETS => current.deferred_tile_offset_entry,
+        TAG_TILEBYTECOUNTS => current.deferred_tile_bytecount_entry,
+        _ => None,
+    }
+}
+
+fn loaded_strile_value(entry: &ParsedTag, index: usize) -> Option<u64> {
+    match &entry.values {
+        StoredValues::U8(values) => values.get(index).copied().map(u64::from),
+        StoredValues::U16(values) => values.get(index).copied().map(u64::from),
+        StoredValues::U32(values) => values.get(index).copied().map(u64::from),
+        StoredValues::U64(values) => values.get(index).copied(),
+        _ => None,
+    }
+}
+
+unsafe fn materialize_deferred_strile_tag(tif: *mut TIFF, tag: u32) -> bool {
+    if !is_strile_tag(tag) {
+        return true;
+    }
+    if directory_state(tif)
+        .current
+        .as_ref()
+        .and_then(|current| current.find_tag(tag))
+        .is_some()
+    {
+        return true;
+    }
+    let Some(deferred_entry) = directory_state(tif)
+        .current
+        .as_ref()
+        .and_then(|current| deferred_strile_entry_for_tag(current, tag))
+    else {
+        return true;
+    };
+    let field = TIFFFindField(tif, tag, TIFFDataType::TIFF_NOTYPE);
+    if field.is_null() {
+        emit_error_message(tif, "TIFFGetField", format!("Unknown tag {}", tag));
+        return false;
+    }
+    let payload = match read_entry_payload(
+        tif,
+        "TIFFGetField",
+        tag,
+        deferred_entry.actual_type,
+        deferred_entry.count,
+        deferred_entry.inline_len,
+        &deferred_entry.inline_bytes[..deferred_entry.inline_len],
+        deferred_entry.value_offset,
+    ) {
+        Some(payload) => payload,
+        None => return false,
+    };
+    let Some(parsed_tag) = parse_tag_value(
+        tif,
+        "TIFFGetField",
+        tag,
+        (*field).field_type,
+        deferred_entry.actual_type,
+        deferred_entry.count,
+        &payload,
+        (*tif_inner(tif)).header_magic == TIFF_BIGENDIAN,
+    ) else {
+        return false;
+    };
+    let Some(current) = current_directory_mut(tif) else {
+        return false;
+    };
+    if current.find_tag(tag).is_none() {
+        current.tags.push(parsed_tag);
+        current.tags.sort_by_key(|entry| entry.tag);
+    }
+    match tag {
+        TAG_STRIPOFFSETS => current.deferred_strip_offset_entry = None,
+        TAG_STRIPBYTECOUNTS => current.deferred_strip_bytecount_entry = None,
+        TAG_TILEOFFSETS => current.deferred_tile_offset_entry = None,
+        TAG_TILEBYTECOUNTS => current.deferred_tile_bytecount_entry = None,
+        _ => {}
+    }
+    true
+}
+
+unsafe fn materialize_all_deferred_strile_tags(tif: *mut TIFF) -> bool {
+    materialize_deferred_strile_tag(tif, TAG_STRIPOFFSETS)
+        && materialize_deferred_strile_tag(tif, TAG_STRIPBYTECOUNTS)
+        && materialize_deferred_strile_tag(tif, TAG_TILEOFFSETS)
+        && materialize_deferred_strile_tag(tif, TAG_TILEBYTECOUNTS)
+}
+
+unsafe fn read_single_deferred_strile_value(
+    tif: *mut TIFF,
+    tag: u32,
+    entry: DeferredStrileEntry,
+    strile: u32,
+) -> Option<u64> {
+    let width = usize::try_from(type_width(entry.actual_type)?).ok()?;
+    let index = usize::try_from(strile).ok()?;
+    let count = usize::try_from(entry.count).ok()?;
+    if index >= count {
+        return None;
+    }
+    let start = index.checked_mul(width)?;
+    let end = start.checked_add(width)?;
+    let total_bytes = count.checked_mul(width)?;
+    let big_endian = (*tif_inner(tif)).header_magic == TIFF_BIGENDIAN;
+    let value = if total_bytes <= entry.inline_len {
+        parse_integer_value(
+            &entry.inline_bytes[start..end],
+            entry.actual_type,
+            big_endian,
+        )?
+    } else {
+        let mut payload = vec![0u8; width];
+        let read_offset = entry.value_offset.checked_add(start as u64)?;
+        if !read_exact_at(tif, read_offset, &mut payload) {
+            emit_error_message(
+                tif,
+                "TIFFGetStrileOffset",
+                format!("Cannot read tag {} data at offset {}", tag, read_offset),
+            );
+            return None;
+        }
+        parse_integer_value(&payload, entry.actual_type, big_endian)?
+    };
+    u64::try_from(value).ok()
+}
+
+pub(crate) unsafe fn get_strile_tag_value_u64(
+    tif: *mut TIFF,
+    tag: u32,
+    strile: u32,
+    err: *mut c_int,
+) -> Option<u64> {
+    if !err.is_null() {
+        *err = 0;
+    }
+    let index = usize::try_from(strile).ok()?;
+    if let Some(entry) = directory_state(tif)
+        .current
+        .as_ref()
+        .and_then(|current| current.find_tag(tag))
+    {
+        let value = loaded_strile_value(entry, index);
+        if value.is_none() && !err.is_null() {
+            *err = 1;
+        }
+        return value;
+    }
+    let Some(deferred_entry) = directory_state(tif)
+        .current
+        .as_ref()
+        .and_then(|current| deferred_strile_entry_for_tag(current, tag))
+    else {
+        if !err.is_null() {
+            *err = 1;
+        }
+        return None;
+    };
+    if ((*tif).tif_flags & TIFF_LAZYSTRILELOAD) == 0 || deferred_entry.count <= 4 {
+        if !materialize_all_deferred_strile_tags(tif) {
+            if !err.is_null() {
+                *err = 1;
+            }
+            return None;
+        }
+        if let Some(entry) = directory_state(tif)
+            .current
+            .as_ref()
+            .and_then(|current| current.find_tag(tag))
+        {
+            return loaded_strile_value(entry, index);
+        }
+        if !err.is_null() {
+            *err = 1;
+        }
+        return None;
+    }
+    let value = read_single_deferred_strile_value(tif, tag, deferred_entry, strile);
+    if value.is_none() && !err.is_null() {
+        *err = 1;
+    }
+    value
 }
 
 unsafe fn upsert_current_tag_with_flags(

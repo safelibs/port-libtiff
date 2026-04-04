@@ -1,6 +1,6 @@
 use crate::abi::TIFFDataType;
 use crate::core::{
-    _TIFFRewriteField, get_tag_value, safe_tiff_directory_entry_is_dummy,
+    _TIFFRewriteField, get_strile_tag_value_u64, get_tag_value, safe_tiff_directory_entry_is_dummy,
     safe_tiff_set_field_marshaled, safe_tiff_set_field_marshaled_nondirty, TIFFRewriteDirectory,
 };
 use crate::{
@@ -934,14 +934,22 @@ unsafe fn ensure_strile_arrays(tif: *mut TIFF, module: &str) -> Option<StrileArr
     }
 }
 
-unsafe fn strile_bounds(tif: *mut TIFF, strile: u32) -> Option<(StrileArrays, usize)> {
-    let arrays = read_strile_arrays(tif)?;
-    let index = usize::try_from(strile).ok()?;
-    if index >= arrays.offsets.len() {
-        None
+unsafe fn read_strile_value_pair(tif: *mut TIFF, strile: u32) -> Option<(u64, u64)> {
+    let (offset_tag, bytecount_tag) = if is_tiled_image(tif) {
+        (TAG_TILEOFFSETS, TAG_TILEBYTECOUNTS)
     } else {
-        Some((arrays, index))
+        (TAG_STRIPOFFSETS, TAG_STRIPBYTECOUNTS)
+    };
+    let mut err = 0;
+    let offset = get_strile_tag_value_u64(tif, offset_tag, strile, &mut err)?;
+    if err != 0 {
+        return None;
     }
+    let bytecount = get_strile_tag_value_u64(tif, bytecount_tag, strile, &mut err)?;
+    if err != 0 {
+        return None;
+    }
+    Some((offset, bytecount))
 }
 
 unsafe fn write_appended_strile_data(
@@ -1098,9 +1106,7 @@ unsafe fn read_strile_bytes(
     size: usize,
     buf: *mut c_void,
 ) -> Option<usize> {
-    let (arrays, index) = strile_bounds(tif, strile)?;
-    let offset = arrays.offsets[index];
-    let bytecount = arrays.bytecounts[index];
+    let (offset, bytecount) = read_strile_value_pair(tif, strile)?;
     if offset == 0 || bytecount == 0 {
         return Some(0);
     }
@@ -1124,9 +1130,7 @@ unsafe fn read_encoded_strile_bytes(
     strile: u32,
     out: &mut [u8],
 ) -> Option<usize> {
-    let (arrays, index) = strile_bounds(tif, strile)?;
-    let offset = arrays.offsets[index];
-    let bytecount = arrays.bytecounts[index];
+    let (offset, bytecount) = read_strile_value_pair(tif, strile)?;
     if out.is_empty() {
         return Some(0);
     }
@@ -1163,11 +1167,11 @@ unsafe fn read_scanline_bytes(tif: *mut TIFF, row: u32, sample: u16, out: &mut [
     let Some(strip) = compute_strip_internal(tif, row, sample, true) else {
         return false;
     };
-    let Some((arrays, index)) = strile_bounds(tif, strip) else {
+    let Some((offset, bytecount)) = read_strile_value_pair(tif, strip) else {
         emit_error_message(tif, module, "Strip out of range");
         return false;
     };
-    if arrays.offsets[index] == 0 || arrays.bytecounts[index] == 0 {
+    if offset == 0 || bytecount == 0 {
         emit_error_message(tif, module, "Strip byte count is zero");
         return false;
     }
@@ -1180,11 +1184,11 @@ unsafe fn read_scanline_bytes(tif: *mut TIFF, row: u32, sample: u16, out: &mut [
     let Some(end_offset) = checked_add_u64(tif, module, within_strip, out.len() as u64) else {
         return false;
     };
-    if end_offset > arrays.bytecounts[index] {
+    if end_offset > bytecount {
         emit_error_message(tif, module, "Scanline extends beyond the strip byte count");
         return false;
     }
-    let Some(offset) = checked_add_u64(tif, module, arrays.offsets[index], within_strip) else {
+    let Some(offset) = checked_add_u64(tif, module, offset, within_strip) else {
         return false;
     };
     let mut raw = vec![0u8; out.len()];
@@ -2011,16 +2015,12 @@ pub unsafe extern "C" fn TIFFGetStrileOffsetWithErr(
     strile: u32,
     err: *mut c_int,
 ) -> u64 {
-    if !err.is_null() {
-        *err = 0;
-    }
-    let Some((arrays, index)) = strile_bounds(tif, strile) else {
-        if !err.is_null() {
-            *err = 1;
-        }
-        return 0;
+    let tag = if is_tiled_image(tif) {
+        TAG_TILEOFFSETS
+    } else {
+        TAG_STRIPOFFSETS
     };
-    arrays.offsets[index]
+    get_strile_tag_value_u64(tif, tag, strile, err).unwrap_or(0)
 }
 
 #[no_mangle]
@@ -2029,16 +2029,12 @@ pub unsafe extern "C" fn TIFFGetStrileByteCountWithErr(
     strile: u32,
     err: *mut c_int,
 ) -> u64 {
-    if !err.is_null() {
-        *err = 0;
-    }
-    let Some((arrays, index)) = strile_bounds(tif, strile) else {
-        if !err.is_null() {
-            *err = 1;
-        }
-        return 0;
+    let tag = if is_tiled_image(tif) {
+        TAG_TILEBYTECOUNTS
+    } else {
+        TAG_STRIPBYTECOUNTS
     };
-    arrays.bytecounts[index]
+    get_strile_tag_value_u64(tif, tag, strile, err).unwrap_or(0)
 }
 
 #[no_mangle]
@@ -2067,7 +2063,9 @@ pub unsafe extern "C" fn TIFFReadFromUserBuffer(
         return 0;
     }
     let expected_size = if is_tiled_image(tif) {
-        if strile_bounds(tif, strile).is_none() {
+        let mut err = 0;
+        let _ = TIFFGetStrileByteCountWithErr(tif, strile, &mut err);
+        if err != 0 {
             emit_error_message(tif, module, "Strile index out of range");
             return 0;
         }
