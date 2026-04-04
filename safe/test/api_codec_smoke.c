@@ -44,6 +44,8 @@ int main(void)
     TIFFCodec *configured;
     TIFFCodec *configured_start;
     int saw_jbig = 0;
+    int saw_sgilog = 0;
+    int saw_sgilog24 = 0;
     int saw_lerc = 0;
     int saw_lzma = 0;
     int saw_zstd = 0;
@@ -58,6 +60,8 @@ int main(void)
     int webp_exact = 0;
 
     expect_configured_codec(COMPRESSION_JBIG, "ISO JBIG");
+    expect_configured_codec(COMPRESSION_SGILOG, "SGILog");
+    expect_configured_codec(COMPRESSION_SGILOG24, "SGILog24");
     expect_configured_codec(COMPRESSION_LERC, "LERC");
     expect_configured_codec(COMPRESSION_LZMA, "LZMA");
     expect_configured_codec(COMPRESSION_ZSTD, "ZSTD");
@@ -69,12 +73,15 @@ int main(void)
     for (; configured->name != NULL; ++configured)
     {
         saw_jbig |= configured->scheme == COMPRESSION_JBIG;
+        saw_sgilog |= configured->scheme == COMPRESSION_SGILOG;
+        saw_sgilog24 |= configured->scheme == COMPRESSION_SGILOG24;
         saw_lerc |= configured->scheme == COMPRESSION_LERC;
         saw_lzma |= configured->scheme == COMPRESSION_LZMA;
         saw_zstd |= configured->scheme == COMPRESSION_ZSTD;
         saw_webp |= configured->scheme == COMPRESSION_WEBP;
     }
-    expect(saw_jbig && saw_lerc && saw_lzma && saw_zstd && saw_webp,
+    expect(saw_jbig && saw_sgilog && saw_sgilog24 && saw_lerc && saw_lzma &&
+               saw_zstd && saw_webp,
            "configured codec listing missed an external codec");
     _TIFFfree(configured_start);
 

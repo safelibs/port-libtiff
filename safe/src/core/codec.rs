@@ -1,7 +1,8 @@
 use super::{
     jpeg_decode_bytes, jpeg_encode_bytes, reset_jpeg_state, safe_tiff_set_field_marshaled_nondirty,
-    set_jpeg_color_mode, unset_jpeg_pseudo_tag, COMPRESSION_JPEG, COMPRESSION_OJPEG,
-    TAG_JPEGCOLORMODE, TAG_JPEGQUALITY,
+    safe_tiff_uv_decode, safe_tiff_uv_encode, set_jpeg_color_mode, sgilog24_decode_row,
+    unset_jpeg_pseudo_tag, COMPRESSION_JPEG, COMPRESSION_OJPEG, TAG_JPEGCOLORMODE,
+    TAG_JPEGQUALITY,
 };
 use crate::abi::{TIFFCodec, TIFFDataType, TIFFInitMethod};
 use crate::strile::{
@@ -21,6 +22,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
 use std::io::{Cursor, Read, Write};
+use std::mem::size_of;
 use std::ptr;
 use std::slice;
 use std::sync::{Mutex, OnceLock};
@@ -40,6 +42,8 @@ const COMPRESSION_PACKBITS: u16 = 32773;
 const COMPRESSION_THUNDERSCAN: u16 = 32809;
 const COMPRESSION_DEFLATE: u16 = 32946;
 const COMPRESSION_JBIG: u16 = 34661;
+const COMPRESSION_SGILOG: u16 = 34676;
+const COMPRESSION_SGILOG24: u16 = 34677;
 const COMPRESSION_LERC: u16 = 34887;
 const COMPRESSION_LZMA: u16 = 34925;
 const COMPRESSION_ZSTD: u16 = 50000;
@@ -79,11 +83,14 @@ const FILLORDER_MSB2LSB: u16 = 1;
 const FILLORDER_LSB2MSB: u16 = 2;
 const PHOTOMETRIC_MINISWHITE: u16 = 0;
 const PHOTOMETRIC_MINISBLACK: u16 = 1;
+const PHOTOMETRIC_LOGL: u16 = 32844;
+const PHOTOMETRIC_LOGLUV: u16 = 32845;
 const PLANARCONFIG_CONTIG: u16 = 1;
 const PLANARCONFIG_SEPARATE: u16 = 2;
 const SAMPLEFORMAT_UINT: u16 = 1;
 const SAMPLEFORMAT_INT: u16 = 2;
 const SAMPLEFORMAT_IEEEFP: u16 = 3;
+const SAMPLEFORMAT_VOID: u16 = 4;
 const PREDICTOR_NONE: u16 = 1;
 const PREDICTOR_HORIZONTAL: u16 = 2;
 const PREDICTOR_FLOATINGPOINT: u16 = 3;
@@ -103,6 +110,16 @@ const WEBP_LEVEL_DEFAULT: i32 = 75;
 const WEBP_LOSSLESS_DEFAULT: i32 = 0;
 const WEBP_LOSSLESS_EXACT_DEFAULT: i32 = 1;
 const WEBP_MAX_DIMENSION: u32 = 16383;
+const SGILOGENCODE_NODITHER: c_int = 0;
+const SGILOGENCODE_RANDITHER: c_int = 1;
+const SGILOG_MIN_RUN: usize = 4;
+const SGILOG_UV_SCALE: f64 = 410.0;
+const SGILOG_U_NEU: f64 = 0.210526316;
+const SGILOG_V_NEU: f64 = 0.473684211;
+const SGILOG_L16_BYTES_PER_PIXEL: usize = size_of::<i16>();
+const SGILOG_LUV48_COMPONENTS: usize = 3;
+const SGILOG_LUV48_BYTES_PER_PIXEL: usize =
+    SGILOG_LUV48_COMPONENTS * size_of::<i16>();
 
 const NAME_NONE: &[u8] = b"None\0";
 const NAME_LZW: &[u8] = b"LZW\0";
@@ -118,6 +135,8 @@ const NAME_CCITT_G3: &[u8] = b"CCITT Group 3\0";
 const NAME_CCITT_G4: &[u8] = b"CCITT Group 4\0";
 const NAME_DEFLATE: &[u8] = b"Deflate\0";
 const NAME_ADOBE_DEFLATE: &[u8] = b"AdobeDeflate\0";
+const NAME_SGILOG: &[u8] = b"SGILog\0";
+const NAME_SGILOG24: &[u8] = b"SGILog24\0";
 const NAME_LERC: &[u8] = b"LERC\0";
 const NAME_LZMA: &[u8] = b"LZMA\0";
 const NAME_ZSTD: &[u8] = b"ZSTD\0";
@@ -2502,6 +2521,454 @@ unsafe fn encode_group4(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -
     Some(output)
 }
 
+fn sgilog_itrunc(value: f64, method: c_int) -> i32 {
+    if method == SGILOGENCODE_NODITHER {
+        value as i32
+    } else {
+        (value + (unsafe { libc::rand() as f64 } * (1.0 / libc::RAND_MAX as f64)) - 0.5) as i32
+    }
+}
+
+fn push_i16_ne(buffer: &mut Vec<u8>, value: i16) {
+    buffer.extend_from_slice(&value.to_ne_bytes());
+}
+
+unsafe fn validate_sgilog_layout(
+    tif: *mut TIFF,
+    module: &str,
+    expected_photometric: u16,
+    expected_samples: u16,
+    geometry: CodecGeometry,
+    bytes_per_pixel: usize,
+) -> Option<usize> {
+    if planar_config(tif) != PLANARCONFIG_CONTIG {
+        emit_error_message(
+            tif,
+            module,
+            "SGILog requires contiguous planar configuration",
+        );
+        return None;
+    }
+    if photometric(tif) != expected_photometric {
+        emit_error_message(
+            tif,
+            module,
+            "SGILog photometric interpretation is not supported by this path",
+        );
+        return None;
+    }
+    if bits_per_sample(tif) != 16 {
+        emit_error_message(
+            tif,
+            module,
+            "SGILog currently requires 16-bit sample data",
+        );
+        return None;
+    }
+    if samples_per_pixel(tif) != expected_samples {
+        emit_error_message(
+            tif,
+            module,
+            "SGILog sample count does not match the image layout",
+        );
+        return None;
+    }
+    if !matches!(
+        sample_format(tif),
+        SAMPLEFORMAT_INT | SAMPLEFORMAT_UINT | SAMPLEFORMAT_VOID
+    ) {
+        emit_error_message(
+            tif,
+            module,
+            "SGILog currently requires integer sample data",
+        );
+        return None;
+    }
+    let pixels = usize::try_from(geometry.width).ok()?;
+    if geometry.row_size != pixels.checked_mul(bytes_per_pixel)? {
+        emit_error_message(
+            tif,
+            module,
+            "SGILog row geometry does not match the visible sample layout",
+        );
+        return None;
+    }
+    Some(pixels)
+}
+
+fn decode_sgilog16_row(input: &[u8], pixels: usize) -> Option<(Vec<u16>, usize)> {
+    let mut out = vec![0u16; pixels];
+    let mut offset = 0usize;
+    for shift in [8u16, 0] {
+        let mut written = 0usize;
+        while written < pixels && offset < input.len() {
+            let control = input[offset];
+            offset += 1;
+            if control >= 128 {
+                let value = (u16::from(*input.get(offset)?)) << shift;
+                let run = control as usize + 2 - 128;
+                offset += 1;
+                for _ in 0..run {
+                    if written >= pixels {
+                        break;
+                    }
+                    out[written] |= value;
+                    written += 1;
+                }
+            } else {
+                for _ in 0..control as usize {
+                    if written >= pixels {
+                        return None;
+                    }
+                    out[written] |= u16::from(*input.get(offset)?) << shift;
+                    offset += 1;
+                    written += 1;
+                }
+            }
+        }
+        if written != pixels {
+            return None;
+        }
+    }
+    Some((out, offset))
+}
+
+fn decode_sgilog32_row_consuming(input: &[u8], pixels: usize) -> Option<(Vec<u32>, usize)> {
+    let mut out = vec![0u32; pixels];
+    let mut offset = 0usize;
+    for shift in [24u32, 16, 8, 0] {
+        let mut written = 0usize;
+        while written < pixels && offset < input.len() {
+            let control = input[offset];
+            offset += 1;
+            if control >= 128 {
+                let value = (u32::from(*input.get(offset)?)) << shift;
+                let run = control as usize + 2 - 128;
+                offset += 1;
+                for _ in 0..run {
+                    if written >= pixels {
+                        break;
+                    }
+                    out[written] |= value;
+                    written += 1;
+                }
+            } else {
+                for _ in 0..control as usize {
+                    if written >= pixels {
+                        return None;
+                    }
+                    out[written] |= u32::from(*input.get(offset)?) << shift;
+                    offset += 1;
+                    written += 1;
+                }
+            }
+        }
+        if written != pixels {
+            return None;
+        }
+    }
+    Some((out, offset))
+}
+
+fn encode_sgilog_plane(plane: &[u8], output: &mut Vec<u8>) {
+    let mut index = 0usize;
+    while index < plane.len() {
+        let mut run_len = 0usize;
+        let mut run_start = index;
+        while run_start < plane.len() {
+            let value = plane[run_start];
+            run_len = 1;
+            while run_len < 129
+                && run_start + run_len < plane.len()
+                && plane[run_start + run_len] == value
+            {
+                run_len += 1;
+            }
+            if run_len >= SGILOG_MIN_RUN {
+                break;
+            }
+            run_start += run_len;
+        }
+
+        if run_start.saturating_sub(index) > 1
+            && run_start.saturating_sub(index) < SGILOG_MIN_RUN
+        {
+            let value = plane[index];
+            let mut short_run_end = index + 1;
+            while short_run_end < run_start && plane[short_run_end] == value {
+                short_run_end += 1;
+            }
+            if short_run_end == run_start {
+                output.push((short_run_end - index + 126) as u8);
+                output.push(value);
+                index = run_start;
+            }
+        }
+
+        while index < run_start {
+            let literal_len = (run_start - index).min(127);
+            output.push(literal_len as u8);
+            output.extend_from_slice(&plane[index..index + literal_len]);
+            index += literal_len;
+        }
+
+        if run_len >= SGILOG_MIN_RUN {
+            output.push((run_len + 126) as u8);
+            output.push(plane[run_start]);
+            index = run_start + run_len;
+        }
+    }
+}
+
+fn encode_sgilog16_row(values: &[u16]) -> Vec<u8> {
+    let mut output = Vec::new();
+    for shift in [8u16, 0] {
+        let plane: Vec<u8> = values.iter().map(|value| ((value >> shift) & 0xff) as u8).collect();
+        encode_sgilog_plane(&plane, &mut output);
+    }
+    output
+}
+
+fn encode_sgilog32_row(values: &[u32]) -> Vec<u8> {
+    let mut output = Vec::new();
+    for shift in [24u32, 16, 8, 0] {
+        let plane: Vec<u8> = values.iter().map(|value| ((value >> shift) & 0xff) as u8).collect();
+        encode_sgilog_plane(&plane, &mut output);
+    }
+    output
+}
+
+unsafe fn decode_logluv24_to_luv48_row(packed: &[u32]) -> Option<Vec<u8>> {
+    let mut output = Vec::with_capacity(packed.len().checked_mul(SGILOG_LUV48_BYTES_PER_PIXEL)?);
+    for value in packed.iter().copied() {
+        let l = (((value >> 12) & 0xffd) + 13314) as i16;
+        let mut u = SGILOG_U_NEU;
+        let mut v = SGILOG_V_NEU;
+        if safe_tiff_uv_decode(&mut u, &mut v, (value & 0x3fff) as c_int) < 0 {
+            u = SGILOG_U_NEU;
+            v = SGILOG_V_NEU;
+        }
+        push_i16_ne(&mut output, l);
+        push_i16_ne(&mut output, (u * f64::from(1u32 << 15)) as i16);
+        push_i16_ne(&mut output, (v * f64::from(1u32 << 15)) as i16);
+    }
+    Some(output)
+}
+
+fn decode_logluv32_to_luv48_row(packed: &[u32]) -> Option<Vec<u8>> {
+    let mut output = Vec::with_capacity(packed.len().checked_mul(SGILOG_LUV48_BYTES_PER_PIXEL)?);
+    for value in packed.iter().copied() {
+        let l = i16::from_ne_bytes(((value >> 16) as u16).to_ne_bytes());
+        let u = (((value >> 8) & 0xff) as f64 + 0.5) / SGILOG_UV_SCALE;
+        let v = ((value & 0xff) as f64 + 0.5) / SGILOG_UV_SCALE;
+        push_i16_ne(&mut output, l);
+        push_i16_ne(&mut output, (u * f64::from(1u32 << 15)) as i16);
+        push_i16_ne(&mut output, (v * f64::from(1u32 << 15)) as i16);
+    }
+    Some(output)
+}
+
+fn parse_luv48_triplets(row: &[u8]) -> Option<Vec<[i16; SGILOG_LUV48_COMPONENTS]>> {
+    if row.len() % SGILOG_LUV48_BYTES_PER_PIXEL != 0 {
+        return None;
+    }
+    let mut triplets = Vec::with_capacity(row.len() / SGILOG_LUV48_BYTES_PER_PIXEL);
+    for chunk in row.chunks_exact(SGILOG_LUV48_BYTES_PER_PIXEL) {
+        let l = i16::from_ne_bytes([chunk[0], chunk[1]]);
+        let u = i16::from_ne_bytes([chunk[2], chunk[3]]);
+        let v = i16::from_ne_bytes([chunk[4], chunk[5]]);
+        triplets.push([l, u, v]);
+    }
+    Some(triplets)
+}
+
+fn encode_logluv24_from_luv48_row(row: &[u8], method: c_int) -> Option<Vec<u8>> {
+    let triplets = parse_luv48_triplets(row)?;
+    let mut output = Vec::with_capacity(triplets.len().checked_mul(3)?);
+    for [l, u, v] in triplets {
+        let le = if l <= 0 {
+            0
+        } else if l >= (1 << 12) + 3314 {
+            (1 << 10) - 1
+        } else if method == SGILOGENCODE_NODITHER {
+            (i32::from(l) - 3314) >> 2
+        } else {
+            sgilog_itrunc(0.25 * (f64::from(l) - 3314.0), method)
+        };
+        let encoded_u = (f64::from(u) + 0.5) / f64::from(1u32 << 15);
+        let encoded_v = (f64::from(v) + 0.5) / f64::from(1u32 << 15);
+        let mut ce = safe_tiff_uv_encode(encoded_u, encoded_v, method);
+        if ce < 0 {
+            ce = safe_tiff_uv_encode(SGILOG_U_NEU, SGILOG_V_NEU, SGILOGENCODE_NODITHER);
+        }
+        let packed = ((le as u32) << 14) | (ce as u32 & 0x3fff);
+        output.push((packed >> 16) as u8);
+        output.push((packed >> 8) as u8);
+        output.push(packed as u8);
+    }
+    Some(output)
+}
+
+fn encode_logluv32_from_luv48_row(row: &[u8], method: c_int) -> Option<Vec<u8>> {
+    let triplets = parse_luv48_triplets(row)?;
+    let mut packed = Vec::with_capacity(triplets.len());
+    for [l, u, v] in triplets {
+        let ue = sgilog_itrunc(
+            f64::from(u) * (SGILOG_UV_SCALE / f64::from(1u32 << 15)),
+            method,
+        )
+        .clamp(0, 255) as u32;
+        let ve = sgilog_itrunc(
+            f64::from(v) * (SGILOG_UV_SCALE / f64::from(1u32 << 15)),
+            method,
+        )
+        .clamp(0, 255) as u32;
+        packed.push((u32::from(l as u16) << 16) | (ue << 8) | ve);
+    }
+    Some(encode_sgilog32_row(&packed))
+}
+
+unsafe fn decode_sgilog_bytes(
+    tif: *mut TIFF,
+    input: &[u8],
+    geometry: CodecGeometry,
+    expected_size: usize,
+) -> Option<Vec<u8>> {
+    let module = "SGILogDecode";
+    let mut output = Vec::with_capacity(expected_size);
+    let mut offset = 0usize;
+    match (active_scheme(tif), photometric(tif)) {
+        (COMPRESSION_SGILOG, PHOTOMETRIC_LOGL) => {
+            let pixels = validate_sgilog_layout(
+                tif,
+                module,
+                PHOTOMETRIC_LOGL,
+                1,
+                geometry,
+                SGILOG_L16_BYTES_PER_PIXEL,
+            )?;
+            for _ in 0..geometry.rows {
+                let (row, used) = decode_sgilog16_row(&input[offset..], pixels)?;
+                offset = offset.checked_add(used)?;
+                for value in row {
+                    output.extend_from_slice(&value.to_ne_bytes());
+                }
+            }
+        }
+        (COMPRESSION_SGILOG24, PHOTOMETRIC_LOGLUV) => {
+            let pixels = validate_sgilog_layout(
+                tif,
+                module,
+                PHOTOMETRIC_LOGLUV,
+                3,
+                geometry,
+                SGILOG_LUV48_BYTES_PER_PIXEL,
+            )?;
+            for _ in 0..geometry.rows {
+                let packed = sgilog24_decode_row(&input[offset..], pixels)?;
+                offset = offset.checked_add(pixels.checked_mul(3)?)?;
+                output.extend_from_slice(&decode_logluv24_to_luv48_row(&packed)?);
+            }
+        }
+        (COMPRESSION_SGILOG, PHOTOMETRIC_LOGLUV) => {
+            let pixels = validate_sgilog_layout(
+                tif,
+                module,
+                PHOTOMETRIC_LOGLUV,
+                3,
+                geometry,
+                SGILOG_LUV48_BYTES_PER_PIXEL,
+            )?;
+            for _ in 0..geometry.rows {
+                let (packed, used) = decode_sgilog32_row_consuming(&input[offset..], pixels)?;
+                offset = offset.checked_add(used)?;
+                output.extend_from_slice(&decode_logluv32_to_luv48_row(&packed)?);
+            }
+        }
+        _ => {
+            emit_error_message(
+                tif,
+                module,
+                "SGILog only supports LogL or LogLuv image data",
+            );
+            return None;
+        }
+    }
+    if output.len() != expected_size {
+        emit_error_message(tif, module, "Decoded SGILog payload size did not match geometry");
+        return None;
+    }
+    Some(output)
+}
+
+unsafe fn encode_sgilog_bytes(
+    tif: *mut TIFF,
+    input: &[u8],
+    geometry: CodecGeometry,
+) -> Option<Vec<u8>> {
+    let module = "SGILogEncode";
+    let mut output = Vec::new();
+    let method = if active_scheme(tif) == COMPRESSION_SGILOG24 {
+        SGILOGENCODE_RANDITHER
+    } else {
+        SGILOGENCODE_NODITHER
+    };
+    match (active_scheme(tif), photometric(tif)) {
+        (COMPRESSION_SGILOG, PHOTOMETRIC_LOGL) => {
+            validate_sgilog_layout(
+                tif,
+                module,
+                PHOTOMETRIC_LOGL,
+                1,
+                geometry,
+                SGILOG_L16_BYTES_PER_PIXEL,
+            )?;
+            for row in input.chunks_exact(geometry.row_size) {
+                let mut values = Vec::with_capacity(row.len() / SGILOG_L16_BYTES_PER_PIXEL);
+                for chunk in row.chunks_exact(SGILOG_L16_BYTES_PER_PIXEL) {
+                    values.push(u16::from_ne_bytes([chunk[0], chunk[1]]));
+                }
+                output.extend_from_slice(&encode_sgilog16_row(&values));
+            }
+        }
+        (COMPRESSION_SGILOG24, PHOTOMETRIC_LOGLUV) => {
+            validate_sgilog_layout(
+                tif,
+                module,
+                PHOTOMETRIC_LOGLUV,
+                3,
+                geometry,
+                SGILOG_LUV48_BYTES_PER_PIXEL,
+            )?;
+            for row in input.chunks_exact(geometry.row_size) {
+                output.extend_from_slice(&encode_logluv24_from_luv48_row(row, method)?);
+            }
+        }
+        (COMPRESSION_SGILOG, PHOTOMETRIC_LOGLUV) => {
+            validate_sgilog_layout(
+                tif,
+                module,
+                PHOTOMETRIC_LOGLUV,
+                3,
+                geometry,
+                SGILOG_LUV48_BYTES_PER_PIXEL,
+            )?;
+            for row in input.chunks_exact(geometry.row_size) {
+                output.extend_from_slice(&encode_logluv32_from_luv48_row(row, method)?);
+            }
+        }
+        _ => {
+            emit_error_message(
+                tif,
+                module,
+                "SGILog only supports LogL or LogLuv image data",
+            );
+            return None;
+        }
+    }
+    Some(output)
+}
+
 pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
     tif: *mut TIFF,
     input: &[u8],
@@ -2525,6 +2992,9 @@ pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
         COMPRESSION_JPEG | COMPRESSION_OJPEG => {
             jpeg_decode_bytes(tif, input, is_tile, strile, geometry, expected_size)?
         }
+        COMPRESSION_SGILOG | COMPRESSION_SGILOG24 => {
+            decode_sgilog_bytes(tif, input, geometry, expected_size)?
+        }
         COMPRESSION_LERC => decode_lerc_bytes(tif, input, geometry, expected_size)?,
         COMPRESSION_LZMA => decode_lzma_bytes(tif, input, expected_size)?,
         COMPRESSION_ZSTD => decode_zstd_bytes(tif, input, expected_size)?,
@@ -2536,6 +3006,8 @@ pub(crate) unsafe fn safe_tiff_codec_decode_bytes(
         && active_scheme(tif) != COMPRESSION_CCITTFAX3
         && active_scheme(tif) != COMPRESSION_CCITTFAX4
         && active_scheme(tif) != COMPRESSION_JBIG
+        && active_scheme(tif) != COMPRESSION_SGILOG
+        && active_scheme(tif) != COMPRESSION_SGILOG24
     {
         if !decode_predictor_bytes(tif, geometry, &mut decoded) {
             return None;
@@ -2567,6 +3039,7 @@ pub(crate) unsafe fn safe_tiff_codec_encode_bytes(
         COMPRESSION_CCITTFAX4 => encode_group4(tif, input, geometry),
         COMPRESSION_JBIG => encode_jbig_bytes(tif, input, geometry),
         COMPRESSION_JPEG | COMPRESSION_OJPEG => jpeg_encode_bytes(tif, input, geometry),
+        COMPRESSION_SGILOG | COMPRESSION_SGILOG24 => encode_sgilog_bytes(tif, input, geometry),
         COMPRESSION_LERC => encode_lerc_bytes(
             tif,
             &encode_predictor_bytes(tif, geometry, input)?,
@@ -2717,6 +3190,10 @@ unsafe extern "C" fn init_simple_codec(_: *mut TIFF, _: c_int) -> c_int {
     1
 }
 
+unsafe extern "C" fn init_sgilog_codec(_: *mut TIFF, _: c_int) -> c_int {
+    1
+}
+
 unsafe extern "C" fn init_ccitt_fax3(tif: *mut TIFF, _: c_int) -> c_int {
     if !tif.is_null() {
         (*tif).tif_setupdecode = Some(fax3_setupdecode);
@@ -2804,6 +3281,8 @@ fn builtin_codec_configured(scheme: u16) -> bool {
             | COMPRESSION_JBIG
             | COMPRESSION_JPEG
             | COMPRESSION_OJPEG
+            | COMPRESSION_SGILOG
+            | COMPRESSION_SGILOG24
             | COMPRESSION_LERC
             | COMPRESSION_LZMA
             | COMPRESSION_ZSTD
@@ -2811,7 +3290,7 @@ fn builtin_codec_configured(scheme: u16) -> bool {
     )
 }
 
-static BUILTIN_CODECS: [TIFFCodec; 19] = [
+static BUILTIN_CODECS: [TIFFCodec; 21] = [
     TIFFCodec {
         name: NAME_NONE.as_ptr() as *mut c_char,
         scheme: COMPRESSION_NONE,
@@ -2881,6 +3360,16 @@ static BUILTIN_CODECS: [TIFFCodec; 19] = [
         name: NAME_ADOBE_DEFLATE.as_ptr() as *mut c_char,
         scheme: COMPRESSION_ADOBE_DEFLATE,
         init: Some(init_simple_codec),
+    },
+    TIFFCodec {
+        name: NAME_SGILOG.as_ptr() as *mut c_char,
+        scheme: COMPRESSION_SGILOG,
+        init: Some(init_sgilog_codec),
+    },
+    TIFFCodec {
+        name: NAME_SGILOG24.as_ptr() as *mut c_char,
+        scheme: COMPRESSION_SGILOG24,
+        init: Some(init_sgilog_codec),
     },
     TIFFCodec {
         name: NAME_LERC.as_ptr() as *mut c_char,
