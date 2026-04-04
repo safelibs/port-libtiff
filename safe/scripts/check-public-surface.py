@@ -78,7 +78,7 @@ DEFAULT_LIBRARY_CONFIGS = [
         "safe_map": SAFE_ROOT / "capi" / "libtiffxx-safe.map",
         "upstream_map": ORIGINAL_ROOT / "libtiff" / "libtiffxx.map",
         "debian_symbols": ORIGINAL_ROOT / "debian" / "libtiffxx6.symbols",
-        "observed_dso": ORIGINAL_ROOT / "build" / "libtiff" / "libtiffxx.so.6.0.1",
+        "observed_dso": SAFE_ROOT / "build" / "libtiff" / "libtiffxx.so.6",
         "header_names": {"TIFFStreamOpen"},
     },
 ]

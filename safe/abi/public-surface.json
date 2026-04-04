@@ -7781,7 +7781,7 @@
       },
       "name": "libtiffxx",
       "observed_exports": {
-        "path": "original/build/libtiff/libtiffxx.so.6.0.1",
+        "path": "safe/build/libtiff/libtiffxx.so.6",
         "version_nodes": [
           "LIBTIFFXX_4.0"
         ]
@@ -7809,7 +7809,7 @@
               "original/debian/libtiffxx6.symbols"
             ],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [
               "original/libtiff/tiffio.hxx"
@@ -7845,7 +7845,7 @@
               "original/debian/libtiffxx6.symbols"
             ],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [
               "original/libtiff/tiffio.hxx"
@@ -7882,7 +7882,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7917,7 +7917,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7952,7 +7952,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -7987,7 +7987,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8022,7 +8022,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8057,7 +8057,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8092,7 +8092,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8127,7 +8127,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8162,7 +8162,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8197,7 +8197,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8232,7 +8232,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [
@@ -8267,7 +8267,7 @@
           "provenance_files": {
             "debian_symbols": [],
             "observed_export": [
-              "original/build/libtiff/libtiffxx.so.6.0.1"
+              "safe/build/libtiff/libtiffxx.so.6"
             ],
             "public_header": [],
             "safe_version_script": [

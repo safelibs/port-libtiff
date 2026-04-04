@@ -44,8 +44,8 @@
       "TIFFOpenWExt"
     ],
     "observed_export_inputs": [
-      "original/build/libtiff/libtiffxx.so.6.0.1",
-      "safe/build/libtiff/libtiff.so.6"
+      "safe/build/libtiff/libtiff.so.6",
+      "safe/build/libtiff/libtiffxx.so.6"
     ],
     "version_script_inputs": [
       "safe/capi/libtiff-safe.map",
@@ -56,10 +56,6 @@
   },
   "schema_version": 1,
   "sources": [
-    {
-      "path": "original/build/libtiff/libtiffxx.so.6.0.1",
-      "sha256": "142fd26bb18a1568dfbfa8da76ed05765b5def6c2a13a161ddf7bcd9c2f1d806"
-    },
     {
       "path": "original/build/libtiff/tif_config.h",
       "sha256": "a47f4576e7b5cafa94bfdb8bccea8b81de15b38401deb2b7bd0a9fc4d3ad51dc"
@@ -103,6 +99,10 @@
     {
       "path": "safe/build/libtiff/libtiff.so.6",
       "sha256": "ae37414b04ab4ea9f4874b5448d23c67f29df73c601483d8f8c740f543da04ff"
+    },
+    {
+      "path": "safe/build/libtiff/libtiffxx.so.6",
+      "sha256": "eb4d6618b94a2f40d62db38641d163dcbadd3ec75a77b45891ea97d046c36d85"
     },
     {
       "path": "safe/capi/libtiff-safe.map",

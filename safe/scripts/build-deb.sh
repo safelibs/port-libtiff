@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 SAFE_ROOT="$ROOT/safe"
+SOURCE_DIR="$SAFE_ROOT"
 DIST_DIR="$SAFE_ROOT/dist"
 EXPECTED_VERSION="1:4.5.1+git230720-4ubuntu2.5+safelibs1"
 INSIDE_CURRENT_ENV=0
@@ -12,8 +13,26 @@ die() {
   exit 1
 }
 
+resolve_path() {
+  local raw_path="$1"
+
+  if [[ "$raw_path" = /* ]]; then
+    printf '%s\n' "$raw_path"
+  else
+    printf '%s\n' "$ROOT/$raw_path"
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --source-dir)
+      SOURCE_DIR="$(resolve_path "$2")"
+      shift 2
+      ;;
+    --out-dir)
+      DIST_DIR="$(resolve_path "$2")"
+      shift 2
+      ;;
     --inside-current-env)
       INSIDE_CURRENT_ENV=1
       shift
@@ -28,10 +47,24 @@ if [[ "$INSIDE_CURRENT_ENV" -ne 0 ]]; then
   :
 fi
 
+SOURCE_DIR="$(realpath "$SOURCE_DIR")"
+[[ -d "$SOURCE_DIR" ]] || die "missing source dir: $SOURCE_DIR"
+
 (
-  cd "$SAFE_ROOT"
+  cd "$SOURCE_DIR"
   dpkg-buildpackage -us -uc -b
 )
+
+actual_dist_dir="$SOURCE_DIR/dist"
+[[ -d "$actual_dist_dir" ]] || die "missing dist dir after build: $actual_dist_dir"
+
+DIST_DIR="$(realpath -m "$DIST_DIR")"
+if [[ "$DIST_DIR" != "$actual_dist_dir" ]]; then
+  rm -rf "$DIST_DIR"
+  mkdir -p "$DIST_DIR"
+  find "$actual_dist_dir" -maxdepth 1 -type f \( -name '*.deb' -o -name '*.ddeb' \) \
+    -exec cp -f -t "$DIST_DIR" {} +
+fi
 
 [[ -d "$DIST_DIR" ]] || die "missing dist dir after build: $DIST_DIR"
 

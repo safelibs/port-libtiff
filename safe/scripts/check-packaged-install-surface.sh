@@ -174,7 +174,7 @@ while [[ $# -gt 0 ]]; do
       CMAKE_PROJECT_OVERRIDES+=("$2")
       shift 2
       ;;
-    --cmake-project-no-target|--cmake-project-targetless)
+    --cmake-project-no-target|--cmake-project-targetless|--cmake-no-target-project)
       CMAKE_PROJECT_NO_TARGET="$2"
       shift 2
       ;;
