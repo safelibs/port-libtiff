@@ -251,6 +251,29 @@ unsafe fn file_size(tif: *mut TIFF) -> u64 {
     }
 }
 
+unsafe fn append_write_offset(tif: *mut TIFF) -> Option<u64> {
+    let inner = tif_inner(tif);
+    if !(*inner).mapped_base.is_null() && (*inner).mapped_size != 0 {
+        return Some((*inner).mapped_size);
+    }
+
+    let offset = seek_in_proc(tif, 0, libc::SEEK_END);
+    if offset != u64::MAX {
+        return Some(offset);
+    }
+
+    (*tif).tif_sizeproc.map(|proc_| proc_((*tif).tif_clientdata))
+}
+
+unsafe fn main_chain_head_offset(tif: *mut TIFF) -> u64 {
+    let state = directory_state(tif);
+    if state.first_ifd_offset != 0 {
+        state.first_ifd_offset
+    } else {
+        (*tif_inner(tif)).next_diroff
+    }
+}
+
 unsafe fn read_exact_at(tif: *mut TIFF, offset: u64, bytes: &mut [u8]) -> bool {
     let size = file_size(tif);
     let Some(end) = offset.checked_add(bytes.len() as u64) else {
@@ -1872,9 +1895,6 @@ unsafe fn initialize_writable_directory(tif: *mut TIFF, kind: DirectoryKind) -> 
     (*tif_inner(tif)).current_diroff = 0;
     (*tif_inner(tif)).next_diroff = 0;
     clear_main_chain_cache(tif);
-    if matches!(kind, DirectoryKind::Main) {
-        directory_state_mut(tif).first_ifd_offset = 0;
-    }
     if !matches!(kind, DirectoryKind::SubIfd) {
         directory_state_mut(tif).pending_subifd = None;
     }
@@ -3140,7 +3160,7 @@ unsafe fn directory_next_offset_location(
 unsafe fn find_tail_link_location(tif: *mut TIFF, module_name: &str) -> Option<u64> {
     let fmt = directory_encoding(tif, module_name)?;
     let mut link_location = header_link_offset(tif);
-    let mut next_offset = read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
+    let mut next_offset = main_chain_head_offset(tif);
     let mut seen = HashSet::new();
     while next_offset != 0 {
         if !seen.insert(next_offset) {
@@ -3164,7 +3184,7 @@ unsafe fn find_predecessor_link_location(
 ) -> Option<u64> {
     let fmt = directory_encoding(tif, module_name)?;
     let mut link_location = header_link_offset(tif);
-    let mut next_offset = read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
+    let mut next_offset = main_chain_head_offset(tif);
     let mut seen = HashSet::new();
     while next_offset != 0 {
         if next_offset == target_offset {
@@ -3194,7 +3214,7 @@ unsafe fn find_directory_link_by_number(
 ) -> Option<(u64, u64, u64)> {
     let fmt = directory_encoding(tif, module_name)?;
     let mut link_location = header_link_offset(tif);
-    let mut current_offset = read_offset_value_at(tif, link_location, fmt.next_size, module_name)?;
+    let mut current_offset = main_chain_head_offset(tif);
     let mut current_number = 1u32;
     let mut seen = HashSet::new();
 
@@ -4034,7 +4054,7 @@ unsafe fn write_standalone_directory(
     next_offset: u64,
 ) -> Option<u64> {
     let fmt = directory_encoding(tif, module_name)?;
-    let dir_offset = align_up(file_size(tif), fmt.alignment)?;
+    let dir_offset = align_up(append_write_offset(tif)?, fmt.alignment)?;
     if !serialize_directory_at_offset(tif, module_name, current, dir_offset, next_offset) {
         return None;
     }
@@ -4049,6 +4069,15 @@ unsafe fn update_current_directory_location(tif: *mut TIFF, offset: u64, next_of
     }
     (*tif_inner(tif)).current_diroff = offset;
     (*tif_inner(tif)).next_diroff = next_offset;
+}
+
+unsafe fn update_main_chain_head_after_append(tif: *mut TIFF, dir_offset: u64) {
+    let head_offset = {
+        let offset = main_chain_head_offset(tif);
+        if offset != 0 { offset } else { dir_offset }
+    };
+    clear_main_chain_cache(tif);
+    directory_state_mut(tif).first_ifd_offset = head_offset;
 }
 
 unsafe fn refresh_main_chain_head(tif: *mut TIFF, module_name: &str) -> bool {
@@ -4353,10 +4382,8 @@ pub unsafe extern "C" fn TIFFWriteDirectory(tif: *mut TIFF) -> c_int {
     ) {
         return 0;
     }
-    if !refresh_main_chain_head(tif, module_name) {
-        return 0;
-    }
     (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
+    update_main_chain_head_after_append(tif, dir_offset);
     let subifd_count = subifd_count_from_directory(&current);
     {
         let state = directory_state_mut(tif);
@@ -4379,11 +4406,7 @@ pub unsafe extern "C" fn TIFFWriteDirectory(tif: *mut TIFF) -> c_int {
     if !initialize_writable_directory(tif, next_kind) {
         return 0;
     }
-    if matches!(next_kind, DirectoryKind::Main) {
-        refresh_main_chain_head(tif, module_name) as c_int
-    } else {
-        1
-    }
+    1
 }
 
 #[no_mangle]
@@ -4439,7 +4462,8 @@ pub unsafe extern "C" fn TIFFCheckpointDirectory(tif: *mut TIFF) -> c_int {
     }
     update_current_directory_location(tif, dir_offset, 0);
     (*tif).tif_flags &= !(TIFF_DIRTYDIRECT | TIFF_DIRTYSTRIP | TIFF_BEENWRITING);
-    refresh_main_chain_head(tif, module_name) as c_int
+    update_main_chain_head_after_append(tif, dir_offset);
+    1
 }
 
 #[no_mangle]
@@ -4606,7 +4630,11 @@ unsafe fn rewrite_field_in_directory_at_offset(
     };
 
     let payload_offset = if bytes.len() > fmt.inline_size {
-        let Some(offset) = align_up(file_size(tif), fmt.alignment) else {
+        let Some(append_offset) = append_write_offset(tif) else {
+            emit_error_message(tif, module_name, "Field rewrite overflowed file addressing");
+            return 0;
+        };
+        let Some(offset) = align_up(append_offset, fmt.alignment) else {
             emit_error_message(tif, module_name, "Field rewrite overflowed file addressing");
             return 0;
         };

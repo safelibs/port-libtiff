@@ -442,6 +442,7 @@ struct image_data
     uint16_t orientation;
     uint16_t compression;
     uint16_t adjustments;
+    uint16_t used_rgba_fallback;
 };
 
 /* Structure to define the output image modifiers */
@@ -1837,6 +1838,33 @@ static const struct cpTag
 #define NTAGS (sizeof(tags) / sizeof(tags[0]))
 
 #define CopyTag(tag, count, type) cpTag(in, out, tag, count, type)
+
+static int should_copy_source_tag(const struct image_data *image, uint16_t tag)
+{
+    if (image == NULL || image->used_rgba_fallback == 0)
+        return (1);
+
+    switch (tag)
+    {
+        case TIFFTAG_MINSAMPLEVALUE:
+        case TIFFTAG_MAXSAMPLEVALUE:
+        case TIFFTAG_WHITEPOINT:
+        case TIFFTAG_PRIMARYCHROMATICITIES:
+        case TIFFTAG_INKSET:
+        case TIFFTAG_SAMPLEFORMAT:
+        case TIFFTAG_YCBCRCOEFFICIENTS:
+        case TIFFTAG_YCBCRSUBSAMPLING:
+        case TIFFTAG_YCBCRPOSITIONING:
+        case TIFFTAG_REFERENCEBLACKWHITE:
+        case TIFFTAG_EXTRASAMPLES:
+        case TIFFTAG_SMINSAMPLEVALUE:
+        case TIFFTAG_SMAXSAMPLEVALUE:
+        case TIFFTAG_STONITS:
+            return (0);
+        default:
+            return (1);
+    }
+}
 
 /* Functions written by Richard Nolde, with exceptions noted. */
 void process_command_opts(int argc, char *argv[], char *mp, char *mode,
@@ -5772,6 +5800,7 @@ static void initImageData(struct image_data *image)
     image->orientation = 0;
     image->compression = COMPRESSION_NONE;
     image->adjustments = 0;
+    image->used_rgba_fallback = 0;
 }
 
 static void initCropMasks(struct crop_mask *cps)
@@ -6932,6 +6961,7 @@ static int loadImageByRGBA(TIFF *in, struct image_data *image,
     image->orientation = ORIENTATION_TOPLEFT;
     image->compression = COMPRESSION_NONE;
     image->adjustments = 0;
+    image->used_rgba_fallback = 1;
 
     if ((dump->infile != NULL) && (dump->level == 2))
     {
@@ -7063,6 +7093,7 @@ static int loadImage(TIFF *in, struct image_data *image, struct dump_opts *dump,
     image->res_unit = res_unit;
     image->compression = input_compression;
     image->photometric = input_photometric;
+    image->used_rgba_fallback = 0;
 #ifdef DEBUG2
     char photometricid[12];
 
@@ -8521,9 +8552,10 @@ static int writeSingleSection(TIFF *in, TIFF *out, struct image_data *image,
         TIFFSetField(out, TIFFTAG_PLANARCONFIG, config);
     else
         CopyField(TIFFTAG_PLANARCONFIG, config);
-    if (spp <= 4)
+    if (spp <= 4 && !image->used_rgba_fallback)
         CopyTag(TIFFTAG_TRANSFERFUNCTION, 4, TIFF_SHORT);
-    CopyTag(TIFFTAG_COLORMAP, 4, TIFF_SHORT);
+    if (!image->used_rgba_fallback)
+        CopyTag(TIFFTAG_COLORMAP, 4, TIFF_SHORT);
 
     /* SMinSampleValue & SMaxSampleValue */
     switch (compression)
@@ -8582,13 +8614,15 @@ static int writeSingleSection(TIFF *in, TIFF *out, struct image_data *image,
     {
         uint32_t len32;
         void **data;
-        if (TIFFGetField(in, TIFFTAG_ICCPROFILE, &len32, &data))
+        if (!image->used_rgba_fallback &&
+            TIFFGetField(in, TIFFTAG_ICCPROFILE, &len32, &data))
             TIFFSetField(out, TIFFTAG_ICCPROFILE, len32, data);
     }
     {
         uint16_t ninks;
         const char *inknames;
-        if (TIFFGetField(in, TIFFTAG_NUMBEROFINKS, &ninks))
+        if (!image->used_rgba_fallback &&
+            TIFFGetField(in, TIFFTAG_NUMBEROFINKS, &ninks))
         {
             TIFFSetField(out, TIFFTAG_NUMBEROFINKS, ninks);
             if (TIFFGetField(in, TIFFTAG_INKNAMES, &inknames))
@@ -8621,7 +8655,10 @@ static int writeSingleSection(TIFF *in, TIFF *out, struct image_data *image,
     }
 
     for (p = tags; p < &tags[NTAGS]; p++)
-        CopyTag(p->tag, p->count, p->type);
+    {
+        if (should_copy_source_tag(image, p->tag))
+            CopyTag(p->tag, p->count, p->type);
+    }
 
     /* Update these since they are overwritten from input res by loop above */
     TIFFSetField(out, TIFFTAG_XRESOLUTION, (float)hres);
@@ -9282,9 +9319,10 @@ static int writeCroppedImage(TIFF *in, TIFF *out, struct image_data *image,
         TIFFSetField(out, TIFFTAG_PLANARCONFIG, config);
     else
         CopyField(TIFFTAG_PLANARCONFIG, config);
-    if (spp <= 4)
+    if (spp <= 4 && !image->used_rgba_fallback)
         CopyTag(TIFFTAG_TRANSFERFUNCTION, 4, TIFF_SHORT);
-    CopyTag(TIFFTAG_COLORMAP, 4, TIFF_SHORT);
+    if (!image->used_rgba_fallback)
+        CopyTag(TIFFTAG_COLORMAP, 4, TIFF_SHORT);
 
     /* SMinSampleValue & SMaxSampleValue */
     switch (compression)
@@ -9344,13 +9382,15 @@ static int writeCroppedImage(TIFF *in, TIFF *out, struct image_data *image,
     {
         uint32_t len32;
         void **data;
-        if (TIFFGetField(in, TIFFTAG_ICCPROFILE, &len32, &data))
+        if (!image->used_rgba_fallback &&
+            TIFFGetField(in, TIFFTAG_ICCPROFILE, &len32, &data))
             TIFFSetField(out, TIFFTAG_ICCPROFILE, len32, data);
     }
     {
         uint16_t ninks;
         const char *inknames;
-        if (TIFFGetField(in, TIFFTAG_NUMBEROFINKS, &ninks))
+        if (!image->used_rgba_fallback &&
+            TIFFGetField(in, TIFFTAG_NUMBEROFINKS, &ninks))
         {
             TIFFSetField(out, TIFFTAG_NUMBEROFINKS, ninks);
             if (TIFFGetField(in, TIFFTAG_INKNAMES, &inknames))
@@ -9380,7 +9420,10 @@ static int writeCroppedImage(TIFF *in, TIFF *out, struct image_data *image,
     }
 
     for (p = tags; p < &tags[NTAGS]; p++)
-        CopyTag(p->tag, p->count, p->type);
+    {
+        if (should_copy_source_tag(image, p->tag))
+            CopyTag(p->tag, p->count, p->type);
+    }
 
     /* Compute the tile or strip dimensions and write to disk */
     if (outtiled)
