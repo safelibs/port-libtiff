@@ -5,6 +5,13 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 SAFE_ROOT="$ROOT/safe"
 DIST_DIR="${LIBTIFF_SAFE_DIST_DIR:-$SAFE_ROOT/dist}"
 STAGE_PREFIX=""
+declare -A DEB_PATHS=()
+declare -a CMAKE_PROJECT_OVERRIDES=()
+CMAKE_PROJECT="$ROOT/original/build/test_cmake"
+CMAKE_PROJECT_NO_TARGET="$ROOT/original/build/test_cmake_no_target"
+PKGCONFIG_SOURCE="$ROOT/original/build/test_cmake/test.c"
+CXX_SMOKE="$SAFE_ROOT/test/install/tiffxx_staged_smoke.cpp"
+INPUT_TIFF=""
 MULTIARCH="$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || gcc -print-multiarch)"
 EXPECTED_VERSION="1:4.5.1+git230720-4ubuntu2.5+safelibs1"
 BASELINE_VERSION="4.5.1+git230720-4ubuntu2.5"
@@ -36,6 +43,16 @@ resolve_deb() {
 
   [[ -n "${path:-}" ]] || die "unable to locate $package .deb under $dir"
   printf '%s\n' "$path"
+}
+
+record_deb_path() {
+  local package="$1"
+  local deb_path="$2"
+
+  [[ -f "$deb_path" ]] || die "missing $package .deb: $deb_path"
+  [[ "$(dpkg-deb -f "$deb_path" Package)" == "$package" ]] || \
+    die "$deb_path is not a $package package"
+  DEB_PATHS["$package"]="$(realpath "$deb_path")"
 }
 
 detect_libdir() {
@@ -77,12 +94,19 @@ run_prefix_smokes() {
   assert_exists "$pc_file"
   assert_exists "$includedir/tiffio.h"
   assert_exists "$includedir/tiffio.hxx"
+  assert_exists "$CMAKE_PROJECT/CMakeLists.txt"
+  assert_exists "$CMAKE_PROJECT_NO_TARGET/CMakeLists.txt"
+  assert_exists "$PKGCONFIG_SOURCE"
+  assert_exists "$CXX_SMOKE"
+  if [[ -n "$INPUT_TIFF" ]]; then
+    assert_exists "$INPUT_TIFF"
+  fi
 
   if grep -qx 'prefix=/usr' "$pc_file"; then
     sysroot="$(dirname "$prefix_root")"
   fi
 
-  cmake -S "$ROOT/original/build/test_cmake" \
+  cmake -S "$CMAKE_PROJECT" \
     -B "$tmp_root/test_cmake" \
     -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
@@ -91,7 +115,7 @@ run_prefix_smokes() {
   cmake --build "$tmp_root/test_cmake" --parallel >/dev/null
   LD_LIBRARY_PATH="$libdir" "$tmp_root/test_cmake/test" >/dev/null
 
-  cmake -S "$ROOT/original/build/test_cmake_no_target" \
+  cmake -S "$CMAKE_PROJECT_NO_TARGET" \
     -B "$tmp_root/test_cmake_no_target" \
     -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
@@ -102,13 +126,13 @@ run_prefix_smokes() {
 
   PKG_CONFIG_PATH="$libdir/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" \
   PKG_CONFIG_SYSROOT_DIR="$sysroot" \
-  cc "$ROOT/original/build/test_cmake/test.c" \
+  cc "$PKGCONFIG_SOURCE" \
     -o "$tmp_root/pkg_config_test" \
     $(PKG_CONFIG_PATH="$libdir/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" PKG_CONFIG_SYSROOT_DIR="$sysroot" pkg-config --cflags --libs libtiff-4)
   LD_LIBRARY_PATH="$libdir" "$tmp_root/pkg_config_test" >/dev/null
 
   c++ -std=c++17 \
-    "$SAFE_ROOT/test/install/tiffxx_staged_smoke.cpp" \
+    "$CXX_SMOKE" \
     -I"$includedir" \
     -L"$libdir" \
     -Wl,-rpath,"$libdir" \
@@ -130,14 +154,63 @@ while [[ $# -gt 0 ]]; do
       STAGE_PREFIX="$2"
       shift 2
       ;;
+    --libtiff-deb)
+      record_deb_path libtiff6 "$2"
+      shift 2
+      ;;
+    --libtiffxx-deb)
+      record_deb_path libtiffxx6 "$2"
+      shift 2
+      ;;
+    --libtiff-dev-deb)
+      record_deb_path libtiff-dev "$2"
+      shift 2
+      ;;
+    --libtiff-tools-deb)
+      record_deb_path libtiff-tools "$2"
+      shift 2
+      ;;
+    --cmake-project)
+      CMAKE_PROJECT_OVERRIDES+=("$2")
+      shift 2
+      ;;
+    --cmake-project-no-target|--cmake-project-targetless)
+      CMAKE_PROJECT_NO_TARGET="$2"
+      shift 2
+      ;;
+    --pkgconfig-source)
+      PKGCONFIG_SOURCE="$2"
+      shift 2
+      ;;
+    --cxx-smoke)
+      CXX_SMOKE="$2"
+      shift 2
+      ;;
+    --input-tiff)
+      INPUT_TIFF="$2"
+      shift 2
+      ;;
     *)
       die "unknown argument: $1"
       ;;
   esac
 done
 
-DIST_DIR="$(realpath "$DIST_DIR")"
-[[ -d "$DIST_DIR" ]] || die "missing dist dir: $DIST_DIR"
+if [[ "${#CMAKE_PROJECT_OVERRIDES[@]}" -gt 2 ]]; then
+  die "expected at most two --cmake-project arguments"
+fi
+if [[ "${#CMAKE_PROJECT_OVERRIDES[@]}" -ge 1 ]]; then
+  CMAKE_PROJECT="${CMAKE_PROJECT_OVERRIDES[0]}"
+fi
+if [[ "${#CMAKE_PROJECT_OVERRIDES[@]}" -ge 2 ]]; then
+  CMAKE_PROJECT_NO_TARGET="${CMAKE_PROJECT_OVERRIDES[1]}"
+fi
+
+if [[ -d "$DIST_DIR" ]]; then
+  DIST_DIR="$(realpath "$DIST_DIR")"
+elif [[ "${#DEB_PATHS[@]}" -ne 4 ]]; then
+  die "missing dist dir: $DIST_DIR"
+fi
 
 if [[ -n "$STAGE_PREFIX" ]]; then
   run_prefix_smokes "$(realpath "$STAGE_PREFIX")" "staged install tree"
@@ -149,7 +222,10 @@ combined_root="$tmp_root/combined"
 mkdir -p "$combined_root"
 
 for package in libtiff6 libtiffxx6 libtiff-dev libtiff-tools; do
-  deb_path="$(resolve_deb "$DIST_DIR" "$package")"
+  deb_path="${DEB_PATHS[$package]:-}"
+  if [[ -z "$deb_path" ]]; then
+    deb_path="$(resolve_deb "$DIST_DIR" "$package")"
+  fi
   version="$(dpkg-deb -f "$deb_path" Version)"
   [[ "$version" == "$EXPECTED_VERSION" ]] || die "$package has unexpected version $version"
   dpkg --compare-versions "$version" gt "$BASELINE_VERSION" || \

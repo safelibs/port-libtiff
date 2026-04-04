@@ -177,6 +177,20 @@ def library_key_for_path(path: Path) -> str:
     return "libtiff.so.6"
 
 
+def default_live_library_paths() -> Dict[str, Path]:
+    return {
+        "libtiff.so.6": SAFE_ROOT / "build" / "libtiff" / "libtiff.so.6",
+        "libtiffxx.so.6": SAFE_ROOT / "build" / "libtiff" / "libtiffxx.so.6",
+    }
+
+
+def default_original_library_paths() -> Dict[str, Path]:
+    return {
+        "libtiff.so.6": ORIGINAL_ROOT / "build" / "libtiff" / "libtiff.so.6.0.1",
+        "libtiffxx.so.6": ORIGINAL_ROOT / "build" / "libtiff" / "libtiffxx.so.6.0.1",
+    }
+
+
 def apply_source_overrides(args: argparse.Namespace) -> Dict[str, object]:
     config = default_source_config()
     by_soname = {item["soname"]: item for item in config["libraries"]}
@@ -205,6 +219,23 @@ def apply_source_overrides(args: argparse.Namespace) -> Dict[str, object]:
         library["observed_dso"] = library_path
 
     return config
+
+
+def apply_live_library_overrides(
+    args: argparse.Namespace,
+) -> Tuple[Dict[str, Path], Dict[str, Path]]:
+    live_libraries = default_live_library_paths()
+    original_libraries = default_original_library_paths()
+
+    for library_path_str in args.libraries:
+        library_path = Path(library_path_str)
+        live_libraries[library_key_for_path(library_path)] = library_path
+
+    for library_path_str in args.original_libraries:
+        library_path = Path(library_path_str)
+        original_libraries[library_key_for_path(library_path)] = library_path
+
+    return live_libraries, original_libraries
 
 
 def diff_text(name: str, expected: str, actual: str) -> str:
@@ -766,6 +797,14 @@ def inventory_matches_symbol(symbol: Dict[str, object], requested_name: str) -> 
     return symbol["name"] == requested_name or symbol.get("base_name") == requested_name
 
 
+def export_matches_symbol(export_entry: Dict[str, object], requested_name: str) -> bool:
+    return requested_name in {
+        export_entry["link_name"],
+        export_entry["demangled_name"],
+        export_entry["base_name"],
+    }
+
+
 def run_assertions(
     inventory_data: Dict[str, object],
     linux_exclusions_path: Path,
@@ -811,6 +850,93 @@ def run_assertions(
             failures.append(
                 f"inventory does not record Linux exclusion for {requested_name}"
             )
+
+    if failures:
+        for failure in failures:
+            print(failure, file=sys.stderr)
+        return 1
+    return 0
+
+
+def summarize_symbol_pairs(pairs: Iterable[Tuple[str, str]]) -> str:
+    return ", ".join(f"{name}@{version}" for name, version in sorted(pairs))
+
+
+def run_live_export_assertions(
+    live_library_paths: Dict[str, Path],
+    original_library_paths: Dict[str, Path],
+    must_not_export: List[str],
+    check_versioned_symbols: bool,
+) -> int:
+    failures = []
+    live_exports_by_library: Dict[str, Dict[str, object]] = {}
+
+    required_libraries = set()
+    if must_not_export:
+        required_libraries.update(live_library_paths.keys())
+    if check_versioned_symbols:
+        required_libraries.update(live_library_paths.keys())
+
+    for soname in sorted(required_libraries):
+        live_path = live_library_paths.get(soname)
+        if not live_path or not live_path.exists():
+            failures.append(
+                f"missing live library for export assertions: {display_path(live_path or Path(soname))}"
+            )
+            continue
+        live_exports_by_library[soname] = parse_observed_exports(live_path)
+
+    for requested_name in must_not_export:
+        for soname, observed in live_exports_by_library.items():
+            for export_entry in observed["exports"].values():
+                if export_matches_symbol(export_entry, requested_name):
+                    failures.append(
+                        f"{requested_name} unexpectedly exported from {soname} via {display_path(live_library_paths[soname])}"
+                    )
+                    break
+
+    if check_versioned_symbols:
+        for soname in sorted(live_library_paths.keys()):
+            live_path = live_library_paths[soname]
+            original_path = original_library_paths.get(soname)
+            if soname not in live_exports_by_library:
+                continue
+            if not original_path or not original_path.exists():
+                failures.append(
+                    f"missing original library for versioned symbol comparison: {display_path(original_path or Path(soname))}"
+                )
+                continue
+
+            live_observed = live_exports_by_library[soname]
+            original_observed = parse_observed_exports(original_path)
+            live_pairs = {
+                (name, entry["version"])
+                for name, entry in live_observed["exports"].items()
+                if entry["version"]
+            }
+            original_pairs = {
+                (name, entry["version"])
+                for name, entry in original_observed["exports"].items()
+                if entry["version"]
+            }
+            missing_pairs = original_pairs - live_pairs
+            extra_pairs = live_pairs - original_pairs
+            if missing_pairs:
+                failures.append(
+                    f"{soname} is missing versioned exports present in {display_path(original_path)}: {summarize_symbol_pairs(missing_pairs)}"
+                )
+            if soname == "libtiffxx.so.6" and extra_pairs:
+                failures.append(
+                    f"{soname} exports extra versioned symbols not present in {display_path(original_path)}: {summarize_symbol_pairs(extra_pairs)}"
+                )
+
+            live_version_nodes = sorted(set(live_observed["version_nodes"]))
+            original_version_nodes = sorted(set(original_observed["version_nodes"]))
+            if live_version_nodes != original_version_nodes:
+                failures.append(
+                    f"{soname} version nodes differ from {display_path(original_path)}: "
+                    f"live={','.join(live_version_nodes)} original={','.join(original_version_nodes)}"
+                )
 
     if failures:
         for failure in failures:
@@ -952,6 +1078,19 @@ def main() -> int:
         help="Override the observed libtiffxx shared-library input.",
     )
     parser.add_argument(
+        "--original-library",
+        dest="original_libraries",
+        action="append",
+        default=[],
+        help="Verifier compatibility flag for the upstream/reference libtiff shared library.",
+    )
+    parser.add_argument(
+        "--original-library-xx",
+        dest="original_libraries",
+        action="append",
+        help="Verifier compatibility flag for the upstream/reference libtiffxx shared library.",
+    )
+    parser.add_argument(
         "--debian-symbols",
         "--symbols",
         "--xx-symbols",
@@ -973,6 +1112,13 @@ def main() -> int:
         nargs="+",
         default=[],
         help="Verifier compatibility alias for --must-contain.",
+    )
+    parser.add_argument(
+        "--must-not-export",
+        action="append",
+        nargs="+",
+        default=[],
+        help="Assert that the current safe shared libraries do not export the specified symbol names.",
     )
     parser.add_argument(
         "--must-record-version",
@@ -1002,6 +1148,11 @@ def main() -> int:
         default=[],
         help="Verifier compatibility alias for --must-record-linux-exclusion.",
     )
+    parser.add_argument(
+        "--check-versioned-symbols",
+        action="store_true",
+        help="Compare the safe versioned dynamic symbol sets against the original DSOs.",
+    )
     args = parser.parse_args()
 
     must_contain = flatten_cli_values(args.must_contain) + flatten_cli_values(
@@ -1013,8 +1164,10 @@ def main() -> int:
     must_record_linux_exclusion = flatten_cli_values(
         args.must_record_linux_exclusion
     ) + flatten_cli_values(args.must_export_linux_exclusion)
+    must_not_export = flatten_cli_values(args.must_not_export)
 
     source_config = apply_source_overrides(args)
+    live_library_paths, original_library_paths = apply_live_library_overrides(args)
     inventory, manifest, platform_excluded_lines = collect_inventory(source_config)
 
     inventory_text = json.dumps(inventory, indent=2, sort_keys=True) + "\n"
@@ -1037,7 +1190,11 @@ def main() -> int:
     validate_mode = args.validate or args.check or args.mode in {"validate", "check"}
     validate_mode = validate_mode or args.validate_existing_inventory
     assertion_mode = bool(
-        must_contain or must_record_version or must_record_linux_exclusion
+        must_contain
+        or must_record_version
+        or must_record_linux_exclusion
+        or must_not_export
+        or args.check_versioned_symbols
     )
     if assertion_mode and not explicit_generate:
         validate_mode = True
@@ -1053,23 +1210,39 @@ def main() -> int:
         if result != 0:
             return result
         inventory_data = load_json(inventory_path)
-        return run_assertions(
+        result = run_assertions(
             inventory_data,
             exclusions_path,
             must_contain,
             must_record_version,
             must_record_linux_exclusion,
         )
+        if result != 0:
+            return result
+        return run_live_export_assertions(
+            live_library_paths,
+            original_library_paths,
+            must_not_export,
+            args.check_versioned_symbols,
+        )
 
     write_if_changed(inventory_path, inventory_text)
     write_if_changed(inputs_path, manifest_text)
     write_if_changed(exclusions_path, excluded_text)
-    return run_assertions(
+    result = run_assertions(
         inventory,
         exclusions_path,
         must_contain,
         must_record_version,
         must_record_linux_exclusion,
+    )
+    if result != 0:
+        return result
+    return run_live_export_assertions(
+        live_library_paths,
+        original_library_paths,
+        must_not_export,
+        args.check_versioned_symbols,
     )
 
 
