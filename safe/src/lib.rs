@@ -598,14 +598,20 @@ fn parse_u64(bytes: &[u8], big_endian: bool) -> u64 {
     }
 }
 
-unsafe fn read_existing_header(tif: *mut TIFF, module_name: &str) -> bool {
+unsafe fn read_existing_header(
+    tif: *mut TIFF,
+    module_name: &str,
+    report_short_read_error: bool,
+) -> bool {
     let mut header = [0u8; 8];
     if !read_from_proc(
         tif,
         header.as_mut_ptr().cast::<c_void>(),
         header.len() as Tmsize,
     ) {
-        emit_error_message(tif, module_name, "Cannot read TIFF header");
+        if report_short_read_error {
+            emit_error_message(tif, module_name, "Cannot read TIFF header");
+        }
         return false;
     }
 
@@ -799,7 +805,7 @@ unsafe fn finalize_open(tif: *mut TIFF, mode_bytes: &[u8], open_flags: c_int) ->
         let _ = saved_position;
     }
 
-    if !read_existing_header(tif, &module_name) {
+    if !read_existing_header(tif, &module_name, (*tif).tif_mode == libc::O_RDONLY) {
         if (*tif).tif_mode == libc::O_RDONLY {
             return false;
         }

@@ -27,6 +27,8 @@ typedef struct
 
 static int g_warning_count = 0;
 static char g_warning_buffer[256];
+static int g_error_count = 0;
+static char g_error_buffer[256];
 
 static void fail(const char *message)
 {
@@ -107,6 +109,17 @@ static void capture_warning(const char *module, const char *fmt, va_list ap)
     g_warning_count++;
 }
 
+static int capture_error_ext(TIFF *tif, void *user_data, const char *module,
+                             const char *fmt, va_list ap)
+{
+    (void)tif;
+    (void)user_data;
+    (void)module;
+    vsnprintf(g_error_buffer, sizeof(g_error_buffer), fmt, ap);
+    g_error_count++;
+    return 0;
+}
+
 static tmsize_t client_read(thandle_t handle, void *buf, tmsize_t size)
 {
     ClientFile *client = (ClientFile *)handle;
@@ -177,6 +190,7 @@ int main(void)
     char read_path[] = "api_open_mode_readXXXXXX";
     char big_read_path[] = "api_open_mode_big_readXXXXXX";
     TIFF *tif;
+    TIFFOpenOptions *opts;
     int fd;
     ClientFile client;
     TIFFErrorHandler previous_warning_handler;
@@ -248,8 +262,17 @@ int main(void)
     fd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd < 0)
         fail("open for a+ failed");
-    tif = TIFFFdOpen(fd, path, "a+");
+    g_error_count = 0;
+    g_error_buffer[0] = '\0';
+    opts = TIFFOpenOptionsAlloc();
+    if (opts == NULL)
+        fail("TIFFOpenOptionsAlloc failed for a+");
+    TIFFOpenOptionsSetErrorHandlerExtR(opts, capture_error_ext, NULL);
+    tif = TIFFFdOpenExt(fd, path, "a+", opts);
+    TIFFOpenOptionsFree(opts);
     expect(tif != NULL, "TIFFFdOpen(a+) failed");
+    expect(g_error_count == 0,
+           "a+ should not emit a read-header error for an empty file");
     expect(TIFFGetMode(tif) == O_RDWR, "a+ should use O_RDWR");
     TIFFClose(tif);
     expect_prefix(path, classic_le, sizeof(classic_le), "a+");

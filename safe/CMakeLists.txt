@@ -91,6 +91,26 @@ add_library(CMath::CMath ALIAS safe_cmath)
 
 add_subdirectory(port)
 
+function(safe_mirror_shared_library_for_verifier target)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(_safe_verifier_dir "${CMAKE_BINARY_DIR}/libtiff")
+    add_custom_command(
+      TARGET ${target}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_safe_verifier_dir}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+              "$<TARGET_FILE:${target}>"
+              "${_safe_verifier_dir}/$<TARGET_FILE_NAME:${target}>"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+              "$<TARGET_SONAME_FILE:${target}>"
+              "${_safe_verifier_dir}/$<TARGET_SONAME_FILE_NAME:${target}>"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+              "$<TARGET_LINKER_FILE:${target}>"
+              "${_safe_verifier_dir}/$<TARGET_LINKER_FILE_NAME:${target}>"
+      VERBATIM)
+  endif()
+endfunction()
+
 add_library(tiff SHARED capi/tiff_placeholder.c)
 target_include_directories(
   tiff
@@ -111,6 +131,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     PRIVATE
       "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/capi/libtiff-safe.map")
 endif()
+safe_mirror_shared_library_for_verifier(tiff)
 
 add_library(tiffxx SHARED capi/tiffxx_placeholder.cxx)
 target_include_directories(
@@ -131,6 +152,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     PRIVATE
       "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/capi/libtiffxx-safe.map")
 endif()
+safe_mirror_shared_library_for_verifier(tiffxx)
 
 install(
   TARGETS tiff tiffxx
