@@ -2,11 +2,10 @@
 #include "tif_dir.h"
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <stdarg.h>
 
 extern int tiff_safe_core_placeholder(void);
-extern int safe_tiff_record_custom_tag(TIFF *tif, uint32_t tag);
-extern int safe_tiff_remove_custom_tag(TIFF *tif, uint32_t tag);
 extern int safe_tiff_read_custom_directory(TIFF *tif, uint64_t diroff,
                                            const TIFFFieldArray *infoarray);
 extern int safe_tiff_set_directory(TIFF *tif, uint32_t dirnum);
@@ -19,6 +18,10 @@ extern uint32_t safe_tiff_current_tag_at(TIFF *tif, uint32_t index);
 extern int safe_tiff_get_tag_value(TIFF *tif, uint32_t tag, int defaulted,
                                    TIFFDataType *out_type, uint64_t *out_count,
                                    const void **out_data);
+extern int safe_tiff_set_field_marshaled(TIFF *tif, uint32_t tag,
+                                         TIFFDataType storage_type,
+                                         uint64_t count, const void *data);
+extern int safe_tiff_unset_field(TIFF *tif, uint32_t tag);
 
 static void unix_error_handler(const char *module, const char *fmt, va_list ap)
 {
@@ -467,21 +470,405 @@ static int call_error_handler_extr_message(TIFFErrorHandlerExtR handler,
     return stop;
 }
 
+static uint64_t safe_fixed_set_count(const TIFFField *fip)
+{
+    if (fip == NULL)
+        return 0;
+    if (fip->field_writecount > 0)
+        return (uint64_t)fip->field_writecount;
+    if (fip->field_readcount > 0)
+        return (uint64_t)fip->field_readcount;
+    return 0;
+}
+
+static int safe_marshal_transferfunction(TIFF *tif, uint32_t tag, va_list ap)
+{
+    const uint16_t *red = va_arg(ap, const uint16_t *);
+    const uint16_t *green = NULL;
+    const uint16_t *blue = NULL;
+    uint16_t bitspersample = 1;
+    uint16_t samplesperpixel = 1;
+    uint16_t extrasamples = 0;
+    const uint16_t *sampleinfo = NULL;
+    uint16_t color_planes;
+    uint64_t sample_count;
+    uint64_t total_count;
+    uint16_t *merged;
+    int ret;
+
+    if (red == NULL)
+        return 0;
+
+    TIFFGetFieldDefaulted(tif, TIFFTAG_BITSPERSAMPLE, &bitspersample);
+    TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel);
+    TIFFGetFieldDefaulted(tif, TIFFTAG_EXTRASAMPLES, &extrasamples, &sampleinfo);
+    (void)sampleinfo;
+
+    if (bitspersample >= 31)
+    {
+        TIFFErrorExtR(tif, "_TIFFVSetField",
+                      "BitsPerSample %u is too large for TransferFunction validation",
+                      bitspersample);
+        return 0;
+    }
+
+    color_planes = (samplesperpixel > extrasamples)
+                       ? (uint16_t)(samplesperpixel - extrasamples)
+                       : samplesperpixel;
+    if (color_planes == 0)
+        color_planes = 1;
+    sample_count = ((uint64_t)1) << bitspersample;
+    total_count = sample_count * ((color_planes > 1) ? 3U : 1U);
+    if (total_count > SIZE_MAX / sizeof(uint16_t))
+        return 0;
+
+    if (color_planes > 1)
+    {
+        green = va_arg(ap, const uint16_t *);
+        blue = va_arg(ap, const uint16_t *);
+        if (green == NULL || blue == NULL)
+            return 0;
+    }
+
+    merged = (uint16_t *)malloc((size_t)total_count * sizeof(uint16_t));
+    if (merged == NULL)
+        return 0;
+
+    memcpy(merged, red, (size_t)sample_count * sizeof(uint16_t));
+    if (color_planes > 1)
+    {
+        memcpy(merged + sample_count, green,
+               (size_t)sample_count * sizeof(uint16_t));
+        memcpy(merged + sample_count * 2U, blue,
+               (size_t)sample_count * sizeof(uint16_t));
+    }
+
+    ret = safe_tiff_set_field_marshaled(tif, tag, TIFF_SHORT, total_count, merged);
+    free(merged);
+    return ret;
+}
+
+static int safe_marshal_colormap(TIFF *tif, uint32_t tag, va_list ap)
+{
+    const uint16_t *red = va_arg(ap, const uint16_t *);
+    const uint16_t *green = va_arg(ap, const uint16_t *);
+    const uint16_t *blue = va_arg(ap, const uint16_t *);
+    uint16_t bitspersample = 1;
+    uint64_t plane_count;
+    uint64_t total_count;
+    uint16_t *merged;
+    int ret;
+
+    if (red == NULL || green == NULL || blue == NULL)
+        return 0;
+
+    TIFFGetFieldDefaulted(tif, TIFFTAG_BITSPERSAMPLE, &bitspersample);
+    if (bitspersample >= 31)
+        return 0;
+
+    plane_count = ((uint64_t)1) << bitspersample;
+    total_count = plane_count * 3U;
+    if (total_count > SIZE_MAX / sizeof(uint16_t))
+        return 0;
+
+    merged = (uint16_t *)malloc((size_t)total_count * sizeof(uint16_t));
+    if (merged == NULL)
+        return 0;
+
+    memcpy(merged, red, (size_t)plane_count * sizeof(uint16_t));
+    memcpy(merged + plane_count, green, (size_t)plane_count * sizeof(uint16_t));
+    memcpy(merged + plane_count * 2U, blue,
+           (size_t)plane_count * sizeof(uint16_t));
+
+    ret = safe_tiff_set_field_marshaled(tif, tag, TIFF_SHORT, total_count, merged);
+    free(merged);
+    return ret;
+}
+
 static int safe_default_vset_field(TIFF *tif, uint32_t tag, va_list ap)
 {
+    const TIFFField *fip;
+
     if (tif == NULL)
         return 0;
 
-    if (tag == TIFFTAG_FILLORDER)
+    fip = TIFFFindField(tif, tag, TIFF_ANY);
+    if (fip == NULL)
     {
-        int order = va_arg(ap, int);
-        tif->tif_flags &= ~TIFF_FILLORDER;
-        tif->tif_flags |=
-            (order == FILLORDER_LSB2MSB) ? FILLORDER_LSB2MSB
-                                         : FILLORDER_MSB2LSB;
+        TIFFErrorExtR(tif, "TIFFSetField", "Unknown tag %" PRIu32, tag);
+        return 0;
     }
-    safe_tiff_record_custom_tag(tif, tag);
-    return 1;
+
+    if (tag == TIFFTAG_TRANSFERFUNCTION)
+        return safe_marshal_transferfunction(tif, tag, ap);
+    if (tag == TIFFTAG_COLORMAP)
+        return safe_marshal_colormap(tif, tag, ap);
+
+    switch (fip->set_field_type)
+    {
+        case TIFF_SETGET_UINT8:
+        {
+            uint8_t value = (uint8_t)va_arg(ap, int);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_BYTE, 1, &value);
+        }
+        case TIFF_SETGET_SINT8:
+        {
+            int8_t value = (int8_t)va_arg(ap, int);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SBYTE, 1, &value);
+        }
+        case TIFF_SETGET_UINT16:
+        {
+            uint16_t value = (uint16_t)va_arg(ap, int);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SHORT, 1, &value);
+        }
+        case TIFF_SETGET_SINT16:
+        {
+            int16_t value = (int16_t)va_arg(ap, int);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SSHORT, 1, &value);
+        }
+        case TIFF_SETGET_UINT32:
+        {
+            uint32_t value = va_arg(ap, uint32_t);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_LONG, 1, &value);
+        }
+        case TIFF_SETGET_SINT32:
+        {
+            int32_t value = va_arg(ap, int32_t);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SLONG, 1, &value);
+        }
+        case TIFF_SETGET_UINT64:
+        {
+            uint64_t value = va_arg(ap, uint64_t);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_LONG8, 1, &value);
+        }
+        case TIFF_SETGET_SINT64:
+        {
+            int64_t value = va_arg(ap, int64_t);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SLONG8, 1, &value);
+        }
+        case TIFF_SETGET_IFD8:
+        {
+            uint64_t value = va_arg(ap, uint64_t);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_IFD8, 1, &value);
+        }
+        case TIFF_SETGET_FLOAT:
+        {
+            float value = (float)va_arg(ap, double);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_FLOAT, 1, &value);
+        }
+        case TIFF_SETGET_DOUBLE:
+        {
+            double value = va_arg(ap, double);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_DOUBLE, 1, &value);
+        }
+        case TIFF_SETGET_INT:
+        {
+            int32_t value = va_arg(ap, int);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SLONG, 1, &value);
+        }
+        case TIFF_SETGET_UINT16_PAIR:
+        {
+            uint16_t values[2];
+            values[0] = (uint16_t)va_arg(ap, int);
+            values[1] = (uint16_t)va_arg(ap, int);
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_SHORT, 2, values);
+        }
+        case TIFF_SETGET_ASCII:
+        {
+            const char *value = va_arg(ap, const char *);
+            uint64_t count =
+                (value == NULL) ? 0U : (uint64_t)strlen(value) + 1U;
+            return safe_tiff_set_field_marshaled(tif, tag, TIFF_ASCII, count,
+                                                 value);
+        }
+        case TIFF_SETGET_C0_ASCII:
+        case TIFF_SETGET_C0_UINT8:
+        case TIFF_SETGET_C0_SINT8:
+        case TIFF_SETGET_C0_UINT16:
+        case TIFF_SETGET_C0_SINT16:
+        case TIFF_SETGET_C0_UINT32:
+        case TIFF_SETGET_C0_SINT32:
+        case TIFF_SETGET_C0_UINT64:
+        case TIFF_SETGET_C0_SINT64:
+        case TIFF_SETGET_C0_FLOAT:
+        case TIFF_SETGET_C0_DOUBLE:
+        case TIFF_SETGET_C0_IFD8:
+        {
+            const void *value = va_arg(ap, const void *);
+            uint64_t count = safe_fixed_set_count(fip);
+            TIFFDataType storage_type = TIFF_NOTYPE;
+            switch (fip->set_field_type)
+            {
+                case TIFF_SETGET_C0_ASCII:
+                    storage_type = TIFF_ASCII;
+                    break;
+                case TIFF_SETGET_C0_UINT8:
+                    storage_type = TIFF_BYTE;
+                    break;
+                case TIFF_SETGET_C0_SINT8:
+                    storage_type = TIFF_SBYTE;
+                    break;
+                case TIFF_SETGET_C0_UINT16:
+                    storage_type = TIFF_SHORT;
+                    break;
+                case TIFF_SETGET_C0_SINT16:
+                    storage_type = TIFF_SSHORT;
+                    break;
+                case TIFF_SETGET_C0_UINT32:
+                    storage_type = TIFF_LONG;
+                    break;
+                case TIFF_SETGET_C0_SINT32:
+                    storage_type = TIFF_SLONG;
+                    break;
+                case TIFF_SETGET_C0_UINT64:
+                    storage_type = TIFF_LONG8;
+                    break;
+                case TIFF_SETGET_C0_SINT64:
+                    storage_type = TIFF_SLONG8;
+                    break;
+                case TIFF_SETGET_C0_FLOAT:
+                    storage_type = TIFF_FLOAT;
+                    break;
+                case TIFF_SETGET_C0_DOUBLE:
+                    storage_type = TIFF_DOUBLE;
+                    break;
+                case TIFF_SETGET_C0_IFD8:
+                    storage_type = TIFF_IFD8;
+                    break;
+                default:
+                    break;
+            }
+            return safe_tiff_set_field_marshaled(tif, tag, storage_type, count,
+                                                 value);
+        }
+        case TIFF_SETGET_C16_ASCII:
+        case TIFF_SETGET_C16_UINT8:
+        case TIFF_SETGET_C16_SINT8:
+        case TIFF_SETGET_C16_UINT16:
+        case TIFF_SETGET_C16_SINT16:
+        case TIFF_SETGET_C16_UINT32:
+        case TIFF_SETGET_C16_SINT32:
+        case TIFF_SETGET_C16_UINT64:
+        case TIFF_SETGET_C16_SINT64:
+        case TIFF_SETGET_C16_FLOAT:
+        case TIFF_SETGET_C16_DOUBLE:
+        case TIFF_SETGET_C16_IFD8:
+        {
+            uint64_t count = (uint16_t)va_arg(ap, int);
+            const void *value = va_arg(ap, const void *);
+            TIFFDataType storage_type = TIFF_NOTYPE;
+            switch (fip->set_field_type)
+            {
+                case TIFF_SETGET_C16_ASCII:
+                    storage_type = TIFF_ASCII;
+                    break;
+                case TIFF_SETGET_C16_UINT8:
+                    storage_type = TIFF_BYTE;
+                    break;
+                case TIFF_SETGET_C16_SINT8:
+                    storage_type = TIFF_SBYTE;
+                    break;
+                case TIFF_SETGET_C16_UINT16:
+                    storage_type = TIFF_SHORT;
+                    break;
+                case TIFF_SETGET_C16_SINT16:
+                    storage_type = TIFF_SSHORT;
+                    break;
+                case TIFF_SETGET_C16_UINT32:
+                    storage_type = TIFF_LONG;
+                    break;
+                case TIFF_SETGET_C16_SINT32:
+                    storage_type = TIFF_SLONG;
+                    break;
+                case TIFF_SETGET_C16_UINT64:
+                    storage_type = TIFF_LONG8;
+                    break;
+                case TIFF_SETGET_C16_SINT64:
+                    storage_type = TIFF_SLONG8;
+                    break;
+                case TIFF_SETGET_C16_FLOAT:
+                    storage_type = TIFF_FLOAT;
+                    break;
+                case TIFF_SETGET_C16_DOUBLE:
+                    storage_type = TIFF_DOUBLE;
+                    break;
+                case TIFF_SETGET_C16_IFD8:
+                    storage_type = TIFF_IFD8;
+                    break;
+                default:
+                    break;
+            }
+            return safe_tiff_set_field_marshaled(tif, tag, storage_type, count,
+                                                 value);
+        }
+        case TIFF_SETGET_C32_ASCII:
+        case TIFF_SETGET_C32_UINT8:
+        case TIFF_SETGET_C32_SINT8:
+        case TIFF_SETGET_C32_UINT16:
+        case TIFF_SETGET_C32_SINT16:
+        case TIFF_SETGET_C32_UINT32:
+        case TIFF_SETGET_C32_SINT32:
+        case TIFF_SETGET_C32_UINT64:
+        case TIFF_SETGET_C32_SINT64:
+        case TIFF_SETGET_C32_FLOAT:
+        case TIFF_SETGET_C32_DOUBLE:
+        case TIFF_SETGET_C32_IFD8:
+        {
+            uint64_t count = (uint64_t)va_arg(ap, uint32_t);
+            const void *value = va_arg(ap, const void *);
+            TIFFDataType storage_type = TIFF_NOTYPE;
+            switch (fip->set_field_type)
+            {
+                case TIFF_SETGET_C32_ASCII:
+                    storage_type = TIFF_ASCII;
+                    break;
+                case TIFF_SETGET_C32_UINT8:
+                    storage_type = TIFF_BYTE;
+                    break;
+                case TIFF_SETGET_C32_SINT8:
+                    storage_type = TIFF_SBYTE;
+                    break;
+                case TIFF_SETGET_C32_UINT16:
+                    storage_type = TIFF_SHORT;
+                    break;
+                case TIFF_SETGET_C32_SINT16:
+                    storage_type = TIFF_SSHORT;
+                    break;
+                case TIFF_SETGET_C32_UINT32:
+                    storage_type = TIFF_LONG;
+                    break;
+                case TIFF_SETGET_C32_SINT32:
+                    storage_type = TIFF_SLONG;
+                    break;
+                case TIFF_SETGET_C32_UINT64:
+                    storage_type = TIFF_LONG8;
+                    break;
+                case TIFF_SETGET_C32_SINT64:
+                    storage_type = TIFF_SLONG8;
+                    break;
+                case TIFF_SETGET_C32_FLOAT:
+                    storage_type = TIFF_FLOAT;
+                    break;
+                case TIFF_SETGET_C32_DOUBLE:
+                    storage_type = TIFF_DOUBLE;
+                    break;
+                case TIFF_SETGET_C32_IFD8:
+                    storage_type = TIFF_IFD8;
+                    break;
+                default:
+                    break;
+            }
+            return safe_tiff_set_field_marshaled(tif, tag, storage_type, count,
+                                                 value);
+        }
+        default:
+        {
+            TIFFErrorExtR(tif, "_TIFFVSetField",
+                          "Unsupported set-field type %d for tag %" PRIu32,
+                          fip->set_field_type, tag);
+            return 0;
+        }
+    }
 }
 
 void safe_tiff_initialize_tag_methods(TIFFTagMethods *methods)
@@ -792,13 +1179,7 @@ int TIFFUnsetField(TIFF *tif, uint32_t tag)
     if (tif == NULL)
         return 0;
 
-    if (tag == TIFFTAG_FILLORDER)
-    {
-        tif->tif_flags &= ~TIFF_FILLORDER;
-        tif->tif_flags |= FILLORDER_MSB2LSB;
-    }
-
-    return safe_tiff_remove_custom_tag(tif, tag);
+    return safe_tiff_unset_field(tif, tag);
 }
 
 int TIFFReadEXIFDirectory(TIFF *tif, toff_t diroff)

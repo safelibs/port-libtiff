@@ -200,6 +200,11 @@ target_link_libraries(api_directory_read_smoke PRIVATE tiff tiff_port)
 target_compile_definitions(api_directory_read_smoke PRIVATE SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 list(APPEND simple_tests api_directory_read_smoke)
 
+add_executable(api_directory_write_smoke ../placeholder.h)
+target_sources(api_directory_write_smoke PRIVATE api_directory_write_smoke.c)
+target_link_libraries(api_directory_write_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_directory_write_smoke)
+
 add_executable(api_field_registry_smoke ../placeholder.h)
 target_sources(api_field_registry_smoke PRIVATE api_field_registry_smoke.c)
 target_link_libraries(api_field_registry_smoke PRIVATE tiff tiff_port)
@@ -245,6 +250,11 @@ add_executable(dirread_regressions ../placeholder.h)
 target_sources(dirread_regressions PRIVATE dirread_regressions.c)
 target_link_libraries(dirread_regressions PRIVATE tiff tiff_port)
 list(APPEND simple_tests dirread_regressions)
+
+add_executable(dirwrite_regressions ../placeholder.h)
+target_sources(dirwrite_regressions PRIVATE dirwrite_regressions.c)
+target_link_libraries(dirwrite_regressions PRIVATE tiff tiff_port)
+list(APPEND simple_tests dirwrite_regressions)
 
 if(WEBP_SUPPORT AND EMSCRIPTEN)
   # Emscripten is pretty finnicky about linker flags.
