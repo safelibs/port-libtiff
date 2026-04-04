@@ -69,7 +69,7 @@ DEFAULT_LIBRARY_CONFIGS = [
         "safe_map": SAFE_ROOT / "capi" / "libtiff-safe.map",
         "upstream_map": ORIGINAL_ROOT / "libtiff" / "libtiff.map",
         "debian_symbols": ORIGINAL_ROOT / "debian" / "libtiff6.symbols",
-        "observed_dso": ORIGINAL_ROOT / "build" / "libtiff" / "libtiff.so.6.0.1",
+        "observed_dso": SAFE_ROOT / "build" / "libtiff" / "libtiff.so.6",
         "header_names": None,
     },
     {
