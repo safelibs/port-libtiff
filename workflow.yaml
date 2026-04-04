@@ -1,0 +1,2224 @@
+name: libtiff-safe-linear-workflow
+backend: codex
+working_dir: /home/yans/code/safelibs/ported/libtiff
+
+phases:
+  - id: impl_surface_scaffold
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_surface_scaffold` (Compatibility Inventory and Safe Workspace Scaffold).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Reuse checked-in artifacts and prior-phase outputs wherever this phase allows.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_surface_scaffold` with fixed `bounce_target: impl_surface_scaffold`.
+      - Use the checked-in `original/`, `relevant_cves.json`, `dependents.json`, and `test-original.sh` inputs as the source baseline for this phase.
+      
+      Preexisting Inputs
+      - `original/libtiff/tiff.h`
+      - `original/libtiff/tiffio.h`
+      - `original/libtiff/tiffio.hxx`
+      - `original/libtiff/tiffvers.h`
+      - `original/libtiff/tif_config.h.in`
+      - `original/libtiff/tiffconf.h.in`
+      - `original/libtiff/libtiff.map`
+      - `original/libtiff/libtiffxx.map`
+      - `original/libtiff/libtiff.def`
+      - `original/libtiff/tiffiop.h`
+      - `original/libtiff/tif_dir.h`
+      - `original/libtiff/tif_hash_set.h`
+      - `original/build/libtiff/tif_config.h`
+      - `original/build/libtiff/tiffconf.h`
+      - `original/build/libtiff/libtiff.so.6.0.1`
+      - `original/build/libtiff/libtiffxx.so.6.0.1`
+      - `original/cmake/TiffConfig.cmake.in`
+      - `original/libtiff-4.pc.in`
+      - `original/port/`
+      - `original/tools/`
+      - `original/test/`
+      - `original/debian/`
+      - `relevant_cves.json`
+      - `dependents.json`
+      - `test-original.sh`
+      
+      New Outputs
+      - A new `safe/` Rust package with Cargo and CMake entry points.
+      - A copied public-header set and generated-config snapshots under `safe/include/`.
+      - A build-only private-header subset under `safe/libtiff/` for compiling the copied in-tree tools against the safe library without installing that private surface.
+      - A copied upstream tools tree and a copied upstream tests tree under `safe/tools/` and `safe/test/`.
+      - A machine-readable compatibility inventory in `safe/abi/public-surface.json` with explicit required version nodes for every Linux-required export.
+      - A checked-in input manifest in `safe/abi/public-surface.inputs.json` that records the exact source files, digests, and collector parameters used to create `safe/abi/public-surface.json`.
+      - An explicit Linux platform-exclusion record in `safe/abi/platform-excluded-linux.txt` for names that must not be required or exported on Ubuntu 24.04.
+      - A reusable upstream shell-test runner in `safe/scripts/run-upstream-shell-tests.sh` that later verifier phases can call directly.
+      - Version scripts in `safe/capi/` that preserve original version nodes, make header-only Linux-visible additions explicit, and omit Linux-excluded Windows-only names.
+      - A Debian packaging skeleton in `safe/debian/`.
+      
+      Required Work
+      - Make `safe/` a normal Rust package and build the Rust core as a `staticlib` so CMake can link the final `libtiff.so.6` and `libtiffxx.so.6` with exact SONAME and version-script control.
+      - Copy the installed public headers from `original/libtiff/` and the generated feature headers from `original/build/libtiff/`. Do not use generated Rust bindings as the installed headers.
+      - Generate `safe/abi/public-surface.json` from the union of the Linux-preprocessed public headers, version scripts, Debian symbols, generated config headers, and observed versioned exports from the prepared original shared libraries. The checked-in inventory must record each symbol's owning library, source provenance, Linux-exclusion status, and required version node.
+      - Emit `safe/abi/public-surface.inputs.json` with, at minimum, every consumed source path, a digest for each consumed source file, the target platform tuple, and the collector options used to build the checked-in inventory.
+      - Capture the known mismatches between headers and version scripts inside the inventory: header-only symbols such as `_TIFFcalloc`, `TIFFDataWidth`, `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFReadFromUserBuffer`, `LogL16toY`, `LogL10toY`, `LogL16fromY`, `LogL10fromY`, `LogLuv24toXYZ`, `LogLuv32toXYZ`, `LogLuv24fromXYZ`, `LogLuv32fromXYZ`, `XYZtoRGB24`, `uv_decode`, and `uv_encode`; version-script-only exports such as `_TIFFCheckMalloc`, `_TIFFGetExifFields`, `_TIFFGetGpsFields`, `_TIFFRewriteField`, and `TIFFSetCompressionScheme`; observed `libtiffxx` exports present in `original/build/libtiff/libtiffxx.so.6.0.1`; and Linux exclusions such as `TIFFOpenW` and `TIFFOpenWExt`.
+      - Seed `safe/capi/libtiff-safe.map` from `original/libtiff/libtiff.map`, preserving `LIBTIFF_4.0` through `LIBTIFF_4.5`, removing Linux-excluded Windows-only names, then add the header-only Linux-visible symbols required for full source and link compatibility.
+      - Do not invent new Linux version nodes for compatibility additions. `_TIFFcalloc`, `LogL16toY`, `LogL10toY`, `LogL16fromY`, `LogL10fromY`, `LogLuv24toXYZ`, `LogLuv32toXYZ`, `LogLuv24fromXYZ`, `LogLuv32fromXYZ`, `XYZtoRGB24`, `uv_decode`, and `uv_encode` must all be appended to `LIBTIFF_4.0` in both `safe/capi/libtiff-safe.map` and the inventory.
+      - Seed `safe/capi/libtiffxx-safe.map` from `original/libtiff/libtiffxx.map`, but treat the observed original `libtiffxx.so.6.0.1` dynsym and version data as the actual compatibility baseline because the map alone is not precise.
+      - `safe/scripts/check-public-surface.py` must support a non-mutating validation mode that reads the checked-in inventory, input manifest, and current source inputs, fails on drift, and leaves `safe/abi/public-surface.json`, `safe/abi/public-surface.inputs.json`, and `safe/abi/platform-excluded-linux.txt` untouched.
+      - Copy the minimal private-header subset needed by the copied tools into `safe/libtiff/`. This private surface is build-only and must not be installed as part of `libtiff-dev`.
+      - Configure the copied safe-tree tools to include `safe/libtiff/` for private build-only headers and `safe/include/` for installed public headers, so the copied `tiffiop.h` contract is available only to in-tree builds.
+      - Mirror `original/tools/`, `original/test/`, and `original/port/` into `safe/` so later phases can port the build glue and run the same C clients against the Rust library.
+      - Create `safe/scripts/run-upstream-shell-tests.sh` in this phase. It must discover the copied shell-test inventory from `safe/test/Makefile.am`, support `--tests` and `--include-regex` selectors, execute each selected script with the working directory set exactly to `safe/build/test`, create `safe/build/test` if needed, clean stale `o-*` outputs there between scripts, leave `safe/test/refs/` untouched, export `srcdir` as the absolute `safe/test` path, wire `top_srcdir`, `top_builddir`, and `LD_LIBRARY_PATH` for `safe/build`, and avoid relying on pre-exported `FAX2PS` through `TIFFSPLIT`.
+      - Copy the Debian packaging split from `original/debian/` as the starting point for the final Ubuntu 24.04 packages.
+      
+      Success Criteria
+      - `safe/` configures as both a Cargo project and a CMake project.
+      - The checked-in public-surface inventory and its companion input manifest are internally consistent and validate without regeneration.
+      - `safe/abi/public-surface.json` contains the missing Linux-visible APIs that previously failed plan review, records `TIFFOpenW` and `TIFFOpenWExt` as Linux exclusions, and records `_TIFFcalloc` plus the full LogLuv helper family as required `LIBTIFF_4.0` exports.
+      - The copied headers, tests, tools, Debian metadata including the `.install` manifests and symbols files, and the reusable upstream shell-test runner all exist in `safe/`.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_surface_scaffold
+    type: check
+    bounce_target: impl_surface_scaffold
+    prompt: |-
+      Reviewer role: Compatibility inventory and scaffold reviewer.
+      
+      Review the current workspace for check phase `check_surface_scaffold`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cargo check --manifest-path safe/Cargo.toml
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --input-manifest safe/abi/public-surface.inputs.json \
+        --linux-exclusions safe/abi/platform-excluded-linux.txt \
+        --validate-existing-inventory \
+        --c-header original/libtiff/tiffio.h \
+        --cxx-header original/libtiff/tiffio.hxx \
+        --platform linux \
+        --map original/libtiff/libtiff.map \
+        --xx-map original/libtiff/libtiffxx.map \
+        --symbols original/debian/libtiff6.symbols \
+        --xx-symbols original/debian/libtiffxx6.symbols \
+        --tif-config original/build/libtiff/tif_config.h \
+        --tiffconf original/build/libtiff/tiffconf.h \
+        --library original/build/libtiff/libtiff.so.6.0.1 \
+        --library-xx original/build/libtiff/libtiffxx.so.6.0.1 \
+        --must-contain _TIFFcalloc LogL16toY LogL10toY LogL16fromY LogL10fromY LogLuv24toXYZ LogLuv32toXYZ LogLuv24fromXYZ LogLuv32fromXYZ XYZtoRGB24 uv_decode uv_encode TIFFCheckTile TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFDataWidth TIFFStreamOpen _TIFFCheckMalloc _TIFFGetExifFields TIFFSetCompressionScheme \
+        --must-record-version _TIFFcalloc=LIBTIFF_4.0 LogL16toY=LIBTIFF_4.0 LogL10toY=LIBTIFF_4.0 LogL16fromY=LIBTIFF_4.0 LogL10fromY=LIBTIFF_4.0 LogLuv24toXYZ=LIBTIFF_4.0 LogLuv32toXYZ=LIBTIFF_4.0 LogLuv24fromXYZ=LIBTIFF_4.0 LogLuv32fromXYZ=LIBTIFF_4.0 XYZtoRGB24=LIBTIFF_4.0 uv_decode=LIBTIFF_4.0 uv_encode=LIBTIFF_4.0 TIFFStreamOpen=LIBTIFFXX_4.0 \
+        --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=OFF \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      bash safe/scripts/run-upstream-shell-tests.sh --help >/dev/null
+      test -f safe/include/tiffio.h
+      test -f safe/include/tiffio.hxx
+      test -f safe/libtiff/tiffiop.h
+      test -f safe/libtiff/tif_dir.h
+      test -f safe/libtiff/tif_hash_set.h
+      test -f safe/capi/libtiff-safe.map
+      test -f safe/abi/platform-excluded-linux.txt
+      test -f safe/abi/public-surface.inputs.json
+      test -f safe/test/CMakeLists.txt
+      test -f safe/test/common.sh
+      test -d safe/test/refs
+      test -f safe/tools/CMakeLists.txt
+      test -f safe/debian/control
+      test -f safe/debian/rules
+      test -f safe/debian/libtiff6.install
+      test -f safe/debian/libtiffxx6.install
+      test -f safe/debian/libtiff-dev.install
+      test -f safe/debian/libtiff-tools.install
+      test -f safe/debian/libtiff6.symbols
+      test -f safe/debian/libtiffxx6.symbols
+      ```
+      
+      Verify all of the following
+      - `safe/` exists as both a Cargo project and a CMake project.
+      - The checker validates the checked-in inventory and its companion input manifest instead of regenerating them in place.
+      - `safe/abi/public-surface.json` contains the required Linux-visible APIs, records `TIFFOpenW` and `TIFFOpenWExt` as Linux exclusions, and records `_TIFFcalloc` plus the LogLuv helper family as required `LIBTIFF_4.0` exports.
+      - The copied headers, tests, tools, Debian metadata including the `.install` manifests and symbols files, and the reusable upstream shell-test runner all exist in `safe/`.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_core_lifecycle
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_core_lifecycle` (Handle Lifecycle, Open Path, Error Plumbing, and Memory Helpers).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Reuse the scaffold outputs from phase 1 instead of rebuilding alternate baselines.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_core_lifecycle` with fixed `bounce_target: impl_core_lifecycle`.
+      - Keep the installed headers opaque. Only the build-only `safe/libtiff/tiffiop.h` surface may expose the small subset needed by copied in-tree tools.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `original/libtiff/tiffiop.h`
+      - `original/libtiff/tif_open.c`
+      - `original/libtiff/tif_close.c`
+      - `original/libtiff/tif_unix.c`
+      - `original/libtiff/tif_error.c`
+      - `original/libtiff/tif_warning.c`
+      - `original/libtiff/tif_version.c`
+      - `original/doc/functions/TIFFClose.rst`
+      - `original/doc/functions/TIFFOpen.rst`
+      - `original/doc/functions/TIFFOpenOptions.rst`
+      - `original/doc/functions/TIFFError.rst`
+      - `original/doc/functions/_TIFFauxiliary.rst`
+      - `original/test/test_open_options.c`
+      - `original/test/testtypes.c`
+      - `original/test/defer_strile_loading.c`
+      - `original/tools/tiffinfo.c`
+      - `original/tools/tiffsplit.c`
+      
+      New Outputs
+      - A real Rust-backed `TIFF *` handle implementation.
+      - Open and close paths for pathname, fd, and client-callback entry points.
+      - Global and per-handle error and warning handlers with `OpenOptions` support.
+      - Exported memory helper functions, including `_TIFFcalloc`.
+      - Checked-allocation helper exports reused by later phases.
+      - Version-string and handle-state query helpers used by copied tools and later compatibility smoke objects.
+      - A build-only internal-handle surface for `safe/tools/` that preserves the small subset of `tiffiop.h` fields and helper macros the copied tools dereference.
+      - A dedicated open-mode compatibility smoke test that exercises the full `tif_open.c` mode-flag contract.
+      
+      Required Work
+      - Represent `TIFF *` as an opaque Rust-owned allocation, not as a field-for-field recreation of `struct tiff`.
+      - Preserve all behavior modeled in `tif_open.c`, `tif_close.c`, `tif_unix.c`, and `tif_version.c`: base mode acceptance for `r`, `r+`, `w`, `w+`, `a`, and `a+`; create-mode modifiers `4`, `8`, `b`, and `l`; fill-order modifiers `B`, `L`, and `H`; mmap and strip-chop modifiers `M`, `m`, `C`, and `c`; deferred and lazy strile modifiers `D` and `O`; header-only modifier `h`; callback storage and accessors; header initialization for classic TIFF and BigTIFF; and open-option-specific allocation caps and re-entrant handlers.
+      - Implement `TIFFOpen`, `TIFFOpenExt`, `TIFFFdOpen`, `TIFFFdOpenExt`, `TIFFClientOpen`, `TIFFClientOpenExt`, `TIFFClose`, `TIFFCleanup`, `TIFFFileName`, `TIFFSetFileName`, `TIFFFileno`, `TIFFSetFileno`, `TIFFClientdata`, `TIFFSetClientdata`, `TIFFGetMode`, `TIFFSetMode`, `TIFFGetReadProc`, `TIFFGetWriteProc`, `TIFFGetSeekProc`, `TIFFGetCloseProc`, `TIFFGetSizeProc`, `TIFFGetMapFileProc`, `TIFFGetUnmapFileProc`, `TIFFGetVersion`, `TIFFIsTiled`, `TIFFIsByteSwapped`, `TIFFIsUpSampled`, `TIFFIsMSB2LSB`, `TIFFIsBigEndian`, `TIFFIsBigTIFF`, `TIFFError*`, `TIFFWarning*`, and `TIFFOpenOptions*`.
+      - Implement exported memory helpers and checked helpers: `_TIFFmalloc`, `_TIFFcalloc`, `_TIFFrealloc`, `_TIFFmemset`, `_TIFFmemcpy`, `_TIFFmemcmp`, `_TIFFfree`, `_TIFFCheckMalloc`, `_TIFFCheckRealloc`, `_TIFFMultiply32`, `_TIFFMultiply64`, and `_TIFFClampDoubleToUInt32`.
+      - Preserve the upstream semantic that `TIFFOpenOptionsSetMaxSingleMemAlloc` constrains internal `*_Ext` helpers, not the public `_TIFFmalloc`, `_TIFFcalloc`, or `_TIFFrealloc` entry points.
+      - Do not run the upstream `test_open_options` binary in this phase. It also exercises `TIFFSetField()` and `TIFFWriteDirectory()`, so that verification belongs in phase 5.
+      - Implement close-path resource teardown ordering from `tif_close.c` in this phase. Add the full write-side `TIFFFlush` and `TIFFFlushData` behavior that `TIFFClose` invokes on writable handles in phase 6.
+      - The build-only internal handle must expose the callbacks and state that copied tools actually dereference from `tiffiop.h`, including `tif_name`, `tif_seekproc`, and the raw-buffer and decode fields consumed by `fax2tiff.c`.
+      - Keep `unsafe` localized to FFI pointer conversion, callback invocation, and exported ABI boundaries.
+      
+      Success Criteria
+      - `testtypes` passes against the safe library.
+      - `api_handle_smoke` directly calls `_TIFFcalloc`, `TIFFGetVersion`, representative `TIFFIs*` queries, the directory-independent `TIFFOpenOptions*` API, and callback accessor functions.
+      - `api_open_mode_smoke` covers the `TIFFOpen`/`TIFFFdOpen`/`TIFFClientOpen` mode-string matrix including `wb`, `wl`, `w4`, `w8`, `rM`, `rm`, `rC`, `rc`, `rD`, `rO`, `rh`, `rH`, `rL`, `w8DO`, `w+`, and `a+`.
+      - Symbol checks confirm `_TIFFcalloc`, the checked-allocation helpers, `TIFFGetVersion`, and the `TIFFIs*` helpers are exported.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_core_lifecycle
+    type: check
+    bounce_target: impl_core_lifecycle
+    prompt: |-
+      Reviewer role: Handle lifecycle and open-path reviewer.
+      
+      Review the current workspace for check phase `check_core_lifecycle`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target testtypes api_handle_smoke api_open_mode_smoke
+      ctest --test-dir safe/build --output-on-failure -R '^(testtypes|api_handle_smoke|api_open_mode_smoke)$'
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFOpen TIFFOpenExt TIFFFdOpen TIFFFdOpenExt TIFFClientOpen TIFFClientOpenExt TIFFClose TIFFCleanup TIFFFileName TIFFSetFileName TIFFFileno TIFFSetFileno TIFFClientdata TIFFSetClientdata TIFFGetMode TIFFSetMode TIFFGetReadProc TIFFGetWriteProc TIFFGetSeekProc TIFFGetCloseProc TIFFGetSizeProc TIFFGetMapFileProc TIFFGetUnmapFileProc TIFFGetVersion TIFFIsTiled TIFFIsByteSwapped TIFFIsUpSampled TIFFIsMSB2LSB TIFFIsBigEndian TIFFIsBigTIFF TIFFError TIFFErrorExt TIFFErrorExtR TIFFWarning TIFFWarningExt TIFFWarningExtR TIFFSetErrorHandler TIFFSetErrorHandlerExt TIFFSetWarningHandler TIFFSetWarningHandlerExt TIFFOpenOptionsAlloc TIFFOpenOptionsFree TIFFOpenOptionsSetMaxSingleMemAlloc TIFFOpenOptionsSetErrorHandlerExtR TIFFOpenOptionsSetWarningHandlerExtR _TIFFmalloc _TIFFcalloc _TIFFrealloc _TIFFmemset _TIFFmemcpy _TIFFmemcmp _TIFFfree _TIFFCheckMalloc _TIFFCheckRealloc _TIFFMultiply32 _TIFFMultiply64 _TIFFClampDoubleToUInt32 \
+        --must-export-version _TIFFcalloc=LIBTIFF_4.0
+      ```
+      
+      Verify all of the following
+      - The implementation uses an opaque handle model rather than a field-for-field recreation of `struct tiff`.
+      - Open and close behavior, callback plumbing, error handlers, and directory-independent open-options behavior match the phase requirements.
+      - `testtypes`, `api_handle_smoke`, and `api_open_mode_smoke` pass.
+      - Symbol checks confirm `_TIFFcalloc`, the checked-allocation helpers, `TIFFGetVersion`, and the `TIFFIs*` helpers are exported.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_field_registry
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_field_registry` (Field Registry, Client Info, and Tag Helper Surface).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Extend the scaffold and lifecycle artifacts already produced instead of rebuilding alternate field tables or ABI probes.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_field_registry` with fixed `bounce_target: impl_field_registry`.
+      - Keep public ABI layout compatibility explicit and checked through the reusable layout-probe bridge rather than by adding new installed headers or new public ELF exports.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `original/libtiff/tif_dirinfo.c`
+      - `original/libtiff/tif_extension.c`
+      - `original/libtiff/tiffiop.h`
+      - `original/doc/functions/TIFFDataWidth.rst`
+      - `original/doc/functions/TIFFCustomTagList.rst`
+      - `original/doc/functions/TIFFFieldDataType.rst`
+      - `original/doc/functions/TIFFFieldName.rst`
+      - `original/doc/functions/TIFFFieldPassCount.rst`
+      - `original/doc/functions/TIFFFieldReadCount.rst`
+      - `original/doc/functions/TIFFFieldTag.rst`
+      - `original/doc/functions/TIFFFieldWriteCount.rst`
+      - `original/doc/functions/TIFFClientInfo.rst`
+      - `original/doc/functions/TIFFMergeFieldInfo.rst`
+      - `original/test/rational_precision2double.c`
+      - `original/test/test_signed_tags.c`
+      
+      New Outputs
+      - Rust representations of `TIFFField`, `TIFFFieldArray`, related field metadata, and exact `#[repr(C)]` mirrors of `TIFFFieldInfo` and `TIFFTagMethods`.
+      - Exact `TIFFDataWidth` behavior and the field-size and count helper API.
+      - Exported EXIF and GPS field-array helpers.
+      - Client-info and tag-extender infrastructure reused by later directory phases.
+      - A reusable test-only public-ABI layout probe that later phases extend for the remaining public non-opaque structs.
+      
+      Required Work
+      - Define `#[repr(C)]` mirrors for the internal field-descriptor types that back the exported helper surface, and for the public `TIFFFieldInfo` and `TIFFTagMethods` layouts that callers can pass by pointer or dereference through `TIFFAccessTagMethods()`.
+      - Port the `TIFFDataWidth` logic from `tif_dirinfo.c:637-665` exactly, including the `0` return for unknown types.
+      - Port `TIFFFindField`, `TIFFFieldWithTag`, `TIFFFieldWithName`, `TIFFFieldTag`, `TIFFFieldName`, `TIFFFieldDataType`, `TIFFFieldPassCount`, `TIFFFieldReadCount`, `TIFFFieldWriteCount`, `TIFFFieldSetGetSize`, `TIFFFieldSetGetCountSize`, `TIFFFieldIsAnonymous`, `TIFFGetTagListCount`, `TIFFGetTagListEntry`, `TIFFAccessTagMethods`, `TIFFGetClientInfo`, `TIFFSetClientInfo`, `TIFFMergeFieldInfo`, `TIFFSetTagExtender`, `_TIFFGetExifFields`, and `_TIFFGetGpsFields`.
+      - Preserve sorted lookup semantics, anonymous-field registration behavior, and stable pointer identity for field descriptors.
+      - Create a test-only layout-probe bridge that exposes Rust `size_of` and `offset_of` results to C tests without adding installed headers or new public ELF exports. `public_abi_layout_smoke` must include `safe/include/tiffio.h` and compare C `sizeof` and `offsetof` values for every `TIFFFieldInfo` and `TIFFTagMethods` member against the Rust mirrors.
+      - Create a direct API smoke test that calls `TIFFDataWidth` across all public `TIFFDataType` values and exercises the EXIF and GPS helper exports.
+      
+      Success Criteria
+      - `api_field_registry_smoke` proves `TIFFDataWidth` behaves correctly and that `_TIFFGetExifFields` and `_TIFFGetGpsFields` are exported.
+      - `public_abi_layout_smoke` proves exact `sizeof` and `offsetof` compatibility for `TIFFFieldInfo` and `TIFFTagMethods`.
+      - Symbol checks cover both header-declared and map-only helper exports.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_field_registry
+    type: check
+    bounce_target: impl_field_registry
+    prompt: |-
+      Reviewer role: Field registry and ABI layout reviewer.
+      
+      Review the current workspace for check phase `check_field_registry`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target api_field_registry_smoke public_abi_layout_smoke
+      ctest --test-dir safe/build --output-on-failure -R '^(api_field_registry_smoke|public_abi_layout_smoke)$'
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFDataWidth TIFFFindField TIFFFieldWithTag TIFFFieldWithName TIFFFieldTag TIFFFieldName TIFFFieldDataType TIFFFieldPassCount TIFFFieldReadCount TIFFFieldWriteCount TIFFFieldSetGetSize TIFFFieldSetGetCountSize TIFFFieldIsAnonymous TIFFGetTagListCount TIFFGetTagListEntry TIFFAccessTagMethods TIFFGetClientInfo TIFFSetClientInfo TIFFMergeFieldInfo TIFFSetTagExtender _TIFFGetExifFields _TIFFGetGpsFields
+      ```
+      
+      Verify all of the following
+      - The exported field tables, field-query accessors, client-info registry, `TIFFDataWidth` behavior, and public `TIFFTagMethods` ABI layout match the phase requirements.
+      - `api_field_registry_smoke` proves `TIFFDataWidth` behavior and the EXIF and GPS helper exports.
+      - `public_abi_layout_smoke` proves exact `sizeof` and `offsetof` compatibility for `TIFFFieldInfo` and `TIFFTagMethods`.
+      - Symbol checks cover both header-declared and map-only helper exports.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_directory_read
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_directory_read` (Directory Reading, Navigation, and Read-Side Field Access).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Extend the existing lifecycle and field-registry artifacts rather than rebuilding independent directory parsers or metadata tables.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_directory_read` with fixed `bounce_target: impl_directory_read`.
+      - Do not run `custom_dir`, `custom_dir_EXIF_231`, or `test_directory` in this phase. They also require phase-5 directory writing and phase-6 payload I/O.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `original/libtiff/tif_dir.c`
+      - `original/libtiff/tif_dirread.c`
+      - `original/libtiff/tif_print.c`
+      - `original/libtiff/tif_hash_set.c`
+      - `original/libtiff/tif_aux.c`
+      - `original/doc/functions/TIFFPrintDirectory.rst`
+      - `original/test/test_ifd_loop_detection.c`
+      - `original/debian/patches/CVE-2024-7006.patch`
+      - `relevant_cves.json`
+      
+      New Outputs
+      - A Rust parser for TIFF headers and IFD chains.
+      - Read-side tag storage and getter marshalling.
+      - Directory-print formatting that remains source- and runtime-compatible for `tiffinfo` and other C clients.
+      - Regression tests for malformed directory and tag cases.
+      
+      Required Work
+      - Port the header and IFD parsing behavior from `tif_dirread.c` and `tif_dir.c`, including classic TIFF, BigTIFF, EXIF and GPS custom directories, and SubIFD traversal.
+      - Implement `TIFFReadDirectory`, `TIFFReadCustomDirectory`, `TIFFReadEXIFDirectory`, `TIFFReadGPSDirectory`, `TIFFGetField`, `TIFFVGetField`, `TIFFGetFieldDefaulted`, `TIFFVGetFieldDefaulted`, `TIFFSetDirectory`, `TIFFSetSubDirectory`, `TIFFCurrentDirectory`, `TIFFCurrentDirOffset`, `TIFFCurrentRow`, `TIFFCurrentStrip`, `TIFFCurrentTile`, `TIFFNumberOfDirectories`, `TIFFLastDirectory`, `TIFFFreeDirectory`, and `TIFFPrintDirectory`.
+      - Use checked arithmetic and explicit file-bounds validation for all offsets, counts, and byte-width calculations.
+      - Translate the existing directory-related CVE themes into validation rules and regression tests for zero divisors and zero-width calculations, malformed anonymous field creation, unexpected tag order, IFD loops and self-referential chains, and absent strip or tile metadata states.
+      - Preserve warning behavior for unknown fields and anonymous tags instead of turning them into panics.
+      
+      Success Criteria
+      - `test_ifd_loop_detection` passes unchanged or with only build-path adjustments.
+      - `api_directory_read_smoke` calls `TIFFPrintDirectory` into a real `FILE *` sink and verifies the output remains stable enough for the copied tools.
+      - `dirread_regressions` covers malformed directory cases derived from `relevant_cves.json` and the Debian patches.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_directory_read
+    type: check
+    bounce_target: impl_directory_read
+    prompt: |-
+      Reviewer role: Directory reading and traversal reviewer.
+      
+      Review the current workspace for check phase `check_directory_read`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target test_ifd_loop_detection api_directory_read_smoke dirread_regressions
+      ctest --test-dir safe/build --output-on-failure -R '^(test_ifd_loop_detection|api_directory_read_smoke|dirread_regressions)$'
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFReadDirectory TIFFReadCustomDirectory TIFFReadEXIFDirectory TIFFReadGPSDirectory TIFFGetField TIFFVGetField TIFFGetFieldDefaulted TIFFVGetFieldDefaulted TIFFSetDirectory TIFFSetSubDirectory TIFFCurrentDirectory TIFFCurrentDirOffset TIFFCurrentRow TIFFCurrentStrip TIFFCurrentTile TIFFNumberOfDirectories TIFFLastDirectory TIFFFreeDirectory TIFFPrintDirectory
+      ```
+      
+      Verify all of the following
+      - Header parsing, IFD traversal, loop detection, and the read-side `GetField` surface work without depending on later write-path or payload-I/O APIs.
+      - `test_ifd_loop_detection`, `api_directory_read_smoke`, and `dirread_regressions` pass.
+      - `api_directory_read_smoke` verifies `TIFFPrintDirectory` output stability for copied tools.
+      - Symbol checks confirm the read-side directory APIs are exported.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_directory_write
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_directory_write` (Directory Writing, SetField/VSetField, and Directory Mutation).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Build on the existing directory-read implementation and prior artifacts instead of creating separate write-path baselines.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_directory_write` with fixed `bounce_target: impl_directory_write`.
+      - Defer `ascii_tag`, `long_tag`, `short_tag`, `rational_precision2double`, `test_write_read_tags`, `test_transferfunction_write_read`, `test_signed_tags`, `custom_dir`, `custom_dir_EXIF_231`, `defer_strile_writing`, and `test_directory` to phase 6 because they also require scanline, strip, or tile payload I/O.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `original/libtiff/tif_dir.c`
+      - `original/libtiff/tif_dirwrite.c`
+      - `original/test/test_open_options.c`
+      - `relevant_cves.json`
+      
+      New Outputs
+      - Setfield and writefield marshalling in Rust.
+      - Directory serialization and rewrite logic.
+      - Regression coverage for directory-only rational-tag validation, transferfunction validation, allocation-cap behavior, and anonymous-field writes.
+      
+      Required Work
+      - Port the write-side directory logic from `tif_dirwrite.c` and the tag set and get dispatch from `tif_dir.c`.
+      - Implement `TIFFSetField`, `TIFFVSetField`, `TIFFUnsetField`, `TIFFCreateDirectory`, `TIFFCreateCustomDirectory`, `TIFFCreateEXIFDirectory`, `TIFFCreateGPSDirectory`, `TIFFWriteDirectory`, `TIFFWriteCustomDirectory`, `TIFFCheckpointDirectory`, `TIFFRewriteDirectory`, `TIFFUnlinkDirectory`, `_TIFFRewriteField`, and `TIFFSetCompressionScheme`.
+      - Preserve varargs promotion rules and pass-count semantics exactly, because the public ABI depends on them.
+      - Run `test_open_options` in this phase because its `TIFFOpenOptionsSetMaxSingleMemAlloc()` coverage also calls `TIFFSetField()` and `TIFFWriteDirectory()`.
+      - Implement enough directory serialization and tag marshalling for `test_open_options` and `api_directory_write_smoke` to succeed without relying on `TIFFWriteScanline()`, `TIFFWriteEncodedStrip()`, `TIFFWriteEncodedTile()`, or other phase-6 payload writers.
+      - In this phase, implement only the `TIFFSetCompressionScheme()` behavior required for directory mutation and uncompressed and default paths, including acceptance of `COMPRESSION_NONE` and the upstream non-fatal handling of unknown schemes. Expand the same exported entry point to full codec-registry-backed behavior in phase 7.
+      - Make rational-tag and transferfunction validation explicit and fallible instead of assertion-driven, covering the `TIFFWriteDirectoryTagCheckedRational` and transferfunction CVE themes.
+      - Ensure anonymous-field creation failures and rewrite failures are reported through the existing warning and error API instead of panicking.
+      
+      Success Criteria
+      - `test_open_options` passes here, proving that the open-options allocation caps now interoperate with `TIFFSetField()` and `TIFFWriteDirectory()`.
+      - `api_directory_write_smoke` exercises exported write-side entry points through directory-only flows that do not rely on scanline, strip, or tile payload writers.
+      - `dirwrite_regressions` covers rational validation, transferfunction validation, allocation-cap failures during directory serialization, and malformed-directory-write cases.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_directory_write
+    type: check
+    bounce_target: impl_directory_write
+    prompt: |-
+      Reviewer role: Directory writing and mutation reviewer.
+      
+      Review the current workspace for check phase `check_directory_write`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target test_open_options api_directory_write_smoke dirwrite_regressions
+      ctest --test-dir safe/build --output-on-failure -R '^(test_open_options|api_directory_write_smoke|dirwrite_regressions)$'
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFSetField TIFFVSetField TIFFUnsetField TIFFCreateDirectory TIFFCreateCustomDirectory TIFFCreateEXIFDirectory TIFFCreateGPSDirectory TIFFWriteDirectory TIFFWriteCustomDirectory TIFFCheckpointDirectory TIFFRewriteDirectory TIFFUnlinkDirectory _TIFFRewriteField TIFFSetCompressionScheme
+      ```
+      
+      Verify all of the following
+      - Tag setting, directory creation, directory writing, and rewrite flows work without relying on phase-6 payload writers.
+      - `test_open_options`, `api_directory_write_smoke`, and `dirwrite_regressions` pass.
+      - `dirwrite_regressions` covers rational validation, transferfunction validation, allocation-cap failures, and malformed-directory-write cases.
+      - Symbol checks confirm the write-side helpers are exported.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_strile_io
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_strile_io` (Strile Math, Scanline/Tile APIs, and Uncompressed I/O).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Extend the directory-read and directory-write implementation already present instead of inventing new payload-I/O harnesses.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phases for this implement phase are `check_strile_io_behavior` and `check_strile_io_exports`, each with fixed `bounce_target: impl_strile_io`.
+      - Do not run `test_tile_read_write` in this phase. It also calls `TIFFReadRGBATile()`, which is implemented in phase 8.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `safe/src/directory/setfield.rs`
+      - `safe/src/directory/write.rs`
+      - `safe/src/directory/rewrite.rs`
+      - `safe/test/api/api_directory_write_smoke.c`
+      - `safe/test/regressions/dirwrite_regressions.c`
+      - `original/libtiff/tif_strip.c`
+      - `original/libtiff/tif_tile.c`
+      - `original/libtiff/tif_read.c`
+      - `original/libtiff/tif_write.c`
+      - `original/libtiff/tif_swab.c`
+      - `original/libtiff/tif_flush.c`
+      - `original/test/ascii_tag.c`
+      - `original/test/long_tag.c`
+      - `original/test/short_tag.c`
+      - `original/test/strip_rw.c`
+      - `original/test/strip.c`
+      - `original/test/rational_precision2double.c`
+      - `original/test/test_write_read_tags.c`
+      - `original/test/test_transferfunction_write_read.c`
+      - `original/test/custom_dir.c`
+      - `original/test/custom_dir_EXIF_231.c`
+      - `original/test/test_append_to_strip.c`
+      - `original/test/defer_strile_loading.c`
+      - `original/test/defer_strile_writing.c`
+      - `original/test/test_directory.c`
+      - `original/test/test_signed_tags.c`
+      - `original/doc/functions/TIFFFlush.rst`
+      - `original/doc/functions/TIFFReadFromUserBuffer.rst`
+      - `relevant_cves.json`
+      
+      New Outputs
+      - Rust implementations of scanline, strip, tile, and deferred-strile operations.
+      - Direct API smoke and regression tests for tile checking, user-buffer decode, public byte-order helpers, and flush behavior.
+      - The first integrated upstream round-trip coverage that combines phase-4 directory reading, phase-5 directory writing, and phase-6 payload I/O in one runnable checker.
+      - Export coverage for `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFReadFromUserBuffer`, `TIFFFlush`, `TIFFFlushData`, and the `TIFFSwab*` and bit-reversal helper family.
+      
+      Required Work
+      - Port size math and coordinate math from `tif_strip.c` and `tif_tile.c`, including `TIFFComputeStrip`, `TIFFComputeTile`, `TIFFCheckTile`, `TIFFDefaultStripSize`, `TIFFDefaultTileSize`, and all `*Size`, `*Size64`, and `V*Size` helpers.
+      - Port raw and encoded scanline, strip, and tile I/O from `tif_read.c` and `tif_write.c`, starting with uncompressed and generic buffer-management paths.
+      - Port the exported byte-order helpers from `tif_swab.c`: `TIFFGetBitRevTable`, `TIFFReverseBits`, `TIFFSwabShort`, `TIFFSwabLong`, `TIFFSwabLong8`, `TIFFSwabArrayOfShort`, `TIFFSwabArrayOfTriples`, `TIFFSwabArrayOfLong`, `TIFFSwabArrayOfLong8`, `TIFFSwabFloat`, `TIFFSwabArrayOfFloat`, `TIFFSwabDouble`, and `TIFFSwabArrayOfDouble`.
+      - Implement `TIFFReadScanline`, `TIFFWriteScanline`, `TIFFReadEncodedStrip`, `TIFFReadRawStrip`, `TIFFReadEncodedTile`, `TIFFReadRawTile`, `TIFFReadTile`, `TIFFWriteEncodedStrip`, `TIFFWriteRawStrip`, `TIFFWriteEncodedTile`, `TIFFWriteRawTile`, `TIFFWriteTile`, `TIFFReadBufferSetup`, `TIFFWriteBufferSetup`, `TIFFSetupStrips`, `TIFFWriteCheck`, `TIFFDeferStrileArrayWriting`, `TIFFForceStrileArrayWriting`, `TIFFGetStrileOffset`, `TIFFGetStrileByteCount`, `TIFFGetStrileOffsetWithErr`, `TIFFGetStrileByteCountWithErr`, `TIFFReadFromUserBuffer`, `TIFFSetWriteOffset`, `TIFFFlush`, and `TIFFFlushData`.
+      - Port the public flush behavior from `tif_flush.c`, including the directory-write-on-flush semantics expected by writable handles. `TIFFFlushData1` may remain internal and is not part of the public Linux inventory.
+      - Preserve deferred and lazy strile-loading semantics, chopped-strip behavior, and mmap-aware read paths.
+      - Run the mixed upstream tests `ascii_tag`, `long_tag`, `short_tag`, `rational_precision2double`, `test_write_read_tags`, `test_transferfunction_write_read`, `custom_dir`, `custom_dir_EXIF_231`, `defer_strile_loading`, `defer_strile_writing`, `test_directory`, `test_signed_tags`, `strip_rw`, and `test_append_to_strip` in this phase.
+      - Add direct API coverage for `TIFFCheckTile`, `TIFFGetBitRevTable`, `TIFFReverseBits`, representative `TIFFSwab*` helpers, `TIFFFlush`, and `TIFFFlushData`.
+      - Use explicit checked arithmetic to block the zero-divisor and overflow CVE classes in tile and strip math.
+      
+      Success Criteria
+      - `ascii_tag`, `long_tag`, `short_tag`, `strip_rw`, `rational_precision2double`, `test_write_read_tags`, `test_transferfunction_write_read`, `custom_dir`, `custom_dir_EXIF_231`, `defer_strile_loading`, `defer_strile_writing`, `test_directory`, `test_signed_tags`, and `test_append_to_strip` all pass here.
+      - `api_strile_smoke` directly calls `TIFFCheckTile`, `TIFFReadTile`, and `TIFFWriteTile` without relying on RGBA helpers.
+      - `defer_strile_loading` passes and exercises `TIFFReadFromUserBuffer`.
+      - `api_strile_smoke` also directly exercises `TIFFGetBitRevTable`, `TIFFReverseBits`, representative `TIFFSwab*` helpers, and a writable-handle `TIFFFlush` and `TIFFFlushData` sequence.
+      - Export checks explicitly require `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFReadFromUserBuffer`, `TIFFFlush`, `TIFFFlushData`, the `TIFFSwab*` family, and all related size-query helpers.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_strile_io_behavior
+    type: check
+    bounce_target: impl_strile_io
+    prompt: |-
+      Reviewer role: Strile I/O behavior reviewer.
+      
+      Review the current workspace for check phase `check_strile_io_behavior`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target ascii_tag long_tag short_tag strip_rw rational_precision2double test_write_read_tags test_transferfunction_write_read custom_dir custom_dir_EXIF_231 defer_strile_loading defer_strile_writing test_directory test_signed_tags test_append_to_strip api_strile_smoke strile_regressions
+      ctest --test-dir safe/build --output-on-failure -R '^(ascii_tag|long_tag|short_tag|strip_rw|rational_precision2double|test_write_read_tags|test_transferfunction_write_read|custom_dir|custom_dir_EXIF_231|defer_strile_loading|defer_strile_writing|test_directory|test_signed_tags|test_append_to_strip|api_strile_smoke|strile_regressions)$'
+      ```
+      
+      Verify all of the following
+      - Scanline, strip, tile, deferred-strile, and user-buffer behavior work for the core uncompressed I/O surface.
+      - The integrated upstream tests listed above pass in this phase.
+      - `api_strile_smoke` directly covers `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFGetBitRevTable`, `TIFFReverseBits`, representative `TIFFSwab*` helpers, and writable-handle `TIFFFlush` and `TIFFFlushData`.
+      - `defer_strile_loading` passes and exercises `TIFFReadFromUserBuffer`.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: check_strile_io_exports
+    type: check
+    bounce_target: impl_strile_io
+    prompt: |-
+      Reviewer role: Strile I/O export-surface reviewer.
+      
+      Review the current workspace for check phase `check_strile_io_exports`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=OFF \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFScanlineSize TIFFScanlineSize64 TIFFRasterScanlineSize TIFFRasterScanlineSize64 TIFFStripSize TIFFStripSize64 TIFFRawStripSize TIFFRawStripSize64 TIFFVStripSize TIFFVStripSize64 TIFFTileRowSize TIFFTileRowSize64 TIFFTileSize TIFFTileSize64 TIFFVTileSize TIFFVTileSize64 TIFFDefaultStripSize TIFFDefaultTileSize TIFFComputeStrip TIFFComputeTile TIFFCheckTile TIFFNumberOfStrips TIFFNumberOfTiles TIFFReadBufferSetup TIFFWriteBufferSetup TIFFSetupStrips TIFFWriteCheck TIFFReadScanline TIFFWriteScanline TIFFReadEncodedStrip TIFFReadRawStrip TIFFReadEncodedTile TIFFReadRawTile TIFFReadTile TIFFReadFromUserBuffer TIFFWriteEncodedStrip TIFFWriteRawStrip TIFFWriteEncodedTile TIFFWriteRawTile TIFFWriteTile TIFFDeferStrileArrayWriting TIFFForceStrileArrayWriting TIFFGetStrileOffset TIFFGetStrileByteCount TIFFGetStrileOffsetWithErr TIFFGetStrileByteCountWithErr TIFFSetWriteOffset TIFFFlush TIFFFlushData TIFFGetBitRevTable TIFFReverseBits TIFFSwabShort TIFFSwabLong TIFFSwabLong8 TIFFSwabArrayOfShort TIFFSwabArrayOfTriples TIFFSwabArrayOfLong TIFFSwabArrayOfLong8 TIFFSwabFloat TIFFSwabArrayOfFloat TIFFSwabDouble TIFFSwabArrayOfDouble
+      ```
+      
+      Verify all of the following
+      - The full tile, strip, and scanline export surface is present, including `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFReadFromUserBuffer`, `TIFFFlush`, `TIFFFlushData`, the `TIFFSwab*` family, and related size-query helpers.
+      - The exported APIs match the checked-in inventory rather than an ad hoc regenerated surface.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_codec_core
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_codec_core` (Codec Registry and Core Non-JPEG Codec Families).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Extend the current strile and directory implementation instead of introducing alternate codec registries or tool harnesses.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phases for this implement phase are `check_codec_core_behavior` and `check_codec_core_exports`, each with fixed `bounce_target: impl_codec_core`.
+      - Keep the generated Fax state table from `original/libtiff/tif_fax3sm.c` as an existing input. Do not regenerate it.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `safe/src/directory/setfield.rs`
+      - `safe/src/directory/write.rs`
+      - `safe/src/directory/rewrite.rs`
+      - `safe/test/api/api_directory_write_smoke.c`
+      - `safe/test/regressions/dirwrite_regressions.c`
+      - `safe/src/strile/mod.rs`
+      - `safe/src/strile/math.rs`
+      - `safe/src/strile/scanline.rs`
+      - `safe/src/strile/strip.rs`
+      - `safe/src/strile/tile.rs`
+      - `safe/src/strile/read.rs`
+      - `safe/src/strile/write.rs`
+      - `safe/src/strile/swab.rs`
+      - `safe/src/strile/flush.rs`
+      - `safe/test/api/api_strile_smoke.c`
+      - `safe/test/regressions/strile_regressions.c`
+      - `original/libtiff/tif_codec.c`
+      - `original/libtiff/tif_compress.c`
+      - `original/libtiff/tif_dumpmode.c`
+      - `original/libtiff/tif_fax3.c`
+      - `original/libtiff/tif_fax3sm.c`
+      - `original/libtiff/tif_lzw.c`
+      - `original/libtiff/tif_packbits.c`
+      - `original/libtiff/tif_next.c`
+      - `original/libtiff/tif_thunder.c`
+      - `original/libtiff/tif_zip.c`
+      - `original/libtiff/tif_predict.c`
+      - `original/test/rewrite_tag.c`
+      - `original/doc/functions/TIFFcodec.rst`
+      - `relevant_cves.json`
+      
+      New Outputs
+      - A Rust codec-registry implementation with stable `TIFFCodec` pointer semantics.
+      - Exact public `TIFFCodec` layout compatibility for callers that inspect configured codec tables.
+      - Safe Rust ports of the non-JPEG internal codecs and predictor logic.
+      - Working CLI-tool paths for the core compression formats.
+      
+      Required Work
+      - Port the codec registration surface: `TIFFFindCODEC`, `TIFFRegisterCODEC`, `TIFFUnRegisterCODEC`, `TIFFIsCODECConfigured`, `TIFFGetConfiguredCODECs`, and `TIFFSetCompressionScheme`.
+      - Port the internal non-JPEG codec families and their setup, predecode, and preencode hooks.
+      - Replace the phase-5 minimal `TIFFSetCompressionScheme()` internals with the full registry-driven behavior from `tif_compress.c` without changing the exported ABI or symbol ownership.
+      - Extend the phase-3 public layout-probe target to cover `TIFFCodec`, including `sizeof(TIFFCodec)` and the offsets of `name`, `scheme`, and `init` as seen through `safe/include/tiffio.h`.
+      - Run `rewrite` in this phase. `original/test/rewrite_tag.c` exercises `COMPRESSION_PACKBITS` in addition to the already-implemented rewrite and payload-I/O paths.
+      - Preserve predictor and strip-chop behavior, because the shell tests and multiple CVEs depend on edge-case size math and decoder state transitions.
+      - Use checked bitstream readers and explicit state machines instead of implicit C integer behavior.
+      
+      Success Criteria
+      - `rewrite` passes here as the first upstream regression that combines PackBits, encoded-strip overwrite, and `TIFFRewriteDirectory()`.
+      - The shell-test subset for Fax, LZW, Deflate, `tiffcp`, `tiffdump`, and `tiffinfo` passes.
+      - `public_abi_layout_smoke` confirms `TIFFCodec` layout compatibility in addition to the earlier `TIFFFieldInfo` and `TIFFTagMethods` coverage.
+      - The codec-registry exports are present and versioned correctly.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_codec_core_behavior
+    type: check
+    bounce_target: impl_codec_core
+    prompt: |-
+      Reviewer role: Core codec behavior reviewer.
+      
+      Review the current workspace for check phase `check_codec_core_behavior`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target public_abi_layout_smoke rewrite fax2tiff ppm2tiff tiffcmp tiffcp tiffdump tiffinfo tiffsplit
+      ctest --test-dir safe/build --output-on-failure -R '^(public_abi_layout_smoke|rewrite)$'
+      safe/scripts/run-upstream-shell-tests.sh \
+        --build-dir safe/build \
+        --test-dir safe/test \
+        --tests fax2tiff.sh ppm2tiff_pbm.sh ppm2tiff_pgm.sh ppm2tiff_ppm.sh tiffcp-g3.sh tiffcp-g3-1d.sh tiffcp-g3-1d-fill.sh tiffcp-g3-2d.sh tiffcp-g3-2d-fill.sh tiffcp-g4.sh tiffcp-lzw-compat.sh tiffcp-lzw-scanline-decode.sh tiffcp-split.sh tiffcp-split-join.sh tiffdump.sh tiffinfo.sh testfax4.sh testfax3_bug_513.sh testdeflatelaststripextradata.sh
+      ```
+      
+      Verify all of the following
+      - Codec registration, CCITT and Fax, LZW, PackBits, NeXT, Thunder, Deflate, Predictor, and the core tool paths that depend on them work as required.
+      - `rewrite` passes and combines PackBits, encoded-strip overwrite, and `TIFFRewriteDirectory()`.
+      - The listed shell-test subset for Fax, LZW, Deflate, `tiffcp`, `tiffdump`, and `tiffinfo` passes.
+      - `public_abi_layout_smoke` confirms `TIFFCodec` layout compatibility in addition to the earlier layout coverage.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: check_codec_core_exports
+    type: check
+    bounce_target: impl_codec_core
+    prompt: |-
+      Reviewer role: Core codec export-surface reviewer.
+      
+      Review the current workspace for check phase `check_codec_core_exports`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=OFF \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFFindCODEC TIFFRegisterCODEC TIFFUnRegisterCODEC TIFFIsCODECConfigured TIFFGetConfiguredCODECs TIFFSetCompressionScheme
+      ```
+      
+      Verify all of the following
+      - The codec-registry export surface is present and versioned correctly.
+      - `TIFFSetCompressionScheme` remains exported while its internals move to the full registry-driven behavior.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_jpeg_rgba_color
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_jpeg_rgba_color` (JPEG/OJPEG, External Codecs, RGBA, and Color Conversion).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Extend the existing codec and strile implementation rather than swapping in unrelated alternate libraries or newly discovered baselines.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phases for this implement phase are `check_jpeg_rgba_behavior` and `check_jpeg_rgba_exports`, each with fixed `bounce_target: impl_jpeg_rgba_color`.
+      - Keep the upstream external-library integration model where it is behavior-critical: JPEG/libjpeg, JBIG, LERC, liblzma, ZSTD, WebP, and zlib/libdeflate.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `safe/src/directory/setfield.rs`
+      - `safe/src/directory/write.rs`
+      - `safe/src/directory/rewrite.rs`
+      - `safe/test/api/api_directory_write_smoke.c`
+      - `safe/test/regressions/dirwrite_regressions.c`
+      - `safe/src/strile/mod.rs`
+      - `safe/src/strile/math.rs`
+      - `safe/src/strile/scanline.rs`
+      - `safe/src/strile/strip.rs`
+      - `safe/src/strile/tile.rs`
+      - `safe/src/strile/read.rs`
+      - `safe/src/strile/write.rs`
+      - `safe/src/strile/swab.rs`
+      - `safe/src/strile/flush.rs`
+      - `safe/test/api/api_strile_smoke.c`
+      - `safe/test/regressions/strile_regressions.c`
+      - `safe/src/codec/mod.rs`
+      - `safe/src/codec/registry.rs`
+      - `safe/src/codec/ccitt.rs`
+      - `safe/src/codec/lzw.rs`
+      - `safe/src/codec/packbits.rs`
+      - `safe/src/codec/next.rs`
+      - `safe/src/codec/thunder.rs`
+      - `safe/src/codec/deflate.rs`
+      - `safe/src/codec/predictor.rs`
+      - `original/libtiff/tif_jpeg.c`
+      - `original/libtiff/tif_jpeg_12.c`
+      - `original/libtiff/tif_ojpeg.c`
+      - `original/libtiff/tif_jbig.c`
+      - `original/libtiff/tif_lerc.c`
+      - `original/libtiff/tif_lzma.c`
+      - `original/libtiff/tif_zstd.c`
+      - `original/libtiff/tif_webp.c`
+      - `original/libtiff/tif_getimage.c`
+      - `original/libtiff/tif_color.c`
+      - `original/libtiff/tif_luv.c`
+      - `original/test/raw_decode.c`
+      - `original/test/test_rgba_readers.c`
+      - `original/test/test_tile_read_write.c`
+      - `original/tools/tiffgt.c`
+      - `original/doc/functions/TIFFReadRGBAImage.rst`
+      - `original/doc/functions/TIFFReadRGBAStrip.rst`
+      - `original/doc/functions/TIFFReadRGBATile.rst`
+      - `original/doc/functions/TIFFRGBAImage.rst`
+      - `original/doc/functions/TIFFcolor.rst`
+      - `relevant_cves.json`
+      
+      New Outputs
+      - JPEG, OJPEG, and external-codec support in the Rust core.
+      - High-level RGBA reader APIs and color conversion helpers.
+      - Exported LogLuv helper functions for the header-only surface.
+      - Exact public-layout compatibility for `TIFFDisplay`, `TIFFYCbCrToRGB`, `TIFFCIELabToRGB`, and `TIFFRGBAImage`, while preserving the earlier `TIFFTagMethods`, `TIFFFieldInfo`, and `TIFFCodec` coverage.
+      
+      Required Work
+      - Port the libtiff-side coordination and state handling for the external codecs into Rust rather than swapping the underlying codec libraries for unrelated crates.
+      - Port OJPEG with especially explicit absent-data, divide-by-zero, and malformed-header validation, because `relevant_cves.json` highlights OJPEG repeatedly.
+      - Run `test_tile_read_write` in this phase because it also calls `TIFFReadRGBATile()` in addition to the phase-6 tile-I/O surface.
+      - Port `TIFFReadRGBAImage`, `TIFFReadRGBAImageOriented`, `TIFFReadRGBAStrip`, `TIFFReadRGBAStripExt`, `TIFFReadRGBATile`, `TIFFReadRGBATileExt`, `TIFFRGBAImageOK`, `TIFFRGBAImageBegin`, `TIFFRGBAImageGet`, `TIFFRGBAImageEnd`, `TIFFCIELabToRGBInit`, `TIFFCIELabToXYZ`, `TIFFXYZToRGB`, `TIFFYCbCrToRGBInit`, `TIFFYCbCrtoRGB`, and the header-only LogLuv conversion helpers.
+      - Extend the phase-3 public layout-probe target to cover `TIFFDisplay`, `TIFFYCbCrToRGB`, `TIFFCIELabToRGB`, and `TIFFRGBAImage`, including the embedded `TIFFDisplay` member, the `put` union, the function-pointer fields, and the trailing offset fields used by `original/tools/tiffgt.c`.
+      - Make all attacker-controlled validation failures return recoverable errors instead of assertions or panics.
+      
+      Success Criteria
+      - `raw_decode`, `test_rgba_readers`, `test_tile_read_write`, and the large `tiff2rgba`/`tiff2bw`/`tiffcrop` shell-test family pass.
+      - `public_abi_layout_smoke` confirms exact `sizeof` and `offsetof` compatibility for `TIFFDisplay`, `TIFFYCbCrToRGB`, `TIFFCIELabToRGB`, `TIFFRGBAImage`, and the earlier layout coverage.
+      - The selected shell-test subset runs against the safe-build `tiffinfo` binary.
+      - Symbol checks verify the LogLuv helpers and the color-conversion exports, not just the RGBA entry points, and verify that the LogLuv helper family is exported on `LIBTIFF_4.0`.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_jpeg_rgba_behavior
+    type: check
+    bounce_target: impl_jpeg_rgba_color
+    prompt: |-
+      Reviewer role: JPEG, RGBA, and color-pipeline behavior reviewer.
+      
+      Review the current workspace for check phase `check_jpeg_rgba_behavior`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel --target public_abi_layout_smoke raw_decode test_rgba_readers test_tile_read_write tiffinfo tiff2rgba tiff2bw tiffcrop tiff2pdf tiff2ps
+      ctest --test-dir safe/build --output-on-failure -R '^(raw_decode|test_rgba_readers|test_tile_read_write|public_abi_layout_smoke)$'
+      safe/scripts/run-upstream-shell-tests.sh \
+        --build-dir safe/build \
+        --test-dir safe/test \
+        --include-regex '^(tiff2rgba-|tiff2bw-|tiffcrop-|tiff2pdf\\.sh|tiff2ps-)'
+      ```
+      
+      Verify all of the following
+      - JPEG and OJPEG behavior, external codec integration, RGBA helper APIs, and color-conversion helpers work as required.
+      - `raw_decode`, `test_rgba_readers`, `test_tile_read_write`, and the selected shell-test subset pass.
+      - `public_abi_layout_smoke` confirms exact `sizeof` and `offsetof` compatibility for `TIFFDisplay`, `TIFFYCbCrToRGB`, `TIFFCIELabToRGB`, `TIFFRGBAImage`, and the earlier layout coverage.
+      - The selected shell-test subset runs against the safe-build `tiffinfo` binary, which the copied scripts use to validate outputs.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: check_jpeg_rgba_exports
+    type: check
+    bounce_target: impl_jpeg_rgba_color
+    prompt: |-
+      Reviewer role: JPEG, RGBA, and LogLuv export-surface reviewer.
+      
+      Review the current workspace for check phase `check_jpeg_rgba_exports`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=OFF \
+        -Dtiff-tests=OFF \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --must-export TIFFReadRGBAImage TIFFReadRGBAImageOriented TIFFReadRGBAStrip TIFFReadRGBAStripExt TIFFReadRGBATile TIFFReadRGBATileExt TIFFRGBAImageOK TIFFRGBAImageBegin TIFFRGBAImageGet TIFFRGBAImageEnd TIFFCIELabToRGBInit TIFFCIELabToXYZ TIFFXYZToRGB TIFFYCbCrToRGBInit TIFFYCbCrtoRGB LogL16toY LogL10toY XYZtoRGB24 uv_decode LogLuv24toXYZ LogLuv32toXYZ LogL16fromY LogL10fromY uv_encode LogLuv24fromXYZ LogLuv32fromXYZ \
+        --must-export-version LogL16toY=LIBTIFF_4.0 LogL10toY=LIBTIFF_4.0 XYZtoRGB24=LIBTIFF_4.0 uv_decode=LIBTIFF_4.0 LogLuv24toXYZ=LIBTIFF_4.0 LogLuv32toXYZ=LIBTIFF_4.0 LogL16fromY=LIBTIFF_4.0 LogL10fromY=LIBTIFF_4.0 uv_encode=LIBTIFF_4.0 LogLuv24fromXYZ=LIBTIFF_4.0 LogLuv32fromXYZ=LIBTIFF_4.0
+      ```
+      
+      Verify all of the following
+      - The RGBA, color-conversion, and header-only LogLuv helper exports are present.
+      - Symbol checks verify the LogLuv helper family is exported on `LIBTIFF_4.0`.
+      - The export set includes the color-conversion helpers, not just the RGBA entry points.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_performance_guard
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_performance_guard` (Performance Baseline, Hot-Path Tuning, and Regression Guard).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Use the prepared original build in `original/build-step2/` as the baseline instead of rebuilding upstream.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_performance_guard` with fixed `bounce_target: impl_performance_guard`.
+      - Use a dedicated `safe/build-perf` CMake tree configured with `-DCMAKE_BUILD_TYPE=Release` so the measured safe workload uses an explicit optimized build.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `safe/src/directory/setfield.rs`
+      - `safe/src/directory/write.rs`
+      - `safe/src/directory/rewrite.rs`
+      - `safe/test/api/api_directory_write_smoke.c`
+      - `safe/test/regressions/dirwrite_regressions.c`
+      - `safe/src/strile/mod.rs`
+      - `safe/src/strile/math.rs`
+      - `safe/src/strile/scanline.rs`
+      - `safe/src/strile/strip.rs`
+      - `safe/src/strile/tile.rs`
+      - `safe/src/strile/read.rs`
+      - `safe/src/strile/write.rs`
+      - `safe/src/strile/swab.rs`
+      - `safe/src/strile/flush.rs`
+      - `safe/test/api/api_strile_smoke.c`
+      - `safe/test/regressions/strile_regressions.c`
+      - `safe/src/codec/mod.rs`
+      - `safe/src/codec/registry.rs`
+      - `safe/src/codec/ccitt.rs`
+      - `safe/src/codec/lzw.rs`
+      - `safe/src/codec/packbits.rs`
+      - `safe/src/codec/next.rs`
+      - `safe/src/codec/thunder.rs`
+      - `safe/src/codec/deflate.rs`
+      - `safe/src/codec/predictor.rs`
+      - `safe/src/codec/jpeg.rs`
+      - `safe/src/codec/ojpeg.rs`
+      - `safe/src/codec/jbig.rs`
+      - `safe/src/codec/lerc.rs`
+      - `safe/src/codec/lzma.rs`
+      - `safe/src/codec/zstd.rs`
+      - `safe/src/codec/webp.rs`
+      - `safe/src/codec/logluv.rs`
+      - `safe/src/color/mod.rs`
+      - `safe/src/color/rgba.rs`
+      - `safe/src/color/ycbcr.rs`
+      - `safe/src/color/cielab.rs`
+      - `safe/src/color/logluv.rs`
+      - `safe/test/regressions/codec_regressions.c`
+      - `original/build-step2/libtiff/libtiff.so.6.0.1`
+      - `original/build-step2/libtiff/libtiffxx.so.6.0.1`
+      - `original/build-step2/tools/tiffinfo`
+      - `original/build-step2/tools/tiffcp`
+      - `original/build-step2/tools/tiff2rgba`
+      - `original/build-step2/tools/tiffcrop`
+      - `original/build-step2/tools/tiff2pdf`
+      - `original/test/images/rgb-3c-8b.tiff`
+      - `original/test/images/tiff_with_subifd_chain.tif`
+      - `original/test/images/quad-lzw-compat.tiff`
+      - `original/test/images/testfax4.tiff`
+      - `original/test/images/rgb-3c-16b.tiff`
+      - `original/test/images/quad-tile.jpg.tiff`
+      
+      New Outputs
+      - A checked-in benchmark harness that compares the safe build against the prepared original build on representative CLI-tool workloads.
+      - A machine-readable workload manifest under `safe/perf/` that records which images and commands make up the accepted performance suite.
+      - Hot-path tuning changes in the safe implementation to remove avoidable copies, repeated allocations, and unnecessary metadata re-parsing discovered by the benchmark.
+      
+      Required Work
+      - Use `original/build-step2/` as the baseline instead of rebuilding the original project. The benchmark harness should run the prepared original and safe binaries on the same inputs under the same temporary-output layout.
+      - Benchmark representative hot paths rather than every supported format. The initial workload manifest must cover at least `tiffinfo` on `rgb-3c-8b.tiff` and `tiff_with_subifd_chain.tif`, `tiffcp` on `quad-lzw-compat.tiff` and `testfax4.tiff`, `tiff2rgba` on `rgb-3c-16b.tiff`, `tiffcrop` on `quad-tile.jpg.tiff`, and `tiff2pdf` on `rgb-3c-8b.tiff`.
+      - The benchmark harness should warm up each command once, measure multiple timed runs, compare medians, and validate outputs instead of timing failed commands.
+      - The acceptance rule must be explicit and machine-checked: no individual workload may exceed `2.0x` the prepared original median, and the suite median slowdown may not exceed `1.5x`.
+      - Tune the safe implementation with compatibility-preserving optimizations only: retain mmap and deferred and lazy strile behavior where safe, cache resolved field and directory metadata instead of reparsing, reuse scanline and tile buffers and codec state instead of allocating per row, and avoid replacing upstream external codec integrations with slower, behavior-divergent alternatives.
+      
+      Success Criteria
+      - `python3 safe/scripts/benchmark-vs-original.py ...` passes with the stated thresholds.
+      - `safe/perf/latest.json` is produced so later phases and the final verifier can inspect the measured regressions.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_performance_guard
+    type: check
+    bounce_target: impl_performance_guard
+    prompt: |-
+      Reviewer role: Performance baseline and regression-guard reviewer.
+      
+      Review the current workspace for check phase `check_performance_guard`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      rm -rf safe/build-perf
+      cmake -S safe -B safe/build-perf -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build-perf --parallel --target tiffinfo tiffcp tiff2rgba tiffcrop tiff2pdf
+      python3 safe/scripts/benchmark-vs-original.py \
+        --original-build original/build-step2 \
+        --safe-build safe/build-perf \
+        --workloads safe/perf/workloads.json \
+        --output safe/perf/latest.json \
+        --max-slowdown 2.0 \
+        --suite-median-max 1.5
+      test -f safe/perf/latest.json
+      ```
+      
+      Verify all of the following
+      - The safe build is benchmarked against the prepared original baseline on representative hot paths.
+      - No individual workload exceeds `2.0x` the prepared original median and the suite median slowdown does not exceed `1.5x`.
+      - `safe/perf/latest.json` is produced.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_packaging_compat
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_packaging_compat` (libtiffxx, Packaging, Install Surface, Link Compatibility, and Downstream Harness).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Use the prepared `original/build-step2` objects and checked-in Debian metadata instead of rebuilding or rediscovering compatibility baselines.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phases for this implement phase are `check_packaging_and_install` and `check_link_and_downstream_compat`, each with fixed `bounce_target: impl_packaging_compat`.
+      - Preserve the package names `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools`, and keep the binary-package version exactly `1:4.5.1+git230720-4ubuntu2.5+safelibs1`.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `safe/src/directory/setfield.rs`
+      - `safe/src/directory/write.rs`
+      - `safe/src/directory/rewrite.rs`
+      - `safe/test/api/api_directory_write_smoke.c`
+      - `safe/test/regressions/dirwrite_regressions.c`
+      - `safe/src/strile/mod.rs`
+      - `safe/src/strile/math.rs`
+      - `safe/src/strile/scanline.rs`
+      - `safe/src/strile/strip.rs`
+      - `safe/src/strile/tile.rs`
+      - `safe/src/strile/read.rs`
+      - `safe/src/strile/write.rs`
+      - `safe/src/strile/swab.rs`
+      - `safe/src/strile/flush.rs`
+      - `safe/test/api/api_strile_smoke.c`
+      - `safe/test/regressions/strile_regressions.c`
+      - `safe/src/codec/mod.rs`
+      - `safe/src/codec/registry.rs`
+      - `safe/src/codec/ccitt.rs`
+      - `safe/src/codec/lzw.rs`
+      - `safe/src/codec/packbits.rs`
+      - `safe/src/codec/next.rs`
+      - `safe/src/codec/thunder.rs`
+      - `safe/src/codec/deflate.rs`
+      - `safe/src/codec/predictor.rs`
+      - `safe/src/codec/jpeg.rs`
+      - `safe/src/codec/ojpeg.rs`
+      - `safe/src/codec/jbig.rs`
+      - `safe/src/codec/lerc.rs`
+      - `safe/src/codec/lzma.rs`
+      - `safe/src/codec/zstd.rs`
+      - `safe/src/codec/webp.rs`
+      - `safe/src/codec/logluv.rs`
+      - `safe/src/color/mod.rs`
+      - `safe/src/color/rgba.rs`
+      - `safe/src/color/ycbcr.rs`
+      - `safe/src/color/cielab.rs`
+      - `safe/src/color/logluv.rs`
+      - `safe/test/regressions/codec_regressions.c`
+      - `safe/scripts/benchmark-vs-original.py`
+      - `safe/perf/workloads.json`
+      - `original/libtiff/tif_stream.cxx`
+      - `original/libtiff/tiffio.hxx`
+      - `original/debian/control`
+      - `original/debian/rules`
+      - `original/debian/libtiff6.install`
+      - `original/debian/libtiffxx6.install`
+      - `original/debian/libtiff-dev.install`
+      - `original/debian/libtiff-tools.install`
+      - `original/debian/libtiff6.symbols`
+      - `original/debian/libtiffxx6.symbols`
+      - `original/libtiff-4.pc.in`
+      - `original/build/libtiff/libtiff.so.6.0.1`
+      - `original/build/libtiff/libtiffxx.so.6.0.1`
+      - `original/build/test_cmake/`
+      - `original/build/test_cmake_no_target/`
+      - `original/test/images/minisblack-1c-8b.tiff`
+      - `original/build-step2/test/CMakeFiles/ascii_tag.dir/ascii_tag.c.o`
+      - `original/build-step2/test/CMakeFiles/ascii_tag.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/custom_dir.dir/custom_dir.c.o`
+      - `original/build-step2/test/CMakeFiles/custom_dir.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/custom_dir_EXIF_231.dir/custom_dir_EXIF_231.c.o`
+      - `original/build-step2/test/CMakeFiles/custom_dir_EXIF_231.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/defer_strile_loading.dir/defer_strile_loading.c.o`
+      - `original/build-step2/test/CMakeFiles/defer_strile_loading.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/defer_strile_writing.dir/defer_strile_writing.c.o`
+      - `original/build-step2/test/CMakeFiles/defer_strile_writing.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/long_tag.dir/check_tag.c.o`
+      - `original/build-step2/test/CMakeFiles/long_tag.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/long_tag.dir/long_tag.c.o`
+      - `original/build-step2/test/CMakeFiles/rational_precision2double.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/rational_precision2double.dir/rational_precision2double.c.o`
+      - `original/build-step2/test/CMakeFiles/raw_decode.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/raw_decode.dir/raw_decode.c.o`
+      - `original/build-step2/test/CMakeFiles/rewrite.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/rewrite.dir/rewrite_tag.c.o`
+      - `original/build-step2/test/CMakeFiles/short_tag.dir/check_tag.c.o`
+      - `original/build-step2/test/CMakeFiles/short_tag.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/short_tag.dir/short_tag.c.o`
+      - `original/build-step2/test/CMakeFiles/strip_rw.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/strip_rw.dir/strip.c.o`
+      - `original/build-step2/test/CMakeFiles/strip_rw.dir/strip_rw.c.o`
+      - `original/build-step2/test/CMakeFiles/strip_rw.dir/test_arrays.c.o`
+      - `original/build-step2/test/CMakeFiles/test_append_to_strip.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_append_to_strip.dir/test_append_to_strip.c.o`
+      - `original/build-step2/test/CMakeFiles/test_directory.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_directory.dir/test_directory.c.o`
+      - `original/build-step2/test/CMakeFiles/test_ifd_loop_detection.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_ifd_loop_detection.dir/test_ifd_loop_detection.c.o`
+      - `original/build-step2/test/CMakeFiles/test_open_options.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_open_options.dir/test_open_options.c.o`
+      - `original/build-step2/test/CMakeFiles/test_rgba_readers.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_rgba_readers.dir/test_rgba_readers.c.o`
+      - `original/build-step2/test/CMakeFiles/test_signed_tags.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_signed_tags.dir/test_signed_tags.c.o`
+      - `original/build-step2/test/CMakeFiles/test_tile_read_write.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_tile_read_write.dir/test_tile_read_write.c.o`
+      - `original/build-step2/test/CMakeFiles/test_transferfunction_write_read.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_transferfunction_write_read.dir/test_transferfunction_write_read.c.o`
+      - `original/build-step2/test/CMakeFiles/test_write_read_tags.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/test_write_read_tags.dir/test_write_read_tags.c.o`
+      - `original/build-step2/test/CMakeFiles/testtypes.dir/link.txt`
+      - `original/build-step2/test/CMakeFiles/testtypes.dir/testtypes.c.o`
+      - `dependents.json`
+      - `test-original.sh`
+      
+      New Outputs
+      - `libtiffxx.so.6` compatibility wrapper for `TIFFStreamOpen`.
+      - Debian packages for `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools`, all carrying version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`.
+      - A reusable package-payload verification harness that extracts the generated `.deb` files, checks the binary-package file split, and reruns external consumer smokes against the extracted package-installed root.
+      - Link-compatibility harnesses that relink prepared `original/build-step2` objects from the stored `link.txt` recipes plus a small set of additional smoke objects against the safe library.
+      - A staged-install C++ consumer smoke that includes `tiffio.hxx`, links `libtiffxx`, and exercises both `TIFFStreamOpen` overloads against the installed safe tree.
+      - A modified downstream Docker harness that installs the generated safe packages in Ubuntu 24.04, proves they replaced the archive packages already present in the container, and reruns the dependent checks.
+      
+      Required Work
+      - Port `TIFFStreamOpen` from `tif_stream.cxx` as a minimal C++ shim library linked against the Rust-backed `libtiff`.
+      - Preserve the `libtiffxx` package split and the two mangled `TIFFStreamOpen` exports required by `original/debian/libtiffxx6.symbols`.
+      - Keep the installed CMake package config and `libtiff-4.pc` consumer contract working. Consumer verification must install the safe build into an explicit temporary prefix such as `/tmp/libtiff-safe-stage/usr`, use `original/build/test_cmake/` and `original/build/test_cmake_no_target/` with `CMAKE_PREFIX_PATH` pointed at that prefix root, compile `original/build/test_cmake/test.c` directly with `pkg-config --cflags --libs libtiff-4` against that staged prefix, and compile and run `safe/test/install/tiffxx_staged_smoke.cpp` directly against the staged install tree.
+      - Build Debian packages under `safe/debian/` with the same package names and multiarch install behavior expected on Ubuntu 24.04.
+      - Set `safe/debian/changelog` to the exact binary-package version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, and preserve the comparison requirement that it sorts above `4.5.1+git230720-4ubuntu2.5`.
+      - Treat the Debian `.install` manifests as first-class compatibility inputs. `safe/debian/libtiff6.install` must capture `usr/lib/*/libtiff.so.*`, `safe/debian/libtiffxx6.install` must capture `usr/lib/*/libtiffxx.so.*`, `safe/debian/libtiff-tools.install` must capture the CLI tools and manpages, and `safe/debian/libtiff-dev.install` must capture the public headers, `usr/lib/*/libtiff.so`, `usr/lib/*/libtiffxx.so`, `usr/lib/*/pkgconfig/libtiff-4.pc`, and `usr/lib/*/cmake/tiff/`.
+      - Update `safe/debian/libtiff6.symbols` from the inventory rather than copying the original file verbatim. It must include `_TIFFcalloc@LIBTIFF_4.0`, `LogL16toY@LIBTIFF_4.0`, `LogL10toY@LIBTIFF_4.0`, `LogL16fromY@LIBTIFF_4.0`, `LogL10fromY@LIBTIFF_4.0`, `LogLuv24toXYZ@LIBTIFF_4.0`, `LogLuv32toXYZ@LIBTIFF_4.0`, `LogLuv24fromXYZ@LIBTIFF_4.0`, `LogLuv32fromXYZ@LIBTIFF_4.0`, `XYZtoRGB24@LIBTIFF_4.0`, `uv_decode@LIBTIFF_4.0`, and `uv_encode@LIBTIFF_4.0`.
+      - Add `safe/scripts/check-packaged-install-surface.sh` and use it in this phase and the final sweep. It must extract each generated `.deb` into both a package-specific inspection directory and a combined temporary root, assert the expected package and file split from the extracted payloads, rerun the CMake sample consumers against the extracted package root, rerun the direct `pkg-config` consumer against the extracted package root, and compile and run `safe/test/install/tiffxx_staged_smoke.cpp` against the extracted package root.
+      - Modify `test-original.sh` so it no longer compiles and installs the original library into `/usr/local`. It must instead read the package directory from `LIBTIFF_SAFE_DIST_DIR`, resolve the four safe `.deb` paths, verify the expected version string and version ordering, install those local `.deb` files after the container's base `apt-get install`, verify installed package versions with `dpkg-query -W`, verify `libtiff.so.6` resolves from the package-managed system path under `/usr/lib/$MULTIARCH`, verify ownership with `dpkg -S`, verify runtime resolution with `ldd`, and rerun the existing 13 dependent-package runtime checks.
+      - Add a dedicated link-compatibility harness that consumes the concrete prepared object and `link.txt` corpus from `original/build-step2` as the primary already-compiled baseline, rewrites only the output path and the `libtiff` library and rpath references so those original objects link and run against `safe/build`, and compiles only the extra header-surface smoke objects needed for APIs that the prepared original objects do not cover.
+      - Because `original/libtiff/libtiffxx.map` is wildcard-based, compare the safe `libtiffxx.so.6` versioned dynsym set directly against `original/build/libtiff/libtiffxx.so.6.0.1` in addition to checking the two `TIFFStreamOpen` overloads from the Debian symbols file.
+      - The extra smoke objects must explicitly call `_TIFFcalloc`, the full LogLuv helper family, `TIFFGetVersion`, `TIFFPrintDirectory`, `TIFFGetBitRevTable`, `TIFFReverseBits`, the `TIFFSwab*` family, `TIFFIsTiled`, `TIFFIsBigEndian`, `TIFFIsBigTIFF`, `TIFFIsByteSwapped`, `TIFFIsMSB2LSB`, `TIFFIsUpSampled`, `TIFFFlush`, `TIFFFlushData`, `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFReadFromUserBuffer`, `TIFFDataWidth`, and `TIFFStreamOpen`.
+      
+      Success Criteria
+      - The staged install tree, CMake package config, and pkg-config metadata support external consumer builds and successful runtime execution.
+      - The staged-install C++ smoke compiles against the installed `tiffio.hxx`, links against the installed `libtiffxx.so.6`, and runs successfully through both `TIFFStreamOpen` overloads.
+      - The built `.deb` files exist under `safe/dist/`, all carry version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, and compare greater than the Ubuntu 24.04 archive baseline.
+      - The actual `.deb` payloads are validated as packaged: the checker proves the required files land in the correct binary package and that the extracted package-installed root supports the CMake, `pkg-config`, and `tiffio.hxx`/`libtiffxx` consumer smokes.
+      - `build-link-compat-objects.sh` plus `link-and-run-link-compat.sh` prove that the prepared `original/build-step2` objects, plus the additional smoke objects, can link and run against the safe library.
+      - `LIBTIFF_SAFE_DIST_DIR=safe/dist ./test-original.sh` passes after being converted to package-based installation and proves via `dpkg-query`, `dpkg -S`, and `ldd` that the safe `libtiff6` package replaced the archive package inside the container.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_packaging_and_install
+    type: check
+    bounce_target: impl_packaging_compat
+    prompt: |-
+      Reviewer role: Packaging, staged-install, and package-payload reviewer.
+      
+      Review the current workspace for check phase `check_packaging_and_install`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      rm -rf /tmp/libtiff-safe-stage /tmp/libtiff-safe-test-cmake /tmp/libtiff-safe-test-cmake-no-target /tmp/libtiff-safe-test-pkgconfig /tmp/libtiff-safe-test-cpp /tmp/libtiff-safe-test-cpp-out.tiff
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_INSTALL_PREFIX=/tmp/libtiff-safe-stage/usr \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      cmake --install safe/build
+      PKGCONFIG_FILE="$(find /tmp/libtiff-safe-stage/usr -type f -name 'libtiff-4.pc' -print -quit)"
+      SAFE_STAGE_LIBDIR="$(find /tmp/libtiff-safe-stage/usr -type f -name 'libtiff.so.6*' -print -quit | xargs -r dirname)"
+      SAFE_STAGE_LIBTIFFXX="$(find /tmp/libtiff-safe-stage/usr -type f -name 'libtiffxx.so.6*' -print -quit)"
+      test -n "$PKGCONFIG_FILE"
+      test -n "$SAFE_STAGE_LIBDIR"
+      test -n "$SAFE_STAGE_LIBTIFFXX"
+      cmake -S original/build/test_cmake -B /tmp/libtiff-safe-test-cmake -G Ninja \
+        -DCMAKE_PREFIX_PATH=/tmp/libtiff-safe-stage/usr
+      cmake --build /tmp/libtiff-safe-test-cmake --parallel
+      LD_LIBRARY_PATH="$SAFE_STAGE_LIBDIR" /tmp/libtiff-safe-test-cmake/test
+      cmake -S original/build/test_cmake_no_target -B /tmp/libtiff-safe-test-cmake-no-target -G Ninja \
+        -DCMAKE_PREFIX_PATH=/tmp/libtiff-safe-stage/usr
+      cmake --build /tmp/libtiff-safe-test-cmake-no-target --parallel
+      LD_LIBRARY_PATH="$SAFE_STAGE_LIBDIR" /tmp/libtiff-safe-test-cmake-no-target/test
+      PKG_CONFIG_PATH="$(dirname "$PKGCONFIG_FILE")" \
+        cc original/build/test_cmake/test.c -o /tmp/libtiff-safe-test-pkgconfig \
+        $(PKG_CONFIG_PATH="$(dirname "$PKGCONFIG_FILE")" pkg-config --cflags --libs libtiff-4)
+      LD_LIBRARY_PATH="$SAFE_STAGE_LIBDIR" /tmp/libtiff-safe-test-pkgconfig
+      PKG_CFLAGS="$(PKG_CONFIG_PATH="$(dirname "$PKGCONFIG_FILE")" pkg-config --cflags libtiff-4)"
+      PKG_LIBS="$(PKG_CONFIG_PATH="$(dirname "$PKGCONFIG_FILE")" pkg-config --libs libtiff-4)"
+      c++ -std=c++17 safe/test/install/tiffxx_staged_smoke.cpp -o /tmp/libtiff-safe-test-cpp \
+        $PKG_CFLAGS \
+        -L"$SAFE_STAGE_LIBDIR" -Wl,-rpath,"$SAFE_STAGE_LIBDIR" -ltiffxx \
+        $PKG_LIBS
+      LD_LIBRARY_PATH="$SAFE_STAGE_LIBDIR" /tmp/libtiff-safe-test-cpp \
+        original/test/images/minisblack-1c-8b.tiff \
+        /tmp/libtiff-safe-test-cpp-out.tiff
+      safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist
+      SAFE_LIBTIFF_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff6_*_*.deb' -print -quit)"
+      SAFE_LIBTIFFXX_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiffxx6_*_*.deb' -print -quit)"
+      SAFE_LIBTIFF_DEV_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff-dev_*_*.deb' -print -quit)"
+      SAFE_LIBTIFF_TOOLS_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff-tools_*_*.deb' -print -quit)"
+      test -n "$SAFE_LIBTIFF_DEB"
+      test -n "$SAFE_LIBTIFFXX_DEB"
+      test -n "$SAFE_LIBTIFF_DEV_DEB"
+      test -n "$SAFE_LIBTIFF_TOOLS_DEB"
+      for deb in "$SAFE_LIBTIFF_DEB" "$SAFE_LIBTIFFXX_DEB" "$SAFE_LIBTIFF_DEV_DEB" "$SAFE_LIBTIFF_TOOLS_DEB"; do
+        test "$(dpkg-deb -f "$deb" Version)" = '1:4.5.1+git230720-4ubuntu2.5+safelibs1'
+      done
+      SAFE_DEB_VERSION="$(dpkg-deb -f "$SAFE_LIBTIFF_DEB" Version)"
+      dpkg --compare-versions "$SAFE_DEB_VERSION" gt '4.5.1+git230720-4ubuntu2.5'
+      safe/scripts/check-packaged-install-surface.sh \
+        --libtiff-deb "$SAFE_LIBTIFF_DEB" \
+        --libtiffxx-deb "$SAFE_LIBTIFFXX_DEB" \
+        --libtiff-dev-deb "$SAFE_LIBTIFF_DEV_DEB" \
+        --libtiff-tools-deb "$SAFE_LIBTIFF_TOOLS_DEB" \
+        --cmake-project original/build/test_cmake \
+        --cmake-no-target-project original/build/test_cmake_no_target \
+        --pkgconfig-source original/build/test_cmake/test.c \
+        --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp \
+        --input-tiff original/test/images/minisblack-1c-8b.tiff
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --input-manifest safe/abi/public-surface.inputs.json \
+        --validate-existing-inventory \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --library-xx safe/build/libtiff/libtiffxx.so.6 \
+        --original-library original/build/libtiff/libtiff.so.6.0.1 \
+        --original-library-xx original/build/libtiff/libtiffxx.so.6.0.1 \
+        --check-versioned-symbols \
+        --must-not-export TIFFOpenW TIFFOpenWExt
+      ```
+      
+      Verify all of the following
+      - The staged install layout, Debian package generation, actual `.deb` payload split, CMake and pkg-config consumer integration, and both staged-root and package-installed `tiffio.hxx`/`libtiffxx` C++ consumers work as required.
+      - The built `.deb` files exist under `safe/dist/`, all carry version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, and compare greater than the Ubuntu 24.04 archive baseline.
+      - `check-packaged-install-surface.sh` validates the packaged payload, not just the staged install tree.
+      - `check-public-surface.py` confirms the packaged libraries keep the checked-in export contract and do not export `TIFFOpenW` or `TIFFOpenWExt`.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: check_link_and_downstream_compat
+    type: check
+    bounce_target: impl_packaging_compat
+    prompt: |-
+      Reviewer role: Link-compatibility and downstream package-replacement reviewer.
+      
+      Review the current workspace for check phase `check_link_and_downstream_compat`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      safe/scripts/build-link-compat-objects.sh \
+        --original-include original/libtiff \
+        --generated-include original/build/libtiff \
+        --out safe/link-compat \
+        --sources safe/test/api/header_surface_smoke.c safe/test/api/utility_surface_smoke.c safe/test/api/header_surface_smoke.cpp
+      safe/scripts/link-and-run-link-compat.sh \
+        --build-dir safe/build \
+        --original-build original/build-step2 \
+        --extra-objects-dir safe/link-compat
+      safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist
+      SAFE_LIBTIFF_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff6_*_*.deb' -print -quit)"
+      SAFE_LIBTIFFXX_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiffxx6_*_*.deb' -print -quit)"
+      SAFE_LIBTIFF_DEV_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff-dev_*_*.deb' -print -quit)"
+      SAFE_LIBTIFF_TOOLS_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff-tools_*_*.deb' -print -quit)"
+      for deb in "$SAFE_LIBTIFF_DEB" "$SAFE_LIBTIFFXX_DEB" "$SAFE_LIBTIFF_DEV_DEB" "$SAFE_LIBTIFF_TOOLS_DEB"; do
+        test -n "$deb"
+        test "$(dpkg-deb -f "$deb" Version)" = '1:4.5.1+git230720-4ubuntu2.5+safelibs1'
+      done
+      dpkg --compare-versions "$(dpkg-deb -f "$SAFE_LIBTIFF_DEB" Version)" gt '4.5.1+git230720-4ubuntu2.5'
+      LIBTIFF_SAFE_DIST_DIR=safe/dist ./test-original.sh
+      ```
+      
+      Verify all of the following
+      - The object-file link-compatibility harness relinks the prepared `original/build-step2` objects against the safe library and runs them successfully.
+      - The extra smoke objects cover the previously missed APIs, including `_TIFFcalloc`, the LogLuv helper family, `TIFFGetVersion`, `TIFFPrintDirectory`, the `TIFFSwab*` family, `TIFFFlush`, `TIFFFlushData`, `TIFFCheckTile`, `TIFFReadTile`, `TIFFWriteTile`, `TIFFReadFromUserBuffer`, `TIFFDataWidth`, and `TIFFStreamOpen`.
+      - `test-original.sh` verifies package replacement semantics via `dpkg-query`, `dpkg -S`, and `ldd` after installing the safe `.deb` packages.
+      - The generated packages still carry the exact expected version and compare greater than the Ubuntu 24.04 archive baseline.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
+
+  - id: impl_final_hardening
+    type: implement
+    bounce_target: null
+    prompt: |-
+      Role: Software engineer implementing phase `impl_final_hardening` (Final Hardening, Residual CVE Closure, and Full Verification Sweep).
+      
+      Consume or update the existing artifacts listed below in place. Do not refetch, recollect, rediscover, or regenerate substitute baselines from scratch. Use the current checked-in safe tree, performance harness, packaging harnesses, and dependent inventory as the authoritative baseline for the final pass.
+      
+      Workflow Constraints Preserved
+      - Keep verifier topology unchanged. The explicit verifier phase for this implement phase is `check_final_hardening` with fixed `bounce_target: impl_final_hardening`.
+      - Keep the phase-10 package-replacement contract intact in the final sweep. The rerun of `test-original.sh` must again verify package replacement via `dpkg-query`, `dpkg -S`, and `ldd`.
+      
+      Preexisting Inputs
+      - `safe/Cargo.toml`
+      - `safe/build.rs`
+      - `safe/CMakeLists.txt`
+      - `safe/src/lib.rs`
+      - `safe/src/abi/mod.rs`
+      - `safe/src/ffi/mod.rs`
+      - `safe/src/ffi/exports.rs`
+      - `safe/include/tiff.h`
+      - `safe/include/tiffio.h`
+      - `safe/include/tiffio.hxx`
+      - `safe/include/tiffvers.h`
+      - `safe/include/tif_config.h`
+      - `safe/include/tiffconf.h`
+      - `safe/libtiff/tiffiop.h`
+      - `safe/libtiff/tif_dir.h`
+      - `safe/libtiff/tif_hash_set.h`
+      - `safe/capi/libtiff-safe.map`
+      - `safe/capi/libtiffxx-safe.map`
+      - `safe/abi/public-surface.json`
+      - `safe/abi/public-surface.inputs.json`
+      - `safe/abi/header-only-linux.txt`
+      - `safe/abi/map-only-linux.txt`
+      - `safe/abi/platform-excluded-linux.txt`
+      - `safe/scripts/collect-public-surface.py`
+      - `safe/scripts/check-public-surface.py`
+      - `safe/scripts/run-upstream-shell-tests.sh`
+      - `safe/port/CMakeLists.txt`
+      - `safe/port/`
+      - `safe/tools/CMakeLists.txt`
+      - `safe/tools/`
+      - `safe/test/CMakeLists.txt`
+      - `safe/test/`
+      - `safe/pkgconfig/libtiff-4.pc.in`
+      - `safe/cmake/TiffConfig.cmake.in`
+      - `safe/debian/changelog`
+      - `safe/debian/control`
+      - `safe/debian/rules`
+      - `safe/debian/libtiff6.install`
+      - `safe/debian/libtiffxx6.install`
+      - `safe/debian/libtiff-dev.install`
+      - `safe/debian/libtiff-tools.install`
+      - `safe/debian/libtiff6.symbols`
+      - `safe/debian/libtiffxx6.symbols`
+      - `safe/debian/source/format`
+      - `safe/debian/copyright`
+      - `safe/src/core/mod.rs`
+      - `safe/src/core/handle.rs`
+      - `safe/src/core/open.rs`
+      - `safe/src/core/error.rs`
+      - `safe/src/core/memory.rs`
+      - `safe/src/core/callbacks.rs`
+      - `safe/src/core/version.rs`
+      - `safe/capi/varargs.c`
+      - `safe/test/api/api_handle_smoke.c`
+      - `safe/test/api/api_open_mode_smoke.c`
+      - `safe/src/abi/public_layout.rs`
+      - `safe/src/abi/layout_probe.rs`
+      - `safe/src/field/mod.rs`
+      - `safe/src/field/types.rs`
+      - `safe/src/field/registry.rs`
+      - `safe/src/field/tag_methods.rs`
+      - `safe/src/field/client_info.rs`
+      - `safe/test/api/api_field_registry_smoke.c`
+      - `safe/test/api/public_abi_layout_smoke.c`
+      - `safe/src/directory/mod.rs`
+      - `safe/src/directory/model.rs`
+      - `safe/src/directory/header.rs`
+      - `safe/src/directory/read.rs`
+      - `safe/src/directory/getfield.rs`
+      - `safe/src/directory/print.rs`
+      - `safe/src/directory/ifd_loop.rs`
+      - `safe/test/api/api_directory_read_smoke.c`
+      - `safe/test/regressions/dirread_regressions.c`
+      - `safe/src/directory/setfield.rs`
+      - `safe/src/directory/write.rs`
+      - `safe/src/directory/rewrite.rs`
+      - `safe/test/api/api_directory_write_smoke.c`
+      - `safe/test/regressions/dirwrite_regressions.c`
+      - `safe/src/strile/mod.rs`
+      - `safe/src/strile/math.rs`
+      - `safe/src/strile/scanline.rs`
+      - `safe/src/strile/strip.rs`
+      - `safe/src/strile/tile.rs`
+      - `safe/src/strile/read.rs`
+      - `safe/src/strile/write.rs`
+      - `safe/src/strile/swab.rs`
+      - `safe/src/strile/flush.rs`
+      - `safe/test/api/api_strile_smoke.c`
+      - `safe/test/regressions/strile_regressions.c`
+      - `safe/src/codec/mod.rs`
+      - `safe/src/codec/registry.rs`
+      - `safe/src/codec/ccitt.rs`
+      - `safe/src/codec/lzw.rs`
+      - `safe/src/codec/packbits.rs`
+      - `safe/src/codec/next.rs`
+      - `safe/src/codec/thunder.rs`
+      - `safe/src/codec/deflate.rs`
+      - `safe/src/codec/predictor.rs`
+      - `safe/src/codec/jpeg.rs`
+      - `safe/src/codec/ojpeg.rs`
+      - `safe/src/codec/jbig.rs`
+      - `safe/src/codec/lerc.rs`
+      - `safe/src/codec/lzma.rs`
+      - `safe/src/codec/zstd.rs`
+      - `safe/src/codec/webp.rs`
+      - `safe/src/codec/logluv.rs`
+      - `safe/src/color/mod.rs`
+      - `safe/src/color/rgba.rs`
+      - `safe/src/color/ycbcr.rs`
+      - `safe/src/color/cielab.rs`
+      - `safe/src/color/logluv.rs`
+      - `safe/test/regressions/codec_regressions.c`
+      - `safe/scripts/benchmark-vs-original.py`
+      - `safe/perf/workloads.json`
+      - `safe/capi/stream.cpp`
+      - `safe/scripts/build-deb.sh`
+      - `safe/scripts/check-packaged-install-surface.sh`
+      - `safe/scripts/build-link-compat-objects.sh`
+      - `safe/scripts/link-and-run-link-compat.sh`
+      - `safe/test/api/header_surface_smoke.c`
+      - `safe/test/api/utility_surface_smoke.c`
+      - `safe/test/api/header_surface_smoke.cpp`
+      - `safe/test/install/tiffxx_staged_smoke.cpp`
+      - `dependents.json`
+      - `test-original.sh`
+      - `original/libtiff/`
+      - `original/build/libtiff/`
+      - `original/build/libtiff/libtiff.so.6.0.1`
+      - `original/build/libtiff/libtiffxx.so.6.0.1`
+      - `original/build/test_cmake/`
+      - `original/build/test_cmake_no_target/`
+      - `original/build-step2/`
+      - `original/test/images/minisblack-1c-8b.tiff`
+      - `relevant_cves.json`
+      - `original/debian/patches/series`
+      
+      New Outputs
+      - Residual compatibility fixes.
+      - Residual security fixes.
+      - Residual performance fixes.
+      - Final regression tests for any remaining CVE classes not already covered in earlier phases.
+      
+      Required Work
+      - Use this phase to fix failures returned by earlier checkers.
+      - Translate any remaining relevant CVE themes from `relevant_cves.json` into regression tests or hardening logic.
+      - If the dedicated performance benchmark still fails, fix the measured hot paths instead of waiving the regression silently. Only security-mandated slowdowns with checked-in justification should remain.
+      - Reduce `unsafe` usage to the minimum necessary for FFI, OS interaction, and externally imposed codec bindings.
+      - Do not change installed headers, exported symbol names, version nodes, or package names unless a checker proves the previous state was wrong.
+      
+      Success Criteria
+      - All earlier checks pass in one run.
+      - The final sweep reruns the staged-install CMake, pkg-config, and `tiffio.hxx`/`libtiffxx` C++ consumer checks, the extracted-package-root consumer checks, the link-compat harness, the `Release`-configured benchmark build, the public-struct layout tests, package creation, and the downstream Docker harness instead of assuming phase-10 artifacts remain available.
+      - The final sweep re-checks that the built safe `.deb` files still carry version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, that the package payload split still matches the planned `libtiff6`/`libtiffxx6`/`libtiff-dev`/`libtiff-tools` install surface, and that the downstream harness proves via `dpkg-query`, `dpkg -S`, and `ldd` that runtime resolution now comes from the safe package rather than the Ubuntu archive package.
+      - The final `rg -n '\\bunsafe\\b'` review shows only boundary-level `unsafe` blocks that are justified by FFI or system integration.
+      
+      Git Commit Requirement
+      - Commit the phase work to git before yielding. Do not yield with uncommitted changes.
+
+  - id: check_final_hardening
+    type: check
+    bounce_target: impl_final_hardening
+    prompt: |-
+      Reviewer role: Final compatibility, security, performance, and package-replacement reviewer.
+      
+      Review the current workspace for check phase `check_final_hardening`. Do not modify files.
+      
+      Run these commands from the repository root in order
+      ```sh
+      cargo test --manifest-path safe/Cargo.toml
+      rm -rf /tmp/libtiff-safe-final-stage /tmp/libtiff-safe-final-cmake /tmp/libtiff-safe-final-cmake-no-target /tmp/libtiff-safe-final-pkgconfig /tmp/libtiff-safe-final-cpp /tmp/libtiff-safe-final-cpp-out.tiff
+      cmake -S safe -B safe/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_INSTALL_PREFIX=/tmp/libtiff-safe-final-stage/usr \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build --parallel
+      ctest --test-dir safe/build --output-on-failure
+      safe/scripts/run-upstream-shell-tests.sh --build-dir safe/build --test-dir safe/test
+      cmake --install safe/build
+      FINAL_PKGCONFIG_FILE="$(find /tmp/libtiff-safe-final-stage/usr -type f -name 'libtiff-4.pc' -print -quit)"
+      FINAL_STAGE_LIBDIR="$(find /tmp/libtiff-safe-final-stage/usr -type f -name 'libtiff.so.6*' -print -quit | xargs -r dirname)"
+      FINAL_STAGE_LIBTIFFXX="$(find /tmp/libtiff-safe-final-stage/usr -type f -name 'libtiffxx.so.6*' -print -quit)"
+      test -n "$FINAL_PKGCONFIG_FILE"
+      test -n "$FINAL_STAGE_LIBDIR"
+      test -n "$FINAL_STAGE_LIBTIFFXX"
+      cmake -S original/build/test_cmake -B /tmp/libtiff-safe-final-cmake -G Ninja \
+        -DCMAKE_PREFIX_PATH=/tmp/libtiff-safe-final-stage/usr
+      cmake --build /tmp/libtiff-safe-final-cmake --parallel
+      LD_LIBRARY_PATH="$FINAL_STAGE_LIBDIR" /tmp/libtiff-safe-final-cmake/test
+      cmake -S original/build/test_cmake_no_target -B /tmp/libtiff-safe-final-cmake-no-target -G Ninja \
+        -DCMAKE_PREFIX_PATH=/tmp/libtiff-safe-final-stage/usr
+      cmake --build /tmp/libtiff-safe-final-cmake-no-target --parallel
+      LD_LIBRARY_PATH="$FINAL_STAGE_LIBDIR" /tmp/libtiff-safe-final-cmake-no-target/test
+      PKG_CONFIG_PATH="$(dirname "$FINAL_PKGCONFIG_FILE")" \
+        cc original/build/test_cmake/test.c -o /tmp/libtiff-safe-final-pkgconfig \
+        $(PKG_CONFIG_PATH="$(dirname "$FINAL_PKGCONFIG_FILE")" pkg-config --cflags --libs libtiff-4)
+      LD_LIBRARY_PATH="$FINAL_STAGE_LIBDIR" /tmp/libtiff-safe-final-pkgconfig
+      FINAL_PKG_CFLAGS="$(PKG_CONFIG_PATH="$(dirname "$FINAL_PKGCONFIG_FILE")" pkg-config --cflags libtiff-4)"
+      FINAL_PKG_LIBS="$(PKG_CONFIG_PATH="$(dirname "$FINAL_PKGCONFIG_FILE")" pkg-config --libs libtiff-4)"
+      c++ -std=c++17 safe/test/install/tiffxx_staged_smoke.cpp -o /tmp/libtiff-safe-final-cpp \
+        $FINAL_PKG_CFLAGS \
+        -L"$FINAL_STAGE_LIBDIR" -Wl,-rpath,"$FINAL_STAGE_LIBDIR" -ltiffxx \
+        $FINAL_PKG_LIBS
+      LD_LIBRARY_PATH="$FINAL_STAGE_LIBDIR" /tmp/libtiff-safe-final-cpp \
+        original/test/images/minisblack-1c-8b.tiff \
+        /tmp/libtiff-safe-final-cpp-out.tiff
+      rm -rf safe/build-perf
+      cmake -S safe -B safe/build-perf -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=ON \
+        -Dtiff-tools=ON \
+        -Dtiff-tests=ON \
+        -Dtiff-contrib=OFF \
+        -Dtiff-docs=OFF
+      cmake --build safe/build-perf --parallel --target tiffinfo tiffcp tiff2rgba tiffcrop tiff2pdf
+      python3 safe/scripts/benchmark-vs-original.py \
+        --original-build original/build-step2 \
+        --safe-build safe/build-perf \
+        --workloads safe/perf/workloads.json \
+        --output safe/perf/latest.json \
+        --max-slowdown 2.0 \
+        --suite-median-max 1.5
+      python3 safe/scripts/check-public-surface.py \
+        --inventory safe/abi/public-surface.json \
+        --input-manifest safe/abi/public-surface.inputs.json \
+        --validate-existing-inventory \
+        --library safe/build/libtiff/libtiff.so.6 \
+        --library-xx safe/build/libtiff/libtiffxx.so.6 \
+        --original-library original/build/libtiff/libtiff.so.6.0.1 \
+        --original-library-xx original/build/libtiff/libtiffxx.so.6.0.1 \
+        --check-versioned-symbols \
+        --must-export _TIFFcalloc LogL16toY LogL10toY LogL16fromY LogL10fromY LogLuv24toXYZ LogLuv32toXYZ LogLuv24fromXYZ LogLuv32fromXYZ XYZtoRGB24 uv_decode uv_encode TIFFGetVersion TIFFPrintDirectory TIFFGetBitRevTable TIFFReverseBits TIFFSwabShort TIFFSwabLong TIFFSwabLong8 TIFFSwabArrayOfShort TIFFSwabArrayOfTriples TIFFSwabArrayOfLong TIFFSwabArrayOfLong8 TIFFSwabFloat TIFFSwabArrayOfFloat TIFFSwabDouble TIFFSwabArrayOfDouble TIFFIsTiled TIFFIsByteSwapped TIFFIsUpSampled TIFFIsMSB2LSB TIFFIsBigEndian TIFFIsBigTIFF TIFFFlush TIFFFlushData TIFFCheckTile TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFDataWidth TIFFStreamOpen _TIFFCheckMalloc _TIFFCheckRealloc _TIFFClampDoubleToUInt32 _TIFFMultiply32 _TIFFMultiply64 _TIFFGetExifFields _TIFFGetGpsFields _TIFFRewriteField TIFFSetCompressionScheme \
+        --must-not-export TIFFOpenW TIFFOpenWExt
+      safe/scripts/build-link-compat-objects.sh \
+        --original-include original/libtiff \
+        --generated-include original/build/libtiff \
+        --out safe/link-compat \
+        --sources safe/test/api/header_surface_smoke.c safe/test/api/utility_surface_smoke.c safe/test/api/header_surface_smoke.cpp
+      safe/scripts/link-and-run-link-compat.sh \
+        --build-dir safe/build \
+        --original-build original/build-step2 \
+        --extra-objects-dir safe/link-compat
+      safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist
+      SAFE_FINAL_LIBTIFF_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff6_*_*.deb' -print -quit)"
+      SAFE_FINAL_LIBTIFFXX_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiffxx6_*_*.deb' -print -quit)"
+      SAFE_FINAL_LIBTIFF_DEV_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff-dev_*_*.deb' -print -quit)"
+      SAFE_FINAL_LIBTIFF_TOOLS_DEB="$(find safe/dist -maxdepth 1 -type f -name 'libtiff-tools_*_*.deb' -print -quit)"
+      for deb in "$SAFE_FINAL_LIBTIFF_DEB" "$SAFE_FINAL_LIBTIFFXX_DEB" "$SAFE_FINAL_LIBTIFF_DEV_DEB" "$SAFE_FINAL_LIBTIFF_TOOLS_DEB"; do
+        test -n "$deb"
+        test "$(dpkg-deb -f "$deb" Version)" = '1:4.5.1+git230720-4ubuntu2.5+safelibs1'
+      done
+      SAFE_FINAL_DEB_VERSION="$(dpkg-deb -f "$SAFE_FINAL_LIBTIFF_DEB" Version)"
+      dpkg --compare-versions "$SAFE_FINAL_DEB_VERSION" gt '4.5.1+git230720-4ubuntu2.5'
+      safe/scripts/check-packaged-install-surface.sh \
+        --libtiff-deb "$SAFE_FINAL_LIBTIFF_DEB" \
+        --libtiffxx-deb "$SAFE_FINAL_LIBTIFFXX_DEB" \
+        --libtiff-dev-deb "$SAFE_FINAL_LIBTIFF_DEV_DEB" \
+        --libtiff-tools-deb "$SAFE_FINAL_LIBTIFF_TOOLS_DEB" \
+        --cmake-project original/build/test_cmake \
+        --cmake-no-target-project original/build/test_cmake_no_target \
+        --pkgconfig-source original/build/test_cmake/test.c \
+        --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp \
+        --input-tiff original/test/images/minisblack-1c-8b.tiff
+      LIBTIFF_SAFE_DIST_DIR=safe/dist ./test-original.sh
+      rg -n '\\bunsafe\\b' safe/src safe/capi || true
+      ```
+      
+      Verify all of the following
+      - All earlier checks pass in one run.
+      - The final sweep reruns the staged-install CMake, pkg-config, and `tiffio.hxx`/`libtiffxx` C++ consumer checks, the extracted-package-root consumer checks, the link-compat harness, the `Release`-configured benchmark build, the public-struct layout tests, package creation, and the downstream Docker harness.
+      - The built safe `.deb` files still carry version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, the package payload split still matches the planned `libtiff6`/`libtiffxx6`/`libtiff-dev`/`libtiff-tools` install surface, and the downstream harness proves via `dpkg-query`, `dpkg -S`, and `ldd` that runtime resolution now comes from the safe package rather than the Ubuntu archive package.
+      - The final `rg -n '\\bunsafe\\b'` review shows only boundary-level `unsafe` blocks justified by FFI or system integration.
+      
+      End your response with exactly one of:
+      VERDICT: PASS
+      VERDICT: FAIL: <reason>
