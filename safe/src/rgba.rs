@@ -4,6 +4,7 @@ use crate::core::{
     safe_tiff_cielab_to_rgb_init, safe_tiff_logl16_to_y,
     safe_tiff_logluv24_to_xyz, safe_tiff_logluv32_to_xyz, safe_tiff_xyz_to_rgb24,
     set_jpeg_color_mode, COMPRESSION_JPEG, COMPRESSION_OJPEG, JPEGCOLORMODE_RGB,
+    TIFFIsCODECConfigured,
 };
 use crate::strile::{
     TIFFComputeTile, TIFFGetStrileByteCount, TIFFNumberOfStrips, TIFFNumberOfTiles,
@@ -23,11 +24,16 @@ const PHOTOMETRIC_MINISWHITE: u16 = 0;
 const PHOTOMETRIC_MINISBLACK: u16 = 1;
 const PHOTOMETRIC_RGB: u16 = 2;
 const PHOTOMETRIC_PALETTE: u16 = 3;
+const PHOTOMETRIC_SEPARATED: u16 = 5;
 const PHOTOMETRIC_YCBCR: u16 = 6;
 const PHOTOMETRIC_CIELAB: u16 = 8;
 const PHOTOMETRIC_LOGL: u16 = 32844;
 const PHOTOMETRIC_LOGLUV: u16 = 32845;
 
+const COMPRESSION_CCITTRLE: u16 = 2;
+const COMPRESSION_CCITTFAX3: u16 = 3;
+const COMPRESSION_CCITTFAX4: u16 = 4;
+const COMPRESSION_CCITTRLEW: u16 = 32771;
 const COMPRESSION_SGILOG: u16 = 34676;
 const COMPRESSION_SGILOG24: u16 = 34677;
 
@@ -41,12 +47,35 @@ const TAG_ROWSPERSTRIP: u32 = 278;
 const TAG_PLANARCONFIG: u32 = 284;
 const TAG_ORIENTATION: u32 = 274;
 const TAG_COLORMAP: u32 = 320;
+const TAG_INKSET: u32 = 332;
 const TAG_EXTRASAMPLES: u32 = 338;
+const TAG_SAMPLEFORMAT: u32 = 339;
 const TAG_TILEWIDTH: u32 = 322;
 const TAG_TILELENGTH: u32 = 323;
 
 const PLANARCONFIG_CONTIG: u16 = 1;
 const PLANARCONFIG_SEPARATE: u16 = 2;
+
+const INKSET_CMYK: u16 = 1;
+const EXTRASAMPLE_UNSPECIFIED: u16 = 0;
+const EXTRASAMPLE_ASSOCALPHA: u16 = 1;
+const EXTRASAMPLE_UNASSALPHA: u16 = 2;
+const SAMPLEFORMAT_IEEEFP: u16 = 3;
+
+#[derive(Clone, Copy)]
+struct PreparedRgbaImage {
+    width: u32,
+    height: u32,
+    bitspersample: u16,
+    samplesperpixel: u16,
+    orientation: u16,
+    photometric: u16,
+    compression: u16,
+    planarconfig: u16,
+    alpha: c_int,
+    colorchannels: i32,
+    is_contig: c_int,
+}
 
 const DEFAULT_DISPLAY: TIFFDisplay = TIFFDisplay {
     d_mat: [
@@ -100,6 +129,21 @@ unsafe fn tag_u16(tif: *mut TIFF, tag: u32, defaulted: bool, fallback: u16) -> u
             u16::try_from(*data.cast::<i32>()).unwrap_or(fallback)
         }
         _ => fallback,
+    }
+}
+
+unsafe fn tag_u16_optional(tif: *mut TIFF, tag: u32, defaulted: bool) -> Option<u16> {
+    let (type_, count, data) = get_tag_raw(tif, tag, defaulted)?;
+    if count == 0 || data.is_null() {
+        return None;
+    }
+    match type_.0 {
+        x if x == crate::abi::TIFFDataType::TIFF_SHORT.0 => Some(*data.cast::<u16>()),
+        x if x == crate::abi::TIFFDataType::TIFF_LONG.0 => u16::try_from(*data.cast::<u32>()).ok(),
+        x if x == crate::abi::TIFFDataType::TIFF_SLONG.0 => {
+            u16::try_from(*data.cast::<i32>()).ok()
+        }
+        _ => None,
     }
 }
 
@@ -976,30 +1020,349 @@ unsafe fn read_rgba_image_impl(
     }
 }
 
-unsafe fn fill_rgba_image_metadata(img: *mut TIFFRGBAImage, tif: *mut TIFF, stoponerr: c_int) {
-    (*img).tif = tif;
-    (*img).stoponerr = stoponerr;
-    (*img).width = tag_u32(tif, TAG_IMAGEWIDTH, true, 0);
-    (*img).height = tag_u32(tif, TAG_IMAGELENGTH, true, 0);
-    (*img).bitspersample = tag_u16(tif, TAG_BITSPERSAMPLE, true, 1);
-    (*img).samplesperpixel = tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1);
-    (*img).orientation = tag_u16(tif, TAG_ORIENTATION, true, ORIENTATION_TOPLEFT);
-    (*img).photometric = tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK);
-    (*img).isContig = (tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG)
-        == PLANARCONFIG_CONTIG) as c_int;
-    (*img).alpha = if (*img).samplesperpixel > 1 { 1 } else { 0 };
-    (*img).redcmap = ptr::null_mut();
-    (*img).greencmap = ptr::null_mut();
-    (*img).bluecmap = ptr::null_mut();
-    (*img).Map = ptr::null_mut();
-    (*img).BWmap = ptr::null_mut();
-    (*img).PALmap = ptr::null_mut();
-    (*img).ycbcr = ptr::null_mut();
-    (*img).cielab = ptr::null_mut();
-    (*img).UaToAa = ptr::null_mut();
-    (*img).Bitdepth16To8 = ptr::null_mut();
+fn is_ccitt_compression(compression: u16) -> bool {
+    matches!(
+        compression,
+        COMPRESSION_CCITTRLE
+            | COMPRESSION_CCITTFAX3
+            | COMPRESSION_CCITTFAX4
+            | COMPRESSION_CCITTRLEW
+    )
+}
+
+fn rgba_codec_configured(compression: u16) -> bool {
+    matches!(compression, COMPRESSION_SGILOG | COMPRESSION_SGILOG24)
+        || unsafe { TIFFIsCODECConfigured(compression) != 0 }
+}
+
+unsafe fn prepared_rgba_image(tif: *mut TIFF, emsg: *mut c_char) -> Option<PreparedRgbaImage> {
+    let compression = tag_u16(tif, TAG_COMPRESSION, true, 1);
+    if !rgba_codec_configured(compression) {
+        set_error(emsg, "Sorry, requested compression method is not configured");
+        return None;
+    }
+
+    let bitspersample = tag_u16(tif, TAG_BITSPERSAMPLE, true, 1);
+    if !matches!(bitspersample, 1 | 2 | 4 | 8 | 16) {
+        set_error(
+            emsg,
+            &format!("Sorry, can not handle images with {bitspersample}-bit samples"),
+        );
+        return None;
+    }
+
+    if tag_u16(tif, TAG_SAMPLEFORMAT, true, 1) == SAMPLEFORMAT_IEEEFP {
+        set_error(
+            emsg,
+            "Sorry, can not handle images with IEEE floating-point samples",
+        );
+        return None;
+    }
+
+    let samplesperpixel = tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1);
+    let sampleinfo = copy_u16_array_tag(tif, TAG_EXTRASAMPLES, false).unwrap_or_default();
+    let extrasamples = u16::try_from(sampleinfo.len()).unwrap_or(u16::MAX);
+    let mut alpha = 0;
+    if let Some(sample) = sampleinfo.first().copied() {
+        match sample {
+            EXTRASAMPLE_UNSPECIFIED if samplesperpixel > 3 => {
+                alpha = EXTRASAMPLE_ASSOCALPHA as c_int;
+            }
+            EXTRASAMPLE_ASSOCALPHA | EXTRASAMPLE_UNASSALPHA => {
+                alpha = c_int::from(sample);
+            }
+            _ => {}
+        }
+    }
+
+    let colorchannels = i32::from(samplesperpixel) - i32::from(extrasamples);
+    let planarconfig = tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG);
+    let mut photometric = if let Some(photometric) = tag_u16_optional(tif, TAG_PHOTOMETRIC, false)
+    {
+        photometric
+    } else {
+        match colorchannels {
+            1 => {
+                if is_ccitt_compression(compression) {
+                    PHOTOMETRIC_MINISWHITE
+                } else {
+                    PHOTOMETRIC_MINISBLACK
+                }
+            }
+            3 => PHOTOMETRIC_RGB,
+            _ => {
+                set_error(emsg, "Missing needed PhotometricInterpretation tag");
+                return None;
+            }
+        }
+    };
+    let mut effective_bits = bitspersample;
+
+    match photometric {
+        PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_MINISBLACK | PHOTOMETRIC_PALETTE => {
+            if planarconfig == PLANARCONFIG_CONTIG && samplesperpixel != 1 && bitspersample < 8 {
+                set_error(
+                    emsg,
+                    &format!(
+                        "Sorry, can not handle contiguous data with PhotometricInterpretation={photometric}, and Samples/pixel={samplesperpixel} and Bits/Sample={bitspersample}"
+                    ),
+                );
+                return None;
+            }
+        }
+        PHOTOMETRIC_YCBCR => {}
+        PHOTOMETRIC_RGB => {
+            if colorchannels < 3 {
+                set_error(
+                    emsg,
+                    &format!("Sorry, can not handle RGB image with Color channels={colorchannels}"),
+                );
+                return None;
+            }
+            if planarconfig == PLANARCONFIG_CONTIG
+                && alpha != 0
+                && samplesperpixel < 4
+            {
+                set_error(emsg, "Sorry, can not handle image");
+                return None;
+            }
+        }
+        PHOTOMETRIC_SEPARATED => {
+            let inkset = tag_u16(tif, TAG_INKSET, true, INKSET_CMYK);
+            if inkset != INKSET_CMYK {
+                set_error(
+                    emsg,
+                    &format!("Sorry, can not handle separated image with InkSet={inkset}"),
+                );
+                return None;
+            }
+            if samplesperpixel < 4 {
+                set_error(
+                    emsg,
+                    &format!(
+                        "Sorry, can not handle separated image with Samples/pixel={samplesperpixel}"
+                    ),
+                );
+                return None;
+            }
+        }
+        PHOTOMETRIC_LOGL => {
+            if compression != COMPRESSION_SGILOG {
+                set_error(
+                    emsg,
+                    &format!("Sorry, LogL data must have Compression={COMPRESSION_SGILOG}"),
+                );
+                return None;
+            }
+            photometric = PHOTOMETRIC_MINISBLACK;
+            effective_bits = 8;
+        }
+        PHOTOMETRIC_LOGLUV => {
+            if compression != COMPRESSION_SGILOG && compression != COMPRESSION_SGILOG24 {
+                set_error(
+                    emsg,
+                    &format!(
+                        "Sorry, LogLuv data must have Compression={COMPRESSION_SGILOG} or {COMPRESSION_SGILOG24}"
+                    ),
+                );
+                return None;
+            }
+            if planarconfig != PLANARCONFIG_CONTIG {
+                set_error(
+                    emsg,
+                    &format!(
+                        "Sorry, can not handle LogLuv images with Planarconfiguration={planarconfig}"
+                    ),
+                );
+                return None;
+            }
+            if samplesperpixel != 3 || colorchannels != 3 {
+                set_error(
+                    emsg,
+                    &format!(
+                        "Sorry, can not handle image with Samples/pixel={samplesperpixel}, colorchannels={colorchannels}"
+                    ),
+                );
+                return None;
+            }
+            photometric = PHOTOMETRIC_RGB;
+            effective_bits = 8;
+        }
+        PHOTOMETRIC_CIELAB => {
+            if samplesperpixel != 3 || colorchannels != 3 || !matches!(bitspersample, 8 | 16) {
+                set_error(
+                    emsg,
+                    &format!(
+                        "Sorry, can not handle image with Samples/pixel={samplesperpixel}, colorchannels={colorchannels} and Bits/sample={bitspersample}"
+                    ),
+                );
+                return None;
+            }
+        }
+        _ => {
+            set_error(
+                emsg,
+                &format!(
+                    "Sorry, can not handle image with PhotometricInterpretation={photometric}"
+                ),
+            );
+            return None;
+        }
+    }
+
+    if photometric == PHOTOMETRIC_YCBCR
+        && planarconfig == PLANARCONFIG_CONTIG
+        && compression == COMPRESSION_JPEG
+    {
+        photometric = PHOTOMETRIC_RGB;
+    }
+
+    Some(PreparedRgbaImage {
+        width: tag_u32(tif, TAG_IMAGEWIDTH, true, 0),
+        height: tag_u32(tif, TAG_IMAGELENGTH, true, 0),
+        bitspersample: effective_bits,
+        samplesperpixel,
+        orientation: tag_u16(tif, TAG_ORIENTATION, true, ORIENTATION_TOPLEFT),
+        photometric,
+        compression,
+        planarconfig,
+        alpha,
+        colorchannels,
+        is_contig: (!(planarconfig == PLANARCONFIG_SEPARATE && samplesperpixel > 1)) as c_int,
+    })
+}
+
+unsafe extern "C" fn safe_tiff_rgba_put_contig_stub(
+    _: *mut TIFFRGBAImage,
+    _: *mut u32,
+    _: u32,
+    _: u32,
+    _: u32,
+    _: u32,
+    _: i32,
+    _: i32,
+    _: *mut u8,
+) {
+}
+
+unsafe extern "C" fn safe_tiff_rgba_put_separate_stub(
+    _: *mut TIFFRGBAImage,
+    _: *mut u32,
+    _: u32,
+    _: u32,
+    _: u32,
+    _: u32,
+    _: i32,
+    _: i32,
+    _: *mut u8,
+    _: *mut u8,
+    _: *mut u8,
+    _: *mut u8,
+) {
+}
+
+unsafe fn pick_contig_case(img: *mut TIFFRGBAImage, state: PreparedRgbaImage) -> bool {
+    (*img).get = Some(safe_tiff_rgba_image_get);
+    (*img).put.any = None;
+
+    let supported = match state.photometric {
+        PHOTOMETRIC_RGB => match state.bitspersample {
+            8 | 16 => {
+                if state.alpha == EXTRASAMPLE_ASSOCALPHA as c_int
+                    || state.alpha == EXTRASAMPLE_UNASSALPHA as c_int
+                {
+                    state.samplesperpixel >= 4
+                } else {
+                    state.samplesperpixel >= 3
+                }
+            }
+            _ => false,
+        },
+        PHOTOMETRIC_SEPARATED => state.bitspersample == 8 && state.samplesperpixel >= 4,
+        PHOTOMETRIC_PALETTE => matches!(state.bitspersample, 1 | 2 | 4 | 8),
+        PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_MINISBLACK => match state.bitspersample {
+            1 | 2 | 4 | 16 => true,
+            8 => {
+                if state.alpha != 0 {
+                    state.samplesperpixel == 2
+                } else {
+                    true
+                }
+            }
+            _ => false,
+        },
+        PHOTOMETRIC_YCBCR => state.bitspersample == 8 && state.samplesperpixel == 3,
+        PHOTOMETRIC_CIELAB => state.samplesperpixel == 3 && matches!(state.bitspersample, 8 | 16),
+        _ => false,
+    };
+
+    if supported {
+        (*img).put.contig = Some(safe_tiff_rgba_put_contig_stub);
+    }
+    supported
+}
+
+unsafe fn pick_separate_case(img: *mut TIFFRGBAImage, state: PreparedRgbaImage) -> bool {
+    (*img).get = Some(safe_tiff_rgba_image_get);
+    (*img).put.any = None;
+
+    let supported = match state.photometric {
+        PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_MINISBLACK | PHOTOMETRIC_RGB => {
+            matches!(state.bitspersample, 8 | 16)
+        }
+        PHOTOMETRIC_SEPARATED => state.bitspersample == 8 && state.samplesperpixel == 4,
+        PHOTOMETRIC_YCBCR => state.bitspersample == 8 && state.samplesperpixel == 3,
+        _ => false,
+    };
+
+    if supported {
+        (*img).put.separate = Some(safe_tiff_rgba_put_separate_stub);
+    }
+    supported
+}
+
+unsafe fn initialize_rgba_image(
+    img: *mut TIFFRGBAImage,
+    tif: *mut TIFF,
+    stoponerr: c_int,
+    state: PreparedRgbaImage,
+    emsg: *mut c_char,
+) -> bool {
+    ptr::write_bytes(img, 0, 1);
     (*img).row_offset = 0;
     (*img).col_offset = 0;
+    (*img).req_orientation = ORIENTATION_BOTLEFT;
+    (*img).tif = tif;
+    (*img).stoponerr = stoponerr;
+    (*img).width = state.width;
+    (*img).height = state.height;
+    (*img).bitspersample = state.bitspersample;
+    (*img).samplesperpixel = state.samplesperpixel;
+    (*img).orientation = state.orientation;
+    (*img).photometric = state.photometric;
+    (*img).isContig = state.is_contig;
+    (*img).alpha = state.alpha;
+
+    if state.compression == COMPRESSION_JPEG
+        && state.planarconfig == PLANARCONFIG_CONTIG
+        && tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK) == PHOTOMETRIC_YCBCR
+    {
+        set_jpeg_color_mode(tif, JPEGCOLORMODE_RGB);
+    }
+
+    let supported = if state.is_contig != 0 {
+        pick_contig_case(img, state)
+    } else {
+        pick_separate_case(img, state)
+    };
+    if !supported {
+        set_error(emsg, "Sorry, can not handle image");
+        ptr::write_bytes(img, 0, 1);
+        return false;
+    }
+
+    set_error(emsg, "");
+    true
 }
 
 unsafe fn copy_rgba_window_from_top_left(
@@ -1045,25 +1408,7 @@ pub unsafe extern "C" fn safe_tiff_rgba_image_ok(tif: *mut TIFF, emsg: *mut c_ch
         set_error(emsg, "Invalid TIFF handle");
         return 0;
     }
-    let photometric = tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK);
-    let supported = matches!(
-        photometric,
-        PHOTOMETRIC_MINISWHITE
-            | PHOTOMETRIC_MINISBLACK
-            | PHOTOMETRIC_RGB
-            | PHOTOMETRIC_PALETTE
-            | PHOTOMETRIC_YCBCR
-            | PHOTOMETRIC_CIELAB
-            | PHOTOMETRIC_LOGL
-            | PHOTOMETRIC_LOGLUV
-    );
-    if supported {
-        set_error(emsg, "");
-        1
-    } else {
-        set_error(emsg, "Unsupported photometric interpretation for RGBA conversion");
-        0
-    }
+    prepared_rgba_image(tif, emsg).is_some() as c_int
 }
 
 #[no_mangle]
@@ -1077,15 +1422,10 @@ pub unsafe extern "C" fn safe_tiff_rgba_image_begin(
         set_error(emsg, "Invalid RGBA image arguments");
         return 0;
     }
-    if safe_tiff_rgba_image_ok(tif, emsg) == 0 {
+    let Some(state) = prepared_rgba_image(tif, emsg) else {
         return 0;
-    }
-    ptr::write_bytes(img, 0, 1);
-    fill_rgba_image_metadata(img, tif, stoponerr);
-    (*img).req_orientation = ORIENTATION_BOTLEFT;
-    (*img).get = Some(safe_tiff_rgba_image_get);
-    set_error(emsg, "");
-    1
+    };
+    initialize_rgba_image(img, tif, stoponerr, state, emsg) as c_int
 }
 
 #[no_mangle]

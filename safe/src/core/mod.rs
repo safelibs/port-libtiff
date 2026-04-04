@@ -20,6 +20,7 @@ pub(crate) use codec::{
     safe_tiff_codec_reset_for_current_directory, safe_tiff_codec_set_field_marshaled,
     safe_tiff_codec_set_scheme, safe_tiff_codec_unset_field, set_default_codec_methods,
     CodecGeometry, CodecState, DecodedStrileCache, PendingStrileWrite,
+    TIFFIsCODECConfigured,
 };
 pub(crate) use directory::{
     _TIFFRewriteField, current_tag_at, current_tag_count, free_directory_state,

@@ -215,6 +215,11 @@ target_sources(api_codec_smoke PRIVATE api_codec_smoke.c)
 target_link_libraries(api_codec_smoke PRIVATE tiff tiff_port)
 list(APPEND simple_tests api_codec_smoke)
 
+add_executable(api_rgba_image_helpers_smoke ../placeholder.h)
+target_sources(api_rgba_image_helpers_smoke PRIVATE api_rgba_image_helpers_smoke.c)
+target_link_libraries(api_rgba_image_helpers_smoke PRIVATE tiff tiff_port)
+list(APPEND simple_tests api_rgba_image_helpers_smoke)
+
 add_executable(api_strile_smoke ../placeholder.h)
 target_sources(api_strile_smoke PRIVATE api_strile_smoke.c)
 target_link_libraries(api_strile_smoke PRIVATE tiff tiff_port)
