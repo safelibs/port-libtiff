@@ -1,0 +1,8 @@
+usr/lib/${DEB_HOST_MULTIARCH}/libtiff.la
+usr/lib/${DEB_HOST_MULTIARCH}/libtiffxx.la
+usr/share/doc/libtiff-doc/COPYRIGHT
+usr/share/doc/libtiff-doc/LICENSE.md
+usr/share/doc/libtiff-doc/README.md
+usr/share/doc/libtiff-doc/RELEASE-DATE
+usr/share/doc/libtiff-doc/TODO
+usr/share/doc/libtiff-doc/VERSION

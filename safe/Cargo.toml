@@ -1,0 +1,16 @@
+[package]
+name = "safe-libtiff"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "tiff_safe_core"
+crate-type = ["staticlib"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+

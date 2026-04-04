@@ -1,0 +1,117 @@
+{
+  "collector_options": {
+    "debian_symbol_inputs": [
+      "original/debian/libtiff6.symbols",
+      "original/debian/libtiffxx6.symbols"
+    ],
+    "header_passes": [
+      {
+        "args": [
+          "gcc",
+          "-E",
+          "-dD",
+          "-P",
+          "-I",
+          "safe/include",
+          "-x",
+          "c",
+          "safe/include/tiffio.h"
+        ],
+        "language": "c"
+      },
+      {
+        "args": [
+          "g++",
+          "-E",
+          "-dD",
+          "-P",
+          "-I",
+          "safe/include",
+          "-x",
+          "c++",
+          "safe/include/tiffio.hxx"
+        ],
+        "language": "c++"
+      }
+    ],
+    "header_symbol_regex": "extern\\s+[^;{]*?\\b(TIFF[A-Za-z0-9_]+|_TIFF[A-Za-z0-9_]+|LogL(?:16|10)(?:toY|fromY)|LogLuv(?:24|32)(?:toXYZ|fromXYZ)|XYZtoRGB24|uv_(?:decode|encode)|TIFFStreamOpen)\\s*\\(",
+    "linux_excluded_symbols": [
+      "TIFFOpenW",
+      "TIFFOpenWExt"
+    ],
+    "observed_export_inputs": [
+      "original/build/libtiff/libtiff.so.6.0.1",
+      "original/build/libtiff/libtiffxx.so.6.0.1"
+    ],
+    "version_script_inputs": [
+      "safe/capi/libtiff-safe.map",
+      "safe/capi/libtiffxx-safe.map",
+      "original/libtiff/libtiff.map",
+      "original/libtiff/libtiffxx.map"
+    ]
+  },
+  "schema_version": 1,
+  "sources": [
+    {
+      "path": "original/build/libtiff/libtiff.so.6.0.1",
+      "sha256": "cc4a93d7cfd455eaf2d8665f75c1cd20ebf168a65a86d217f457bbf34357a7da"
+    },
+    {
+      "path": "original/build/libtiff/libtiffxx.so.6.0.1",
+      "sha256": "142fd26bb18a1568dfbfa8da76ed05765b5def6c2a13a161ddf7bcd9c2f1d806"
+    },
+    {
+      "path": "original/debian/libtiff6.symbols",
+      "sha256": "feb1e1e306c1c8612a098426fb9e7319a411edb5c4528a67a97873360d6fef70"
+    },
+    {
+      "path": "original/debian/libtiffxx6.symbols",
+      "sha256": "b5c441616e33b6650d55e31a152f95b5d3e037471e2b39748016a8d0effb0f1f"
+    },
+    {
+      "path": "original/libtiff/libtiff.map",
+      "sha256": "05aa78fe04c1b096703de12401eead4853e11ab29535143e317fff5fd04a3e2e"
+    },
+    {
+      "path": "original/libtiff/libtiffxx.map",
+      "sha256": "ef9fe3c6f69ea55d6a26f2c931e58229130ae9840311e7649da966f36b323a9b"
+    },
+    {
+      "path": "safe/capi/libtiff-safe.map",
+      "sha256": "91345c3b45202c21566b8303f8bcbce66c018782622c769e6b35d5c5a6053078"
+    },
+    {
+      "path": "safe/capi/libtiffxx-safe.map",
+      "sha256": "69f0770560d388adf82592d049e4351e2f946be420b8d81aeb7eac1b31210d09"
+    },
+    {
+      "path": "safe/include/tif_config.h",
+      "sha256": "a47f4576e7b5cafa94bfdb8bccea8b81de15b38401deb2b7bd0a9fc4d3ad51dc"
+    },
+    {
+      "path": "safe/include/tiff.h",
+      "sha256": "ec0904a51c9392cb6a63dc5e9d563e5adb8af64517264176f370b96b6deb5200"
+    },
+    {
+      "path": "safe/include/tiffconf.h",
+      "sha256": "bfd4ac2e9861d34ad8b4fa02c8215b3672a6ef73ff343d140d1886507c551be1"
+    },
+    {
+      "path": "safe/include/tiffio.h",
+      "sha256": "304e7ebf0b2805db8f96df30ce5f53eae4d86124ec42c587d4e69a9f5f419da3"
+    },
+    {
+      "path": "safe/include/tiffio.hxx",
+      "sha256": "cd7ebd22cdba45167415b000e923f7d0ef9301028a3e775e3ace9e8c60d15ece"
+    },
+    {
+      "path": "safe/include/tiffvers.h",
+      "sha256": "08a7a8dc12968f77fb4ec7dcb481b590ba2b6e558ca6569d941938915c65a81c"
+    }
+  ],
+  "target_platform": {
+    "distribution_baseline": "ubuntu-24.04",
+    "system": "Linux",
+    "triple": "x86_64-linux-gnu"
+  }
+}

@@ -1,0 +1,20 @@
+LIBTIFFXX_4.0 {
+  global:
+    _Z14TIFFStreamOpenPKcPSi;
+    _Z14TIFFStreamOpenPKcPSo;
+    _ZN11tiffis_dataC1Ev;
+    _ZN11tiffis_dataC2Ev;
+    _ZN11tiffos_dataC1Ev;
+    _ZN11tiffos_dataC2Ev;
+    _ZNKSt4fposI11__mbstate_tEcvlEv;
+    _ZNKSt4fposI11__mbstate_tEmiERKS1_;
+    _ZNSt4fposI11__mbstate_tEC1El;
+    _ZNSt4fposI11__mbstate_tEC1Ev;
+    _ZNSt4fposI11__mbstate_tEC2El;
+    _ZNSt4fposI11__mbstate_tEC2Ev;
+    _ZStanSt12_Ios_IostateS_;
+    _ZStcoSt12_Ios_Iostate;
+
+  local:
+    *;
+};
