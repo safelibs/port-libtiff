@@ -11,7 +11,7 @@ CMAKE_PROJECT="$ROOT/original/build/test_cmake"
 CMAKE_PROJECT_NO_TARGET="$ROOT/original/build/test_cmake_no_target"
 PKGCONFIG_SOURCE="$ROOT/original/build/test_cmake/test.c"
 CXX_SMOKE="$SAFE_ROOT/test/install/tiffxx_staged_smoke.cpp"
-INPUT_TIFF=""
+INPUT_TIFF="$ROOT/original/test/images/rgb-3c-8b.tiff"
 MULTIARCH="$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || gcc -print-multiarch)"
 EXPECTED_VERSION="1:4.5.1+git230720-4ubuntu2.5+safelibs1"
 BASELINE_VERSION="4.5.1+git230720-4ubuntu2.5"
@@ -27,6 +27,10 @@ assert_exists() {
 
 assert_absent() {
   [[ ! -e "$1" && ! -L "$1" ]] || die "expected path to be absent: $1"
+}
+
+assert_nonempty_file() {
+  [[ -s "$1" ]] || die "expected non-empty file: $1"
 }
 
 resolve_deb() {
@@ -140,6 +144,17 @@ run_prefix_smokes() {
     -ltiff \
     -o "$tmp_root/tiffxx_staged_smoke"
   LD_LIBRARY_PATH="$libdir" "$tmp_root/tiffxx_staged_smoke" >/dev/null
+
+  if [[ -n "$INPUT_TIFF" && -x "$prefix_root/bin/tiffinfo" && -x "$prefix_root/bin/tiffcp" ]]; then
+    LD_LIBRARY_PATH="$libdir" "$prefix_root/bin/tiffinfo" "$INPUT_TIFF" \
+      >"$tmp_root/tiffinfo.stdout"
+    grep -F 'Image Width' "$tmp_root/tiffinfo.stdout" >/dev/null || \
+      die "packaged tiffinfo did not inspect $INPUT_TIFF successfully under $label"
+
+    LD_LIBRARY_PATH="$libdir" "$prefix_root/bin/tiffcp" "$INPUT_TIFF" "$tmp_root/tool-smoke.tiff" \
+      >/dev/null
+    assert_nonempty_file "$tmp_root/tool-smoke.tiff"
+  fi
 
   printf 'verified install surface: %s\n' "$label"
 }

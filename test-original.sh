@@ -96,6 +96,9 @@ TEST_ROOT=/tmp/libtiff-dependent-tests
 MULTIARCH="$(gcc -print-multiarch)"
 EXPECTED_SAFE_VERSION="1:4.5.1+git230720-4ubuntu2.5+safelibs1"
 ARCHIVE_BASELINE_VERSION="4.5.1+git230720-4ubuntu2.5"
+PROBE_TIMEOUT_SEC="${LIBTIFF_DOWNSTREAM_TIMEOUT_SEC:-120}"
+VALIDATION_TIMEOUT_SEC="${LIBTIFF_DOWNSTREAM_VALIDATION_TIMEOUT_SEC:-30}"
+PROBE_KILL_AFTER_SEC="${LIBTIFF_DOWNSTREAM_KILL_AFTER_SEC:-10}"
 
 log_step() {
   printf '\n==> %s\n' "$1"
@@ -124,12 +127,70 @@ require_contains() {
   fi
 }
 
+report_probe_failure() {
+  local app="$1"
+  local command_desc="$2"
+  local artifact="$3"
+  local behavior="$4"
+  local log_path="$5"
+  local status="$6"
+
+  printf 'downstream probe failed\n' >&2
+  printf 'application: %s\n' "$app" >&2
+  printf 'command: %s\n' "$command_desc" >&2
+  printf 'artifact: %s\n' "$artifact" >&2
+  printf 'libtiff behavior: %s\n' "$behavior" >&2
+  printf 'exit status: %s\n' "$status" >&2
+
+  if [[ -f "$log_path" ]]; then
+    printf -- '--- %s ---\n' "$log_path" >&2
+    cat "$log_path" >&2
+  fi
+
+  exit "$status"
+}
+
+run_probe() {
+  local app="$1"
+  local command_desc="$2"
+  local artifact="$3"
+  local behavior="$4"
+  local log_path="$5"
+  local timeout_sec="$6"
+  shift 6
+
+  mkdir -p "$(dirname "$log_path")"
+  timeout --signal=TERM --kill-after="${PROBE_KILL_AFTER_SEC}s" "${timeout_sec}s" "$@" \
+    >"$log_path" 2>&1 || {
+      local status=$?
+      report_probe_failure "$app" "$command_desc" "$artifact" "$behavior" "$log_path" "$status"
+    }
+}
+
+build_isolated_env() {
+  local dir="$1"
+  local out_name="$2"
+  local -n out_ref="$out_name"
+
+  mkdir -p "$dir/home" "$dir/cache" "$dir/config" "$dir/runtime" "$dir/tmp"
+  chmod 700 "$dir/runtime"
+
+  out_ref=(
+    env
+    HOME="$dir/home"
+    XDG_CACHE_HOME="$dir/cache"
+    XDG_CONFIG_HOME="$dir/config"
+    XDG_RUNTIME_DIR="$dir/runtime"
+    TMPDIR="$dir/tmp"
+  )
+}
+
 find_file_or_die() {
   local search_root="$1"
   local pattern="$2"
   local result
 
-  result="$(find "$search_root" -type f -path "$pattern" -print -quit 2>/dev/null || true)"
+  result="$(find "$search_root" -type f -path "$pattern" -print 2>/dev/null | LC_ALL=C sort | head -n 1 || true)"
   [[ -n "$result" ]] || die "unable to locate file matching $pattern under $search_root"
   printf '%s\n' "$result"
 }
@@ -156,6 +217,17 @@ find_deb_by_package() {
 
   [[ -n "${deb:-}" ]] || die "unable to locate ${package}.deb under $DIST_ROOT"
   printf '%s\n' "$deb"
+}
+
+assert_installed_path_owned_by_package() {
+  local path="$1"
+  local package="$2"
+
+  dpkg -S "$path" >/tmp/dpkg-owner.log 2>&1 || {
+    cat /tmp/dpkg-owner.log >&2
+    exit 1
+  }
+  require_contains /tmp/dpkg-owner.log "${package}:"
 }
 
 assert_uses_packaged_libtiff() {
@@ -196,7 +268,8 @@ require_valid_tiff() {
   local path="$1"
 
   require_nonempty_file "$path"
-  tiffinfo "$path" >/tmp/tiffinfo-check.log 2>&1 || {
+  timeout --signal=TERM --kill-after="${PROBE_KILL_AFTER_SEC}s" "${VALIDATION_TIMEOUT_SEC}s" \
+    tiffinfo "$path" >/tmp/tiffinfo-check.log 2>&1 || {
     cat /tmp/tiffinfo-check.log >&2
     exit 1
   }
@@ -282,22 +355,36 @@ install_safe_packages() {
       die "failed to install $package at $EXPECTED_SAFE_VERSION"
   done
 
+  assert_installed_path_owned_by_package "/usr/lib/$MULTIARCH/libtiff.so.6.0.1" "libtiff6"
+  assert_installed_path_owned_by_package "/usr/lib/$MULTIARCH/libtiffxx.so.6.0.1" "libtiffxx6"
+  assert_installed_path_owned_by_package "$(command -v tiffinfo)" "libtiff-tools"
+  assert_installed_path_owned_by_package "$(command -v tiffcp)" "libtiff-tools"
   assert_uses_packaged_libtiff "$(command -v tiffinfo)" "installed tiffinfo"
+  assert_uses_packaged_libtiff "$(command -v tiffcp)" "installed tiffcp"
 }
 
 prepare_fixtures() {
+  local -a fixture_env
+
   log_step "Preparing fixtures"
 
   rm -rf "$FIXTURE_DIR" "$TEST_ROOT"
   mkdir -p "$FIXTURE_DIR" "$TEST_ROOT"
+  build_isolated_env "$FIXTURE_DIR" fixture_env
 
   cp "$ROOT/original/test/images/rgb-3c-8b.tiff" "$FIXTURE_DIR/input.tiff"
   require_valid_tiff "$FIXTURE_DIR/input.tiff"
 
-  convert "$FIXTURE_DIR/input.tiff" "$FIXTURE_DIR/input.pdf" >/tmp/fixture-convert.log 2>&1 || {
-    cat /tmp/fixture-convert.log >&2
-    exit 1
-  }
+  fixture_env+=(MAGICK_TEMPORARY_PATH="$FIXTURE_DIR/tmp")
+  run_probe \
+    "fixture-setup" \
+    "convert input.tiff input.pdf" \
+    "$FIXTURE_DIR/input.tiff -> $FIXTURE_DIR/input.pdf" \
+    "prepare a deterministic PDF fixture from the canonical TIFF input" \
+    /tmp/fixture-convert.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${fixture_env[@]}" \
+    convert "$FIXTURE_DIR/input.tiff" "$FIXTURE_DIR/input.pdf"
 
   require_nonempty_file "$FIXTURE_DIR/input.pdf"
   file "$FIXTURE_DIR/input.pdf" | grep -F 'PDF document' >/dev/null
@@ -305,51 +392,70 @@ prepare_fixtures() {
 
 test_gimp() {
   local plugin dir
+  local -a app_env
 
   log_step "gimp"
   plugin="$(find_file_or_die /usr/lib '*/gimp/*/plug-ins/file-tiff/file-tiff')"
   assert_uses_packaged_libtiff "$plugin" "gimp TIFF plug-in"
 
   dir="$(reset_test_dir gimp)"
+  build_isolated_env "$dir" app_env
+  app_env+=(GIMP2_DIRECTORY="$dir/gimp")
   cp "$FIXTURE_DIR/input.tiff" "$dir/input.tiff"
 
-  (
-    cd "$dir"
-    timeout 120 gimp-console-2.10 -i -d -f \
-      -b "(let* ((image (car (gimp-file-load RUN-NONINTERACTIVE \"$(pwd)/input.tiff\" \"$(pwd)/input.tiff\"))) (drawable (car (gimp-image-get-active-layer image)))) (gimp-file-save RUN-NONINTERACTIVE image drawable \"$(pwd)/output.tiff\" \"$(pwd)/output.tiff\") (gimp-image-delete image))" \
-      -b "(gimp-quit 0)" \
-      >/tmp/gimp.log 2>&1
-  ) || {
-    cat /tmp/gimp.log >&2
-    exit 1
-  }
+  run_probe \
+    "gimp" \
+    "gimp-console-2.10 scripted TIFF load/save" \
+    "$dir/input.tiff -> $dir/output.tiff" \
+    "load and save through the GIMP TIFF plug-in linked against the packaged libtiff" \
+    /tmp/gimp.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    bash -lc 'cd "$1" && gimp-console-2.10 -i -d -f \
+      -b "(let* ((image (car (gimp-file-load RUN-NONINTERACTIVE \"$2\" \"$2\"))) (drawable (car (gimp-image-get-active-layer image)))) (gimp-file-save RUN-NONINTERACTIVE image drawable \"$3\" \"$3\") (gimp-image-delete image))" \
+      -b "(gimp-quit 0)"' \
+    bash "$dir" "$dir/input.tiff" "$dir/output.tiff"
 
   require_valid_tiff "$dir/output.tiff"
 }
 
 test_imagemagick() {
   local coder dir
+  local -a app_env
 
   log_step "imagemagick"
   coder="$(find_file_or_die /usr/lib '*/ImageMagick-*/modules-*/coders/tiff.so')"
   assert_uses_packaged_libtiff "$coder" "ImageMagick TIFF coder"
 
   dir="$(reset_test_dir imagemagick)"
-  convert "$FIXTURE_DIR/input.tiff" -rotate 90 "$dir/output.tiff" >/tmp/imagemagick.log 2>&1 || {
-    cat /tmp/imagemagick.log >&2
-    exit 1
-  }
+  build_isolated_env "$dir" app_env
+  app_env+=(MAGICK_TEMPORARY_PATH="$dir/tmp")
+  run_probe \
+    "imagemagick" \
+    "convert input.tiff -rotate 90 output.tiff" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.tiff" \
+    "load the TIFF coder and write a rotated TIFF using the packaged libtiff" \
+    /tmp/imagemagick.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    convert "$FIXTURE_DIR/input.tiff" -rotate 90 "$dir/output.tiff"
 
   require_valid_tiff "$dir/output.tiff"
-  identify "$dir/output.tiff" >/tmp/imagemagick-identify.log 2>&1 || {
-    cat /tmp/imagemagick-identify.log >&2
-    exit 1
-  }
+  run_probe \
+    "imagemagick" \
+    "identify output.tiff" \
+    "$dir/output.tiff" \
+    "reopen the generated TIFF through ImageMagick metadata inspection" \
+    /tmp/imagemagick-identify.log \
+    "$VALIDATION_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    identify "$dir/output.tiff"
   require_contains /tmp/imagemagick-identify.log "TIFF"
 }
 
 test_graphicsmagick() {
   local lib dir
+  local -a app_env
 
   log_step "graphicsmagick"
   lib="$(ldconfig -p | awk '/libGraphicsMagick.*\.so/ { print $NF; exit }')"
@@ -357,21 +463,33 @@ test_graphicsmagick() {
   assert_uses_packaged_libtiff "$lib" "GraphicsMagick shared library"
 
   dir="$(reset_test_dir graphicsmagick)"
-  gm convert "$FIXTURE_DIR/input.tiff" -flip "$dir/output.tiff" >/tmp/graphicsmagick.log 2>&1 || {
-    cat /tmp/graphicsmagick.log >&2
-    exit 1
-  }
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "graphicsmagick" \
+    "gm convert input.tiff -flip output.tiff" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.tiff" \
+    "load and write TIFFs through the GraphicsMagick shared library bound to the packaged libtiff" \
+    /tmp/graphicsmagick.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    gm convert "$FIXTURE_DIR/input.tiff" -flip "$dir/output.tiff"
 
   require_valid_tiff "$dir/output.tiff"
-  gm identify "$dir/output.tiff" >/tmp/graphicsmagick-identify.log 2>&1 || {
-    cat /tmp/graphicsmagick-identify.log >&2
-    exit 1
-  }
+  run_probe \
+    "graphicsmagick" \
+    "gm identify output.tiff" \
+    "$dir/output.tiff" \
+    "reopen the generated TIFF through GraphicsMagick metadata inspection" \
+    /tmp/graphicsmagick-identify.log \
+    "$VALIDATION_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    gm identify "$dir/output.tiff"
   require_contains /tmp/graphicsmagick-identify.log "TIFF"
 }
 
 test_gdal() {
   local lib dir
+  local -a app_env
 
   log_step "gdal-bin"
   lib="$(ldconfig -p | awk '/libgdal\.so/ { print $NF; exit }')"
@@ -379,21 +497,33 @@ test_gdal() {
   assert_uses_packaged_libtiff "$lib" "libgdal shared library"
 
   dir="$(reset_test_dir gdal-bin)"
-  gdal_translate -of GTiff "$FIXTURE_DIR/input.tiff" "$dir/output.tiff" >/tmp/gdal-translate.log 2>&1 || {
-    cat /tmp/gdal-translate.log >&2
-    exit 1
-  }
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "gdal-bin" \
+    "gdal_translate -of GTiff input.tiff output.tiff" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.tiff" \
+    "round-trip a TIFF through the GTiff driver linked against the packaged libtiff" \
+    /tmp/gdal-translate.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    gdal_translate -of GTiff "$FIXTURE_DIR/input.tiff" "$dir/output.tiff"
   require_valid_tiff "$dir/output.tiff"
 
-  gdalinfo "$dir/output.tiff" >/tmp/gdalinfo.log 2>&1 || {
-    cat /tmp/gdalinfo.log >&2
-    exit 1
-  }
+  run_probe \
+    "gdal-bin" \
+    "gdalinfo output.tiff" \
+    "$dir/output.tiff" \
+    "read the generated TIFF back through GDAL metadata inspection" \
+    /tmp/gdalinfo.log \
+    "$VALIDATION_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    gdalinfo "$dir/output.tiff"
   require_contains /tmp/gdalinfo.log "Driver: GTiff/GeoTIFF"
 }
 
 test_poppler() {
   local lib dir
+  local -a app_env
 
   log_step "poppler-utils"
   lib="$(ldconfig -p | awk '/libpoppler\.so/ { print $NF; exit }')"
@@ -401,16 +531,23 @@ test_poppler() {
   assert_uses_packaged_libtiff "$lib" "libpoppler shared library"
 
   dir="$(reset_test_dir poppler-utils)"
-  pdftocairo -tiff -singlefile "$FIXTURE_DIR/input.pdf" "$dir/poppler" >/tmp/pdftocairo.log 2>&1 || {
-    cat /tmp/pdftocairo.log >&2
-    exit 1
-  }
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "poppler-utils" \
+    "pdftocairo -tiff -singlefile input.pdf poppler" \
+    "$FIXTURE_DIR/input.pdf -> $dir/poppler.tif" \
+    "render PDF content to TIFF through Poppler's TIFF backend using the packaged libtiff" \
+    /tmp/pdftocairo.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    pdftocairo -tiff -singlefile "$FIXTURE_DIR/input.pdf" "$dir/poppler"
 
   require_valid_tiff "$dir/poppler.tif"
 }
 
 test_qt6_image_formats() {
   local plugin dir
+  local -a app_env
 
   log_step "qt6-image-formats-plugins"
   plugin="$(find_file_or_die /usr/lib '*/qt6/plugins/imageformats/libqtiff.so')"
@@ -461,22 +598,34 @@ int main(int argc, char **argv)
 }
 CPP
 
-  g++ -std=c++17 "$dir/qt_tiff_probe.cpp" -o "$dir/qt_tiff_probe" \
-    $(pkg-config --cflags --libs Qt6Gui) >/tmp/qt-build.log 2>&1 || {
-      cat /tmp/qt-build.log >&2
-      exit 1
-    }
+  build_isolated_env "$dir" app_env
+  app_env+=(QT_QPA_PLATFORM=offscreen)
+  run_probe \
+    "qt6-image-formats-plugins" \
+    "build qt_tiff_probe.cpp" \
+    "$dir/qt_tiff_probe.cpp -> $dir/qt_tiff_probe" \
+    "compile a Qt imageformats probe against the system Qt stack" \
+    /tmp/qt-build.log \
+    "$PROBE_TIMEOUT_SEC" \
+    bash -lc 'g++ -std=c++17 "$1" -o "$2" $(pkg-config --cflags --libs Qt6Gui)' \
+    bash "$dir/qt_tiff_probe.cpp" "$dir/qt_tiff_probe"
 
-  "$dir/qt_tiff_probe" "$FIXTURE_DIR/input.tiff" "$dir/output.tiff" >/tmp/qt-run.log 2>&1 || {
-    cat /tmp/qt-run.log >&2
-    exit 1
-  }
+  run_probe \
+    "qt6-image-formats-plugins" \
+    "qt_tiff_probe input.tiff output.tiff" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.tiff" \
+    "load the Qt TIFF plug-in and save a mirrored TIFF through QImageWriter" \
+    /tmp/qt-run.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    "$dir/qt_tiff_probe" "$FIXTURE_DIR/input.tiff" "$dir/output.tiff"
 
   require_valid_tiff "$dir/output.tiff"
 }
 
 test_python_pil() {
   local imaging_so dir
+  local -a app_env
 
   log_step "python3-pil"
   imaging_so="$(python3 - <<'PY'
@@ -488,7 +637,8 @@ PY
   assert_uses_packaged_libtiff "$imaging_so" "Pillow _imaging extension"
 
   dir="$(reset_test_dir python3-pil)"
-  python3 <<PY >"$dir/pillow.log"
+  build_isolated_env "$dir" app_env
+  cat > "$dir/pillow_probe.py" <<PY
 from PIL import Image
 
 src = "$FIXTURE_DIR/input.tiff"
@@ -499,6 +649,15 @@ print(image.format, image.size)
 image.transpose(Image.Transpose.FLIP_LEFT_RIGHT).save(dst, format="TIFF")
 print(Image.open(dst).size)
 PY
+  run_probe \
+    "python3-pil" \
+    "python3 pillow_probe.py" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.tiff" \
+    "load and save TIFFs through Pillow's _imaging extension linked against the packaged libtiff" \
+    "$dir/pillow.log" \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    python3 "$dir/pillow_probe.py"
 
   require_contains "$dir/pillow.log" "TIFF"
   require_valid_tiff "$dir/output.tiff"
@@ -506,26 +665,41 @@ PY
 
 test_netpbm() {
   local dir
+  local -a app_env
 
   log_step "netpbm"
   assert_uses_packaged_libtiff "$(command -v tifftopnm)" "tifftopnm"
 
   dir="$(reset_test_dir netpbm)"
-  tifftopnm "$FIXTURE_DIR/input.tiff" > "$dir/output.ppm" 2>"$dir/tifftopnm.log" || {
-    cat "$dir/tifftopnm.log" >&2
-    exit 1
-  }
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "netpbm" \
+    "tifftopnm input.tiff > output.ppm" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.ppm" \
+    "decode TIFF input through tifftopnm backed by the packaged libtiff" \
+    "$dir/tifftopnm.log" \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    bash -lc 'tifftopnm "$1" > "$2"' \
+    bash "$FIXTURE_DIR/input.tiff" "$dir/output.ppm"
   require_nonempty_file "$dir/output.ppm"
 
-  pnmtotiff "$dir/output.ppm" > "$dir/output.tiff" 2>"$dir/pnmtotiff.log" || {
-    cat "$dir/pnmtotiff.log" >&2
-    exit 1
-  }
+  run_probe \
+    "netpbm" \
+    "pnmtotiff output.ppm > output.tiff" \
+    "$dir/output.ppm -> $dir/output.tiff" \
+    "re-encode the intermediate PPM into TIFF for a downstream round-trip" \
+    "$dir/pnmtotiff.log" \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    bash -lc 'pnmtotiff "$1" > "$2"' \
+    bash "$dir/output.ppm" "$dir/output.tiff"
   require_valid_tiff "$dir/output.tiff"
 }
 
 test_tesseract() {
   local lib dir digits
+  local -a app_env
 
   log_step "tesseract-ocr"
   lib="$(ldconfig -p | awk '/liblept\.so/ { print $NF; exit }')"
@@ -533,15 +707,39 @@ test_tesseract() {
   assert_uses_packaged_libtiff "$lib" "Leptonica shared library"
 
   dir="$(reset_test_dir tesseract-ocr)"
-  pbmtext '12345' | pnmscale 10 > "$dir/ocr-input.pbm"
-  pnmtotiff "$dir/ocr-input.pbm" > "$dir/ocr-input.tiff"
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "tesseract-ocr" \
+    "pbmtext 12345 | pnmscale 10 > ocr-input.pbm" \
+    "$dir/ocr-input.pbm" \
+    "generate a deterministic PBM input for OCR smoke coverage" \
+    "$dir/pbmtext.log" \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    bash -lc 'pbmtext "12345" | pnmscale 10 > "$1"' \
+    bash "$dir/ocr-input.pbm"
+  run_probe \
+    "tesseract-ocr" \
+    "pnmtotiff ocr-input.pbm > ocr-input.tiff" \
+    "$dir/ocr-input.pbm -> $dir/ocr-input.tiff" \
+    "encode the OCR fixture as TIFF before handing it to Tesseract" \
+    "$dir/pnmtotiff.log" \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    bash -lc 'pnmtotiff "$1" > "$2"' \
+    bash "$dir/ocr-input.pbm" "$dir/ocr-input.tiff"
   require_valid_tiff "$dir/ocr-input.tiff"
 
-  tesseract "$dir/ocr-input.tiff" stdout --dpi 300 --psm 7 -l eng \
-    -c tessedit_char_whitelist=12345 >"$dir/tesseract.log" 2>&1 || {
-      cat "$dir/tesseract.log" >&2
-      exit 1
-    }
+  run_probe \
+    "tesseract-ocr" \
+    "tesseract ocr-input.tiff stdout --dpi 300 --psm 7 -l eng" \
+    "$dir/ocr-input.tiff" \
+    "read TIFF input through Leptonica and recover the expected digits" \
+    "$dir/tesseract.log" \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    tesseract "$dir/ocr-input.tiff" stdout --dpi 300 --psm 7 -l eng \
+      -c tessedit_char_whitelist=12345
 
   digits="$(tr -cd '0-9' < "$dir/tesseract.log")"
   [[ "$digits" == *"12345"* ]] || {
@@ -552,6 +750,7 @@ test_tesseract() {
 
 test_ghostscript() {
   local lib dir
+  local -a app_env
 
   log_step "ghostscript"
   lib="$(ldconfig -p | awk '/libgs\.so/ { print $NF; exit }')"
@@ -559,36 +758,56 @@ test_ghostscript() {
   assert_uses_packaged_libtiff "$lib" "Ghostscript shared library"
 
   dir="$(reset_test_dir ghostscript)"
-  gs -q -dNOPAUSE -dBATCH -sDEVICE=tiff24nc \
-    -sOutputFile="$dir/output.tiff" \
-    "$FIXTURE_DIR/input.pdf" >/tmp/ghostscript.log 2>&1 || {
-      cat /tmp/ghostscript.log >&2
-      exit 1
-    }
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "ghostscript" \
+    "gs -sDEVICE=tiff24nc -sOutputFile=output.tiff input.pdf" \
+    "$FIXTURE_DIR/input.pdf -> $dir/output.tiff" \
+    "render PDF content to TIFF through Ghostscript linked against the packaged libtiff" \
+    /tmp/ghostscript.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    gs -q -dNOPAUSE -dBATCH -sDEVICE=tiff24nc \
+      -sOutputFile="$dir/output.tiff" \
+      "$FIXTURE_DIR/input.pdf"
 
   require_valid_tiff "$dir/output.tiff"
 }
 
 test_gdk_pixbuf() {
   local loader query_loaders thumbnailer dir
+  local -a app_env
 
   log_step "libgdk-pixbuf-2.0-0"
   loader="$(find_file_or_die /usr/lib '*/gdk-pixbuf-2.0/*/loaders/libpixbufloader-tiff.so')"
   assert_uses_packaged_libtiff "$loader" "GDK Pixbuf TIFF loader"
 
   query_loaders="$(find_file_or_die /usr '*/gdk-pixbuf-query-loaders')"
-  "$query_loaders" >/tmp/gdk-pixbuf-loaders.log 2>&1 || {
-    cat /tmp/gdk-pixbuf-loaders.log >&2
-    exit 1
-  }
-  require_contains /tmp/gdk-pixbuf-loaders.log "libpixbufloader-tiff"
-
   dir="$(reset_test_dir libgdk-pixbuf-2.0-0)"
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "libgdk-pixbuf-2.0-0" \
+    "gdk-pixbuf-query-loaders > loaders.cache" \
+    "$dir/loaders.cache" \
+    "build a deterministic loader cache that includes the TIFF loader linked against the packaged libtiff" \
+    /tmp/gdk-pixbuf-loaders.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    bash -lc '"$1" > "$2"' \
+    bash "$query_loaders" "$dir/loaders.cache"
+  require_contains "$dir/loaders.cache" "libpixbufloader-tiff"
+
   thumbnailer="$(find_file_or_die /usr '*/gdk-pixbuf-thumbnailer')"
-  "$thumbnailer" -s 64 "$FIXTURE_DIR/input.tiff" "$dir/thumbnail.png" >/tmp/gdk-thumb.log 2>&1 || {
-    cat /tmp/gdk-thumb.log >&2
-    exit 1
-  }
+  app_env+=(GDK_PIXBUF_MODULE_FILE="$dir/loaders.cache")
+  run_probe \
+    "libgdk-pixbuf-2.0-0" \
+    "gdk-pixbuf-thumbnailer -s 64 input.tiff thumbnail.png" \
+    "$FIXTURE_DIR/input.tiff -> $dir/thumbnail.png" \
+    "load TIFF input through the GDK Pixbuf TIFF loader and render a PNG thumbnail" \
+    /tmp/gdk-thumb.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    "$thumbnailer" -s 64 "$FIXTURE_DIR/input.tiff" "$dir/thumbnail.png"
 
   require_nonempty_file "$dir/thumbnail.png"
   file "$dir/thumbnail.png" | grep -F 'PNG image data' >/dev/null
@@ -596,6 +815,7 @@ test_gdk_pixbuf() {
 
 test_opencv() {
   local lib dir
+  local -a app_env
 
   log_step "libopencv-imgcodecs406t64"
   lib="$(ldconfig -p | awk '/libopencv_imgcodecs\.so/ { print $NF; exit }')"
@@ -632,22 +852,33 @@ int main(int argc, char **argv)
 }
 CPP
 
-  g++ -std=c++17 "$dir/opencv_tiff_probe.cpp" -o "$dir/opencv_tiff_probe" \
-    $(pkg-config --cflags --libs opencv4) >/tmp/opencv-build.log 2>&1 || {
-      cat /tmp/opencv-build.log >&2
-      exit 1
-    }
+  build_isolated_env "$dir" app_env
+  run_probe \
+    "libopencv-imgcodecs406t64" \
+    "build opencv_tiff_probe.cpp" \
+    "$dir/opencv_tiff_probe.cpp -> $dir/opencv_tiff_probe" \
+    "compile an OpenCV imgcodecs probe against the system OpenCV stack" \
+    /tmp/opencv-build.log \
+    "$PROBE_TIMEOUT_SEC" \
+    bash -lc 'g++ -std=c++17 "$1" -o "$2" $(pkg-config --cflags --libs opencv4)' \
+    bash "$dir/opencv_tiff_probe.cpp" "$dir/opencv_tiff_probe"
 
-  "$dir/opencv_tiff_probe" "$FIXTURE_DIR/input.tiff" "$dir/output.tiff" >/tmp/opencv-run.log 2>&1 || {
-    cat /tmp/opencv-run.log >&2
-    exit 1
-  }
+  run_probe \
+    "libopencv-imgcodecs406t64" \
+    "opencv_tiff_probe input.tiff output.tiff" \
+    "$FIXTURE_DIR/input.tiff -> $dir/output.tiff" \
+    "load and write TIFFs through OpenCV imgcodecs backed by the packaged libtiff" \
+    /tmp/opencv-run.log \
+    "$PROBE_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    "$dir/opencv_tiff_probe" "$FIXTURE_DIR/input.tiff" "$dir/output.tiff"
 
   require_valid_tiff "$dir/output.tiff"
 }
 
 test_sane_airscan() {
   local backend dir
+  local -a app_env
 
   log_step "sane-airscan"
   backend="$(find_file_or_die /usr/lib '*/sane/libsane-airscan.so*')"
@@ -665,10 +896,17 @@ EOF
 
   # There is no physical network scanner in CI, so the backend smoke test is
   # limited to loading the airscan backend through SANE with discovery disabled.
-  SANE_CONFIG_DIR="$dir/sane.d" SANE_DEBUG_DLL=255 timeout 30 scanimage -L >"$dir/scanimage.log" 2>&1 || {
-    cat "$dir/scanimage.log" >&2
-    exit 1
-  }
+  build_isolated_env "$dir" app_env
+  app_env+=(SANE_CONFIG_DIR="$dir/sane.d" SANE_DEBUG_DLL=255)
+  run_probe \
+    "sane-airscan" \
+    "scanimage -L" \
+    "$dir/sane.d/airscan.conf" \
+    "load the sane-airscan backend and enumerate devices with discovery disabled" \
+    "$dir/scanimage.log" \
+    "$VALIDATION_TIMEOUT_SEC" \
+    "${app_env[@]}" \
+    scanimage -L
 
   require_contains "$dir/scanimage.log" "libsane-airscan"
 }
