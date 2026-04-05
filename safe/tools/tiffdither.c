@@ -43,8 +43,12 @@
 #define EXIT_FAILURE 1
 #endif
 
+#ifndef streq
 #define streq(a, b) (strcmp(a, b) == 0)
+#endif
+#ifndef strneq
 #define strneq(a, b, n) (strncmp(a, b, n) == 0)
+#endif
 
 #define CopyField(tag, v)                                                      \
     if (TIFFGetField(in, tag, &v))                                             \
