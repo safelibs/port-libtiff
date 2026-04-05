@@ -8,50 +8,11 @@
 #include "tiffiop.h"
 
 #include <iostream>
-#include <type_traits>
 
 using namespace std;
 
 struct tiffis_data;
 struct tiffos_data;
-
-namespace
-{
-
-struct tiff_fpos_layout
-{
-    std::streamoff off;
-    std::mbstate_t state;
-};
-
-static_assert(sizeof(tiff_fpos_layout) == sizeof(std::fpos<std::mbstate_t>),
-              "unexpected std::fpos layout");
-
-} // namespace
-
-extern std::streamoff
-tiff_std_fpos_to_streamoff(const std::fpos<std::mbstate_t> *self)
-    __asm__("_ZNKSt4fposI11__mbstate_tEcvlEv")
-        __attribute__((weak, used, visibility("default")));
-
-std::streamoff tiff_std_fpos_to_streamoff(
-    const std::fpos<std::mbstate_t> *self)
-{
-    return reinterpret_cast<const tiff_fpos_layout *>(self)->off;
-}
-
-extern std::streamoff
-tiff_std_fpos_minus(const std::fpos<std::mbstate_t> *lhs,
-                    const std::fpos<std::mbstate_t> *rhs)
-    __asm__("_ZNKSt4fposI11__mbstate_tEmiERKS1_")
-        __attribute__((weak, used, visibility("default")));
-
-std::streamoff tiff_std_fpos_minus(const std::fpos<std::mbstate_t> *lhs,
-                                   const std::fpos<std::mbstate_t> *rhs)
-{
-    return reinterpret_cast<const tiff_fpos_layout *>(lhs)->off -
-           reinterpret_cast<const tiff_fpos_layout *>(rhs)->off;
-}
 
 extern "C"
 {
