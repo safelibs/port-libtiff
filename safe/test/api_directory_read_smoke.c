@@ -31,6 +31,19 @@ static void expect_contains(const char *haystack, const char *needle,
         fail(message);
 }
 
+static TIFF *expect_open(const char *path, const char *label)
+{
+    TIFF *tif = TIFFOpen(path, "r");
+    char message[512];
+
+    if (tif != NULL)
+        return tif;
+
+    snprintf(message, sizeof(message), "failed to open %s: %s", label, path);
+    fail(message);
+    return NULL;
+}
+
 static void capture_print_directory(TIFF *tif, long flags, char *buffer,
                                     size_t buffer_size)
 {
@@ -64,8 +77,8 @@ int main(void)
     char *date_time_original = NULL;
     char *exif_version = NULL;
 
-    tif = TIFFOpen(SOURCE_DIR "/images/test_ifd_loop_subifd.tif", "r");
-    expect(tif != NULL, "failed to open loop-subifd smoke image");
+    tif = expect_open(SOURCE_DIR "/images/test_ifd_loop_subifd.tif",
+                      "loop-subifd smoke image");
     expect(TIFFCurrentDirectory(tif) == 0, "first directory must be loaded");
     expect(TIFFGetField(tif, TIFFTAG_PAGENAME, &page_name) == 1,
            "missing PageName in first directory");
@@ -127,8 +140,8 @@ int main(void)
 
     TIFFClose(tif);
 
-    tif = TIFFOpen(SOURCE_DIR "/images/custom_dir_EXIF_GPS.tiff", "r");
-    expect(tif != NULL, "failed to open EXIF/GPS smoke image");
+    tif = expect_open(SOURCE_DIR "/images/custom_dir_EXIF_GPS.tiff",
+                      "EXIF/GPS smoke image");
     expect(TIFFGetField(tif, TIFFTAG_EXIFIFD, &exif_offset) == 1,
            "missing EXIF directory offset");
     expect(TIFFReadEXIFDirectory(tif, exif_offset) == 1,

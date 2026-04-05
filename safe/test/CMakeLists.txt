@@ -98,6 +98,40 @@ set(IMAGES_EXTRA_DIST
     ${PNMIMAGES}
     ${TIFFIMAGES})
 
+set(REGISTERED_TEST_INPUTS
+    ${RGBIMAGES}
+    ${TIFFIMAGES}
+    ${TIFFIMAGES_OJPEG}
+    ${PNMIMAGES}
+    images/miniswhite-1c-1b.g3
+    images/test_float64_predictor2_be_lzw.tif
+    images/test_float64_predictor2_le_lzw.tif
+    images/test_ifd_loop_subifd.tif
+    images/test_ifd_loop_to_first.tif
+    images/test_ifd_loop_to_self.tif
+    images/test_two_ifds.tif
+    images/tiff_with_subifd_chain.tif)
+
+if(WEBP_SUPPORT)
+  list(APPEND REGISTERED_TEST_INPUTS
+       images/webp_lossless_rgba_alpha_fully_opaque.tif)
+endif()
+
+list(REMOVE_DUPLICATES REGISTERED_TEST_INPUTS)
+
+function(assert_registered_test_inputs_exist)
+  foreach(image IN LISTS ARGN)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${image}")
+      message(
+        FATAL_ERROR
+          "Registered test input is missing: ${CMAKE_CURRENT_SOURCE_DIR}/${image}\n"
+          "Restore the copied upstream fixture in safe/test/images/ or update safe/test/CMakeLists.txt.")
+    endif()
+  endforeach()
+endfunction()
+
+assert_registered_test_inputs_exist(${REGISTERED_TEST_INPUTS})
+
 set(noinst_HEADERS tifftest.h)
 
 set(simple_tests)
