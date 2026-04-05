@@ -234,6 +234,12 @@ target_link_libraries(api_directory_read_smoke PRIVATE tiff tiff_port)
 target_compile_definitions(api_directory_read_smoke PRIVATE SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 list(APPEND simple_tests api_directory_read_smoke)
 
+add_executable(api_custom_dir_read_smoke ../placeholder.h)
+target_sources(api_custom_dir_read_smoke PRIVATE api_custom_dir_read_smoke.c)
+target_link_libraries(api_custom_dir_read_smoke PRIVATE tiff tiff_port)
+target_compile_definitions(api_custom_dir_read_smoke PRIVATE SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
+list(APPEND simple_tests api_custom_dir_read_smoke)
+
 add_executable(api_directory_write_smoke ../placeholder.h)
 target_sources(api_directory_write_smoke PRIVATE api_directory_write_smoke.c)
 target_link_libraries(api_directory_write_smoke PRIVATE tiff tiff_port)

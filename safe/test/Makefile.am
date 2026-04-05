@@ -78,7 +78,9 @@ check_PROGRAMS = \
 	ascii_tag long_tag short_tag strip_rw rewrite custom_dir custom_dir_EXIF_231 \
 	defer_strile_loading defer_strile_writing test_directory test_open_options \
 	test_append_to_strip test_rgba_readers test_tile_read_write \
-	test_ifd_loop_detection testtypes test_signed_tags $(JPEG_DEPENDENT_CHECK_PROG) $(STATIC_CHECK_PROGS)
+	test_ifd_loop_detection testtypes test_signed_tags \
+	api_custom_dir_read_smoke \
+	$(JPEG_DEPENDENT_CHECK_PROG) $(STATIC_CHECK_PROGS)
 endif
 
 # Test scripts to execute
@@ -271,6 +273,9 @@ test_tile_read_write_LDADD = $(LIBTIFF)
 test_ifd_loop_detection_CFLAGS = -DSOURCE_DIR=\"@srcdir@\"
 test_ifd_loop_detection_SOURCES = test_ifd_loop_detection.c
 test_ifd_loop_detection_LDADD = $(LIBTIFF)
+api_custom_dir_read_smoke_CFLAGS = -DSOURCE_DIR=\"@srcdir@\"
+api_custom_dir_read_smoke_SOURCES = api_custom_dir_read_smoke.c
+api_custom_dir_read_smoke_LDADD = $(LIBTIFF)
 
 AM_CPPFLAGS = -I$(top_srcdir)/libtiff
 
