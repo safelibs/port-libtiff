@@ -1,5 +1,4 @@
 config.log
-test/images/custom_dir_EXIF_GPS.tiff
 doc/__pycache__/*
 build-debian
 dist
