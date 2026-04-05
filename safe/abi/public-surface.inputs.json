@@ -98,11 +98,11 @@
     },
     {
       "path": "safe/build/libtiff/libtiff.so.6",
-      "sha256": "3e81f8651052fd3f6a8ee25b7cd4d55bfb82c941aeb8ceb14eaec988866c64ad"
+      "sha256": "d966e84494ada7391eb7da70457bf54ae6fa20078bd3dfd984068268d8d2b353"
     },
     {
       "path": "safe/build/libtiff/libtiffxx.so.6",
-      "sha256": "7d6f55bf8eaca06f2059e7b8b583741535f8d1ab3be7b78c864e3ea9dc8213a3"
+      "sha256": "5acd96b093fdbe068b5e131eb80e2a732503d3198f485125d2a57a6d621aa373"
     },
     {
       "path": "safe/capi/libtiff-safe.map",

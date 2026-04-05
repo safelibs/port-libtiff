@@ -11,6 +11,23 @@
 
 using namespace std;
 
+namespace
+{
+using mbstate_fpos = std::fpos<__mbstate_t>;
+using fpos_minus_member = std::streamoff (mbstate_fpos::*)(const mbstate_fpos &) const;
+using fpos_cast_member = std::streamoff (mbstate_fpos::*)() const;
+
+/*
+ * The upstream libtiffxx DSO exports these inline libstdc++ helpers as weak
+ * versioned symbols. Keep their member-function addresses live so the safe
+ * shim emits matching definitions for ABI and Debian symbol compatibility.
+ */
+[[maybe_unused]] __attribute__((used)) static fpos_minus_member keep_fpos_minus_export =
+    &mbstate_fpos::operator-;
+[[maybe_unused]] __attribute__((used)) static fpos_cast_member keep_fpos_cast_export =
+    &mbstate_fpos::operator std::streamoff;
+} // namespace
+
 struct tiffis_data;
 struct tiffos_data;
 

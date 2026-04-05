@@ -22,6 +22,11 @@
 # LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
 # OF THIS SOFTWARE.
 
+set(CUSTOM_DIR_EXIF_GPS_TIFF "${CMAKE_CURRENT_SOURCE_DIR}/images/custom_dir_EXIF_GPS.tiff")
+if(NOT EXISTS "${CUSTOM_DIR_EXIF_GPS_TIFF}")
+  set(CUSTOM_DIR_EXIF_GPS_TIFF "${CMAKE_CURRENT_SOURCE_DIR}/../debian/custom_dir_EXIF_GPS.tiff")
+endif()
+
 # Images for tiff2bw (8-bit RGB only)
 set(RGBIMAGES
     images/palette-1c-8b.tiff
@@ -33,7 +38,7 @@ set(RGBIMAGES
 # subdirectory which are intended to be used as input images for
 # tests.  All of these files should use the extension ".tiff".
 set(TIFFIMAGES
-    images/custom_dir_EXIF_GPS.tiff
+    ${CUSTOM_DIR_EXIF_GPS_TIFF}
     images/logluv-3c-16b.tiff
     images/minisblack-1c-16b.tiff
     images/minisblack-1c-8b.tiff
@@ -119,12 +124,22 @@ endif()
 
 list(REMOVE_DUPLICATES REGISTERED_TEST_INPUTS)
 
+function(resolve_test_input_path output_var input_path)
+  if(IS_ABSOLUTE "${input_path}")
+    set(resolved_path "${input_path}")
+  else()
+    set(resolved_path "${CMAKE_CURRENT_SOURCE_DIR}/${input_path}")
+  endif()
+  set(${output_var} "${resolved_path}" PARENT_SCOPE)
+endfunction()
+
 function(assert_registered_test_inputs_exist)
   foreach(image IN LISTS ARGN)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${image}")
+    resolve_test_input_path(image_path "${image}")
+    if(NOT EXISTS "${image_path}")
       message(
         FATAL_ERROR
-          "Registered test input is missing: ${CMAKE_CURRENT_SOURCE_DIR}/${image}\n"
+          "Registered test input is missing: ${image_path}\n"
           "Restore the copied upstream fixture in safe/test/images/ or update safe/test/CMakeLists.txt.")
     endif()
   endforeach()
@@ -443,7 +458,7 @@ function(add_convert_test_multi commandname1 commandname2 commandname3
   else()
     set(command3)
   endif()
-  set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${image}")
+  resolve_test_input_path(infile "${image}")
   set(outfile "${TEST_OUTPUT}/${commandname1}-${categoryname}-${base}.tiff")
   tiff_test_convert("${testname}" "${command1}" "${command2}" "${command3}"
                     "${infile}" "${outfile}" "${validate}")
@@ -482,7 +497,7 @@ function(add_stdout_test commandname suffix commandargs image)
   get_filename_component(base "${image}" NAME_WE)
   set(testname "${commandname}-${base}")
   set(command "$<TARGET_FILE:${commandname}>^${escaped_commandargs}")
-  set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${image}")
+  resolve_test_input_path(infile "${image}")
   set(outfile "${TEST_OUTPUT}/${commandname}-${name}")
   string(REGEX REPLACE "\\.tiff\$" "" name "${name}")
   tiff_test_stdout("${testname}" "${suffix}" "${command}" "${infile}" "${outfile}")
@@ -494,7 +509,7 @@ function(add_reader_test commandname commandargs image)
   get_filename_component(base "${image}" NAME_WE)
   set(testname "${commandname}-${base}")
   set(command "$<TARGET_FILE:${commandname}>^${escaped_commandargs}")
-  set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${image}")
+  resolve_test_input_path(infile "${image}")
   tiff_test_reader("${testname}" "${command}" "${infile}")
 endfunction()
 
@@ -533,7 +548,7 @@ if(tiff-tools)
   add_reader_test(tiffdump "" "images/miniswhite-1c-1b.tiff")
 
   # tiffinfo
-  add_reader_test(tiffinfo "-c -D -d -j -s" "images/custom_dir_EXIF_GPS.tiff")
+  add_reader_test(tiffinfo "-c -D -d -j -s" "${CUSTOM_DIR_EXIF_GPS_TIFF}")
   add_reader_test(tiffinfo "-c -D -d -j -s" "images/minisblack-1c-16b.tiff")
   add_reader_test(tiffinfo " " "images/tiff_with_subifd_chain.tif")
 

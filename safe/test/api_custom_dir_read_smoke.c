@@ -48,6 +48,28 @@ static void capture_print_directory(TIFF *tif, long flags, char *buffer,
     fclose(sink);
 }
 
+static const char *custom_dir_exif_gps_path(void)
+{
+    static const char primary[] = SOURCE_DIR "/images/custom_dir_EXIF_GPS.tiff";
+    static const char fallback[] = SOURCE_DIR "/../debian/custom_dir_EXIF_GPS.tiff";
+    FILE *probe = fopen(primary, "rb");
+
+    if (probe != NULL)
+    {
+        fclose(probe);
+        return primary;
+    }
+
+    probe = fopen(fallback, "rb");
+    if (probe != NULL)
+    {
+        fclose(probe);
+        return fallback;
+    }
+
+    return primary;
+}
+
 int main(void)
 {
     char print_buffer[8192];
@@ -64,7 +86,7 @@ int main(void)
     double altitude = 0.0;
     static const uint8_t expected_gps_version[4] = {2, 2, 0, 1};
 
-    tif = TIFFOpen(SOURCE_DIR "/images/custom_dir_EXIF_GPS.tiff", "r");
+    tif = TIFFOpen(custom_dir_exif_gps_path(), "r");
     expect(tif != NULL, "failed to open EXIF/GPS fixture");
 
     expect(TIFFCurrentDirectory(tif) == 0, "main directory must be loaded first");

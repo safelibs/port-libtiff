@@ -61,6 +61,28 @@ static void capture_print_directory(TIFF *tif, long flags, char *buffer,
     fclose(sink);
 }
 
+static const char *custom_dir_exif_gps_path(void)
+{
+    static const char primary[] = SOURCE_DIR "/images/custom_dir_EXIF_GPS.tiff";
+    static const char fallback[] = SOURCE_DIR "/../debian/custom_dir_EXIF_GPS.tiff";
+    FILE *probe = fopen(primary, "rb");
+
+    if (probe != NULL)
+    {
+        fclose(probe);
+        return primary;
+    }
+
+    probe = fopen(fallback, "rb");
+    if (probe != NULL)
+    {
+        fclose(probe);
+        return fallback;
+    }
+
+    return primary;
+}
+
 int main(void)
 {
     char print_buffer[4096];
@@ -140,8 +162,7 @@ int main(void)
 
     TIFFClose(tif);
 
-    tif = expect_open(SOURCE_DIR "/images/custom_dir_EXIF_GPS.tiff",
-                      "EXIF/GPS smoke image");
+    tif = expect_open(custom_dir_exif_gps_path(), "EXIF/GPS smoke image");
     expect(TIFFGetField(tif, TIFFTAG_EXIFIFD, &exif_offset) == 1,
            "missing EXIF directory offset");
     expect(TIFFReadEXIFDirectory(tif, exif_offset) == 1,
