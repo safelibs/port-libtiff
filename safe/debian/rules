@@ -8,8 +8,8 @@
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all optimize=-lto
 export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic -D_REENTRANT
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-export CARGO_HOME := /home/yans/.cargo
-export RUSTUP_HOME := /home/yans/.rustup
+export CARGO_HOME := $(HOME)/.cargo
+export RUSTUP_HOME := $(HOME)/.rustup
 export RUSTUP_TOOLCHAIN := stable-x86_64-unknown-linux-gnu
 export PATH := $(CARGO_HOME)/bin:/usr/bin:/bin:$(PATH)
 export CARGO := $(CARGO_HOME)/bin/cargo
