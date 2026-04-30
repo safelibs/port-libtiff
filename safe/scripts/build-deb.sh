@@ -23,6 +23,54 @@ resolve_path() {
   fi
 }
 
+buildx_driver() {
+  docker buildx inspect 2>/dev/null | awk '$1 == "Driver:" { print $2; exit }'
+}
+
+maybe_preload_validator_image() {
+  local setting="${LIBTIFF_SAFE_PRELOAD_VALIDATOR_IMAGE:-auto}"
+  case "$setting" in
+    0|false|no|off)
+      return 0
+      ;;
+  esac
+
+  command -v docker >/dev/null 2>&1 || return 0
+
+  local validator_root="$ROOT/validator"
+  local shared_root="$validator_root/tests/_shared"
+  local library_root="$validator_root/tests/libtiff"
+  local dockerfile="$library_root/Dockerfile"
+  [[ -d "$shared_root" && -d "$library_root" && -f "$dockerfile" ]] || return 0
+
+  local driver
+  driver="$(buildx_driver || true)"
+  if [[ "$setting" == "auto" ]]; then
+    case "$driver" in
+      docker-container|kubernetes|remote)
+        ;;
+      *)
+        return 0
+        ;;
+    esac
+  fi
+
+  local tmp_root
+  tmp_root="$(mktemp -d)"
+  (
+    trap 'rm -rf "$tmp_root"' EXIT
+    cp -a "$shared_root" "$tmp_root/_shared"
+    mkdir -p "$tmp_root/libtiff"
+    cp -a "$library_root/." "$tmp_root/libtiff/"
+    docker buildx build \
+      --load \
+      --tag validator-libtiff-shared \
+      --file "$tmp_root/libtiff/Dockerfile" \
+      "$tmp_root"
+  )
+  printf 'preloaded validator image validator-libtiff-shared:latest for Docker Buildx driver %s\n' "${driver:-unknown}"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --source-dir)
@@ -81,5 +129,7 @@ for package in libtiff6 libtiffxx6 libtiff-dev libtiff-tools; do
   [[ "$(dpkg-deb -f "$deb_path" Version)" == "$EXPECTED_VERSION" ]] || \
     die "$package has unexpected version in $(basename "$deb_path")"
 done
+
+maybe_preload_validator_image
 
 printf 'built Debian packages in %s\n' "$DIST_DIR"
