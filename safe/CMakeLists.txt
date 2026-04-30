@@ -231,8 +231,16 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TiffConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/TiffConfig.cmake
   @ONLY)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TiffConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/TIFFConfig.cmake
+  @ONLY)
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/TiffConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/TIFFConfigVersion.cmake
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion)
 
@@ -262,6 +270,8 @@ install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/TiffConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/TiffConfigVersion.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/TIFFConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/TIFFConfigVersion.cmake
   DESTINATION ${TIFF_CONFIGDIR})
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/libtiff-4.pc
