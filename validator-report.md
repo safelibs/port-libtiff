@@ -1,13 +1,15 @@
-# Package Override And Waiver Gate Report
+# Source And CLI Failures Report
 
 Validator commit: 5d908be26e33f071e119ffe1a52e3149f1e5ec4e
 Safe source commit tested: e9fe9a8b468c1ce8e097186d9e1290cb586a4b95
-Checks executed: safe tree diff check; safe build-deb; packaged install-surface; local override copy and port-lock regeneration; validator port matrix with local override debs/casts; verify_proof_artifacts; result JSON override audit
-Failures found: 5: usage-python3-pil-tiff-jpeg-compression-info, usage-python3-pil-tiff-tiff2pdf-conversion, usage-python3-pil-tiff-tiffcp-jpeg-rows-per-strip, usage-python3-pil-tiff-tiffcp-tile-32x32-convert, usage-python3-pil-tiff-tiffcp-tile-convert
+Checks executed: safe tree diff check; CMake Release build with tools/tests; CTest; selected upstream shell tests for tiffinfo, tiffdump, tiffcp, ppm2tiff, and fax2tiff; safe build-deb; packaged install-surface; local override copy and port-lock regeneration with package-name validation; validator port matrix with local override debs/casts; verify_proof_artifacts; source-case and override result JSON audits
+Failures found: 5 usage-only: usage-python3-pil-tiff-jpeg-compression-info, usage-python3-pil-tiff-tiff2pdf-conversion, usage-python3-pil-tiff-tiffcp-jpeg-rows-per-strip, usage-python3-pil-tiff-tiffcp-tile-32x32-convert, usage-python3-pil-tiff-tiffcp-tile-convert
 Waived testcase ids:
 
 ## Summary
 
+- Phase: `impl_source_cli_failures`
+- Source/CLI result: no source/CLI failures. All five source cases passed in the refreshed port matrix.
 - Mode: port
 - Cases: 135 total, 5 source, 130 usage
 - Results: 130 passed, 5 failed
@@ -16,17 +18,23 @@ Waived testcase ids:
 - Result summary: `validator/artifacts/libtiff-safe/port/results/libtiff/summary.json`
 - Proof: `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`
 - Local port lock: `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`
+- No `safe/` source or test edits were needed in this phase because the source-facing validator cases were already passing; the remaining failures are usage cases for the next phase.
 
 ## Commands Executed
 
 - `git diff --quiet -- safe`
 - `git diff --cached --quiet -- safe`
+- `cmake -S safe -B safe/build -DCMAKE_BUILD_TYPE=Release -Dtiff-tools=ON -Dtiff-tests=ON`
+- `cmake --build safe/build --parallel`
+- `ctest --test-dir safe/build --output-on-failure`
+- `safe/scripts/run-upstream-shell-tests.sh --build-dir safe/build --include-regex 'tiff(info|dump|cp)|ppm2tiff|fax2tiff'`
 - `safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist`
 - `safe/scripts/check-packaged-install-surface.sh --dist-dir safe/dist --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-target --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-targetless --pkgconfig-source validator/artifacts/libtiff-safe/package-smoke/test.c --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp --input-tiff original/test/images/rgb-3c-8b.tiff`
 - `rm -rf validator/artifacts/debs/local/libtiff && mkdir -p validator/artifacts/debs/local/libtiff validator/artifacts/libtiff-safe/proof && find safe/dist -maxdepth 1 -type f -name '*.deb' -exec cp -f -t validator/artifacts/debs/local/libtiff {} +`
-- `python3 - <<'PY' ... regenerate validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json from local .deb metadata, sizes, and SHA-256 hashes ... PY`
+- `python3 - <<'PY' ... validate package names and regenerate validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json from local .deb metadata, sizes, and SHA-256 hashes ... PY`
 - `cd validator && bash test.sh --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --mode port --override-deb-root artifacts/debs/local --port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json --library libtiff --record-casts`
 - `cd validator && python3 tools/verify_proof_artifacts.py --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --proof-output proof/libtiff-safe-port-proof.json --mode port --library libtiff --require-casts --min-source-cases 5 --min-usage-cases 130 --min-cases 135 --ports-root /home/yans/safelibs/pipeline/ports`
+- `python3 - <<'PY' ... assert no unwaived source failures in validator/artifacts/libtiff-safe/port/results/libtiff/*.json ... PY`
 - `python3 - <<'PY' ... audit summary, proof port_commit, per-case port_commit, override_debs_installed, and override_installed_packages ... PY`
 
 ## Package Provenance
@@ -54,9 +62,19 @@ Waived testcase ids:
 | `usage-python3-pil-tiff-tiffcp-tile-32x32-convert` | `usage` | `validator/artifacts/libtiff-safe/port/results/libtiff/usage-python3-pil-tiff-tiffcp-tile-32x32-convert.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/usage-python3-pil-tiff-tiffcp-tile-32x32-convert.log` | Traceback (most recent call last):; AssertionError: tiled TIFF must not have RowsPerStrip | Tile directory/write semantics: tiled output still exposes RowsPerStrip. |
 | `usage-python3-pil-tiff-tiffcp-tile-convert` | `usage` | `validator/artifacts/libtiff-safe/port/results/libtiff/usage-python3-pil-tiff-tiffcp-tile-convert.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/usage-python3-pil-tiff-tiffcp-tile-convert.log` | Traceback (most recent call last):; AssertionError: expected no RowsPerStrip in tiled TIFF | Tile directory/write semantics: tiled output still exposes RowsPerStrip. |
 
+## Source/CLI Testcases
+
+| Testcase id | Kind | Status | Result JSON | Log |
+| --- | --- | --- | --- | --- |
+| `c-api-read-write` | `source` | passed | `validator/artifacts/libtiff-safe/port/results/libtiff/c-api-read-write.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/c-api-read-write.log` |
+| `malformed-tiff-rejection` | `source` | passed | `validator/artifacts/libtiff-safe/port/results/libtiff/malformed-tiff-rejection.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/malformed-tiff-rejection.log` |
+| `tiffcp-copy` | `source` | passed | `validator/artifacts/libtiff-safe/port/results/libtiff/tiffcp-copy.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/tiffcp-copy.log` |
+| `tiffdump-structure` | `source` | passed | `validator/artifacts/libtiff-safe/port/results/libtiff/tiffdump-structure.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/tiffdump-structure.log` |
+| `tiffinfo-metadata` | `source` | passed | `validator/artifacts/libtiff-safe/port/results/libtiff/tiffinfo-metadata.json` | `validator/artifacts/libtiff-safe/port/logs/libtiff/tiffinfo-metadata.log` |
+
 ## Waivers
 
-No testcase waivers were applied in this phase. The five failures above are ordinary libtiff-safe compatibility regressions left for follow-up source or usage phases; no validator-bug waiver was needed, so the original-mode validator matrix was not run.
+No testcase waivers were applied in this phase. The source/CLI cases passed without code changes, and the five failures above are ordinary libtiff-safe usage compatibility regressions left for the next usage-focused phase; no validator-bug waiver was needed, so the original-mode validator matrix was not run.
 
 ## Setup Notes
 
