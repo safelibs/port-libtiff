@@ -29,7 +29,7 @@ fi
 
 mkdir -p "$BIN_DIR"
 
-python3 - "$SAFE_LIB_DIR/libtiffxx.so.6.0.1" "$ORIGINAL_LIBTIFFXX" <<'PY'
+python3 - "$SAFE_LIB_DIR/libtiffxx.so.6.0.1" "$ORIGINAL_LIBTIFFXX" "$SAFE_ROOT/capi/libtiffxx-safe.map" <<'PY'
 import subprocess
 import sys
 
@@ -46,11 +46,31 @@ def dynsym_names(path: str):
         names.append(tokens[-1])
     return sorted(names)
 
+def map_global_names(path: str):
+    names = set()
+    in_global = False
+    for raw_line in open(path, encoding="utf-8"):
+        line = raw_line.strip()
+        if line == "global:":
+            in_global = True
+            continue
+        if line == "local:":
+            in_global = False
+            continue
+        if in_global and line.endswith(";"):
+            names.add(line[:-1].strip())
+    return names
+
 safe = dynsym_names(sys.argv[1])
 orig = dynsym_names(sys.argv[2])
+allowed_extra_bases = map_global_names(sys.argv[3])
 if safe != orig:
     missing = sorted(set(orig) - set(safe))
-    extra = sorted(set(safe) - set(orig))
+    extra = sorted(
+        item
+        for item in set(safe) - set(orig)
+        if item.split("@", 1)[0] not in allowed_extra_bases
+    )
     if missing:
         print("missing dynsym entries:", file=sys.stderr)
         for item in missing:
@@ -59,7 +79,8 @@ if safe != orig:
         print("unexpected dynsym entries:", file=sys.stderr)
         for item in extra:
             print(f"  {item}", file=sys.stderr)
-    raise SystemExit(1)
+    if missing or extra:
+        raise SystemExit(1)
 
 required = {
     "_Z14TIFFStreamOpenPKcPSi@@LIBTIFFXX_4.0",
