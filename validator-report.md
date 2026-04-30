@@ -1,8 +1,8 @@
-# Validator Baseline Report
+# Package Override And Waiver Gate Report
 
 Validator commit: 5d908be26e33f071e119ffe1a52e3149f1e5ec4e
 Safe source commit tested: e9fe9a8b468c1ce8e097186d9e1290cb586a4b95
-Checks executed: validator unit/check-testcases/libtiff inventory; safe build-deb; packaged install-surface; validator port matrix with local override debs and casts; verify_proof_artifacts
+Checks executed: safe tree diff check; safe build-deb; packaged install-surface; local override copy and port-lock regeneration; validator port matrix with local override debs/casts; verify_proof_artifacts; result JSON override audit
 Failures found: 5: usage-python3-pil-tiff-jpeg-compression-info, usage-python3-pil-tiff-tiff2pdf-conversion, usage-python3-pil-tiff-tiffcp-jpeg-rows-per-strip, usage-python3-pil-tiff-tiffcp-tile-32x32-convert, usage-python3-pil-tiff-tiffcp-tile-convert
 Waived testcase ids:
 
@@ -12,24 +12,30 @@ Waived testcase ids:
 - Cases: 135 total, 5 source, 130 usage
 - Results: 130 passed, 5 failed
 - Casts recorded: 135
+- Override installation: 135/135 result JSON files have `override_debs_installed: true`
 - Result summary: `validator/artifacts/libtiff-safe/port/results/libtiff/summary.json`
 - Proof: `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`
 - Local port lock: `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`
 
 ## Commands Executed
 
-- `make -C validator unit`
-- `make -C validator check-testcases`
-- `python3 validator/tools/testcases.py --config validator/repositories.yml --tests-root validator/tests --library libtiff --check --min-source-cases 5 --min-usage-cases 130 --min-cases 135`
+- `git diff --quiet -- safe`
+- `git diff --cached --quiet -- safe`
 - `safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist`
 - `safe/scripts/check-packaged-install-surface.sh --dist-dir safe/dist --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-target --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-targetless --pkgconfig-source validator/artifacts/libtiff-safe/package-smoke/test.c --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp --input-tiff original/test/images/rgb-3c-8b.tiff`
+- `rm -rf validator/artifacts/debs/local/libtiff && mkdir -p validator/artifacts/debs/local/libtiff validator/artifacts/libtiff-safe/proof && find safe/dist -maxdepth 1 -type f -name '*.deb' -exec cp -f -t validator/artifacts/debs/local/libtiff {} +`
+- `python3 - <<'PY' ... regenerate validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json from local .deb metadata, sizes, and SHA-256 hashes ... PY`
 - `cd validator && bash test.sh --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --mode port --override-deb-root artifacts/debs/local --port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json --library libtiff --record-casts`
 - `cd validator && python3 tools/verify_proof_artifacts.py --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --proof-output proof/libtiff-safe-port-proof.json --mode port --library libtiff --require-casts --min-source-cases 5 --min-usage-cases 130 --min-cases 135 --ports-root /home/yans/safelibs/pipeline/ports`
+- `python3 - <<'PY' ... audit summary, proof port_commit, per-case port_commit, override_debs_installed, and override_installed_packages ... PY`
 
 ## Package Provenance
 
 - Release tag: `local-e9fe9a8b468c`
 - Override root: `validator/artifacts/debs/local/libtiff/`
+- Local port lock commit: `e9fe9a8b468c1ce8e097186d9e1290cb586a4b95`
+- Proof `port_commit`: `e9fe9a8b468c1ce8e097186d9e1290cb586a4b95`
+- Override install status: all 135 result JSON files report `override_debs_installed: true`, `port_commit: e9fe9a8b468c1ce8e097186d9e1290cb586a4b95`, and installed local packages include `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools`.
 
 | Package | Version | Architecture | Filename | SHA-256 | Size |
 | --- | --- | --- | --- | --- | ---: |
@@ -50,7 +56,7 @@ Waived testcase ids:
 
 ## Waivers
 
-No testcase waivers were applied in this phase. The five failures above are left as baseline compatibility regressions for follow-up phases.
+No testcase waivers were applied in this phase. The five failures above are ordinary libtiff-safe compatibility regressions left for follow-up source or usage phases; no validator-bug waiver was needed, so the original-mode validator matrix was not run.
 
 ## Setup Notes
 
