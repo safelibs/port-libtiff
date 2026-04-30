@@ -9,7 +9,7 @@ name = "tiff_safe_core"
 crate-type = ["staticlib"]
 
 [dependencies]
-fax = "0.2.6"
+fax = "0.2.7"
 flate2 = "1.1.9"
 libc = "0.2"
 weezl = "0.1.12"
