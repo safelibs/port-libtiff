@@ -79,6 +79,7 @@ check_PROGRAMS = \
 	defer_strile_loading defer_strile_writing test_directory test_open_options \
 	test_append_to_strip test_rgba_readers test_tile_read_write \
 	test_ifd_loop_detection testtypes test_signed_tags \
+	validator_usage_jpeg_encode \
 	api_custom_dir_read_smoke \
 	$(JPEG_DEPENDENT_CHECK_PROG) $(STATIC_CHECK_PROGS)
 endif
@@ -109,6 +110,7 @@ TESTSCRIPTS = \
 	tiff2ps-PS3.sh \
 	tiff2ps-EPS1.sh \
 	tiff2pdf.sh \
+	validator_usage_tools.sh \
 	tiffcrop-doubleflip-logluv-3c-16b.sh \
 	tiffcrop-doubleflip-minisblack-1c-16b.sh \
 	tiffcrop-doubleflip-minisblack-1c-8b.sh \
@@ -270,6 +272,8 @@ test_rgba_readers_SOURCES = test_rgba_readers.c
 test_rgba_readers_LDADD = $(LIBTIFF)
 test_tile_read_write_SOURCES = test_tile_read_write.c
 test_tile_read_write_LDADD = $(LIBTIFF)
+validator_usage_jpeg_encode_SOURCES = validator_usage_jpeg_encode.c
+validator_usage_jpeg_encode_LDADD = $(LIBTIFF)
 test_ifd_loop_detection_CFLAGS = -DSOURCE_DIR=\"@srcdir@\"
 test_ifd_loop_detection_SOURCES = test_ifd_loop_detection.c
 test_ifd_loop_detection_LDADD = $(LIBTIFF)

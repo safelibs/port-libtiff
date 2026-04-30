@@ -347,6 +347,11 @@ target_sources(strile_regressions PRIVATE strile_regressions.c)
 target_link_libraries(strile_regressions PRIVATE tiff tiff_port)
 list(APPEND simple_tests strile_regressions)
 
+add_executable(validator_usage_jpeg_encode ../placeholder.h)
+target_sources(validator_usage_jpeg_encode PRIVATE validator_usage_jpeg_encode.c)
+target_link_libraries(validator_usage_jpeg_encode PRIVATE tiff tiff_port)
+list(APPEND simple_tests validator_usage_jpeg_encode)
+
 if(WEBP_SUPPORT AND EMSCRIPTEN)
   # Emscripten is pretty finnicky about linker flags.
   # It needs --shared-memory if and only if atomics or bulk-memory is used.
@@ -575,6 +580,11 @@ if(tiff-tools)
 
   # PDF
   add_stdout_test(tiff2pdf "" "" "images/miniswhite-1c-1b.tiff" TRUE)
+  add_test(NAME "validator_usage_tools"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/validator_usage_tools.sh"
+           WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+  set_tests_properties("validator_usage_tools" PROPERTIES ENVIRONMENT
+          "srcdir=${CMAKE_CURRENT_SOURCE_DIR}")
 
   # PS
   add_stdout_test(tiff2ps "ps-1" "-a -p -1" "images/miniswhite-1c-1b.tiff" TRUE)

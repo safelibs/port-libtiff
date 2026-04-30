@@ -931,11 +931,6 @@ static int tiffcp(TIFF *in, TIFF *out)
         TIFFDefaultTileSize(out, &tilewidth, &tilelength);
         TIFFSetField(out, TIFFTAG_TILEWIDTH, tilewidth);
         TIFFSetField(out, TIFFTAG_TILELENGTH, tilelength);
-        {
-            uint32_t inputrowsperstrip = 0;
-            TIFFGetFieldDefaulted(in, TIFFTAG_ROWSPERSTRIP, &inputrowsperstrip);
-            TIFFSetField(out, TIFFTAG_ROWSPERSTRIP, inputrowsperstrip);
-        }
     }
     else
     {

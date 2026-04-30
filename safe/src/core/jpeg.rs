@@ -43,6 +43,10 @@ const TAG_TILEOFFSETS: u32 = 324;
 const TAG_TILEBYTECOUNTS: u32 = 325;
 
 const PLANARCONFIG_CONTIG: u16 = 1;
+const PHOTOMETRIC_MINISWHITE: u16 = 0;
+const PHOTOMETRIC_MINISBLACK: u16 = 1;
+const PHOTOMETRIC_RGB: u16 = 2;
+const PHOTOMETRIC_YCBCR: u16 = 6;
 
 #[allow(improper_ctypes)]
 unsafe extern "C" {
@@ -66,6 +70,21 @@ unsafe extern "C" {
         errbuf: *mut c_char,
         errbuf_len: usize,
     ) -> c_int;
+    fn safe_tiff_jpeg_encode(
+        input: *const u8,
+        input_len: usize,
+        width: u32,
+        height: u32,
+        row_stride: usize,
+        components: c_int,
+        input_is_ycbcr: c_int,
+        quality: c_int,
+        out_ptr: *mut *mut u8,
+        out_len: *mut usize,
+        errbuf: *mut c_char,
+        errbuf_len: usize,
+    ) -> c_int;
+    fn safe_tiff_external_codec_free(ptr: *mut c_void);
 }
 
 pub(crate) struct JpegStream {
@@ -744,6 +763,8 @@ pub(crate) fn jpeg_decode_bytes(
     unsafe {
         let stream = maybe_reconstruct_jpeg_stream(tif, input, is_tile, strile, geometry)?;
         if jpeg_color_mode(tif) == JPEGCOLORMODE_RGB
+            || tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK)
+                == PHOTOMETRIC_RGB
             || tag_u16(tif, TAG_COMPRESSION, true, 0) == COMPRESSION_OJPEG
         {
             return decode_rgb_stream(tif, &stream, geometry, expected_size);
@@ -780,9 +801,82 @@ pub(crate) fn jpeg_decode_bytes(
 }
 
 pub(crate) fn jpeg_encode_bytes(
-    _tif: *mut TIFF,
-    _input: &[u8],
-    _geometry: CodecGeometry,
+    tif: *mut TIFF,
+    input: &[u8],
+    geometry: CodecGeometry,
 ) -> Option<Vec<u8>> {
-    None
+    unsafe {
+        if tag_u16(tif, TAG_PLANARCONFIG, true, PLANARCONFIG_CONTIG) != PLANARCONFIG_CONTIG {
+            emit_error_message(tif, "JPEGEncode", "Planar separate JPEG is not supported");
+            return None;
+        }
+        if tag_u16(tif, TAG_BITSPERSAMPLE, true, 1) != 8 {
+            emit_error_message(tif, "JPEGEncode", "JPEG encode requires 8-bit samples");
+            return None;
+        }
+
+        let samples = tag_u16(tif, TAG_SAMPLESPERPIXEL, true, 1);
+        let photometric = tag_u16(tif, TAG_PHOTOMETRIC, true, PHOTOMETRIC_MINISBLACK);
+        let components = match (samples, photometric) {
+            (1, PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_MINISBLACK) => 1,
+            (3, PHOTOMETRIC_RGB | PHOTOMETRIC_YCBCR) => 3,
+            (3, _) => 3,
+            _ => {
+                emit_error_message(
+                    tif,
+                    "JPEGEncode",
+                    "JPEG encode supports only 8-bit grayscale or three-component data",
+                );
+                return None;
+            }
+        };
+        let min_row_stride = usize::try_from(geometry.width)
+            .ok()?
+            .checked_mul(usize::try_from(components).ok()?)?;
+        if geometry.row_size < min_row_stride {
+            emit_error_message(
+                tif,
+                "JPEGEncode",
+                "JPEG row size is smaller than image width",
+            );
+            return None;
+        }
+        let expected_len = geometry.row_size.checked_mul(geometry.rows)?;
+        if input.len() < expected_len {
+            emit_error_message(tif, "JPEGEncode", "JPEG input buffer is truncated");
+            return None;
+        }
+
+        let input_is_ycbcr = components == 3
+            && photometric == PHOTOMETRIC_YCBCR
+            && jpeg_color_mode(tif) != JPEGCOLORMODE_RGB;
+        let mut out_ptr: *mut u8 = ptr::null_mut();
+        let mut out_len = 0usize;
+        let mut errbuf = [0 as c_char; 256];
+        if safe_tiff_jpeg_encode(
+            input.as_ptr(),
+            expected_len,
+            geometry.width,
+            u32::try_from(geometry.rows).ok()?,
+            geometry.row_size,
+            components,
+            input_is_ycbcr as c_int,
+            jpeg_quality(tif),
+            &mut out_ptr,
+            &mut out_len,
+            errbuf.as_mut_ptr(),
+            errbuf.len(),
+        ) == 0
+        {
+            emit_error_message(tif, "JPEGEncode", jpeg_helper_error(&errbuf));
+            return None;
+        }
+        if out_ptr.is_null() {
+            emit_error_message(tif, "JPEGEncode", "JPEG helper returned no output");
+            return None;
+        }
+        let out = slice::from_raw_parts(out_ptr, out_len).to_vec();
+        safe_tiff_external_codec_free(out_ptr.cast::<c_void>());
+        Some(out)
+    }
 }

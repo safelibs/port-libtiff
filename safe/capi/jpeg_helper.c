@@ -319,6 +319,103 @@ static int safe_jpeg_decode_raw_impl(const uint8_t *jpeg_data, size_t jpeg_len,
     return 1;
 }
 
+static int safe_jpeg_encode_impl(const uint8_t *input, size_t input_len,
+                                 uint32_t width, uint32_t height,
+                                 size_t row_stride, int components,
+                                 int input_is_ycbcr, int quality,
+                                 uint8_t **out_ptr, size_t *out_len,
+                                 char *errbuf, size_t errbuf_len)
+{
+    struct jpeg_compress_struct cinfo;
+    struct safe_jpeg_error_mgr err;
+    unsigned char *jpeg_out = NULL;
+    unsigned long jpeg_len = 0;
+    size_t min_row_stride;
+    size_t expected_len;
+    int jpeg_quality;
+
+    memset(&err, 0, sizeof(err));
+    err.message = errbuf;
+    err.message_len = errbuf_len;
+
+    if (out_ptr == NULL || out_len == NULL)
+        return 0;
+    *out_ptr = NULL;
+    *out_len = 0;
+
+    if (input == NULL || width == 0 || height == 0 ||
+        (components != 1 && components != 3))
+    {
+        safe_jpeg_set_message(&err, "Invalid JPEG encode parameters");
+        return 0;
+    }
+
+    min_row_stride = (size_t)width * (size_t)components;
+    if (row_stride < min_row_stride ||
+        height > (uint32_t)(SIZE_MAX / row_stride))
+    {
+        safe_jpeg_set_message(&err, "JPEG input geometry is invalid");
+        return 0;
+    }
+    expected_len = row_stride * (size_t)height;
+    if (input_len < expected_len)
+    {
+        safe_jpeg_set_message(&err, "JPEG input buffer is too small");
+        return 0;
+    }
+
+    memset(&cinfo, 0, sizeof(cinfo));
+
+    cinfo.err = jpeg_std_error(&err.pub);
+    err.pub.error_exit = safe_jpeg_error_exit;
+
+    if (setjmp(err.setjmp_buffer) != 0)
+    {
+        jpeg_destroy_compress(&cinfo);
+        free(jpeg_out);
+        return 0;
+    }
+
+    jpeg_create_compress(&cinfo);
+    jpeg_mem_dest(&cinfo, &jpeg_out, &jpeg_len);
+
+    cinfo.image_width = width;
+    cinfo.image_height = height;
+    cinfo.input_components = components;
+    if (components == 1)
+        cinfo.in_color_space = JCS_GRAYSCALE;
+    else
+        cinfo.in_color_space = input_is_ycbcr ? JCS_YCbCr : JCS_RGB;
+
+    jpeg_set_defaults(&cinfo);
+    jpeg_quality = quality;
+    if (jpeg_quality < 1)
+        jpeg_quality = 1;
+    else if (jpeg_quality > 100)
+        jpeg_quality = 100;
+    jpeg_set_quality(&cinfo, jpeg_quality, TRUE);
+
+    jpeg_start_compress(&cinfo, TRUE);
+    while (cinfo.next_scanline < cinfo.image_height)
+    {
+        JSAMPROW row =
+            (JSAMPROW)(input + (size_t)cinfo.next_scanline * row_stride);
+        if (jpeg_write_scanlines(&cinfo, &row, 1) != 1)
+        {
+            safe_jpeg_set_message(&err, "JPEG scanline encode failed");
+            jpeg_destroy_compress(&cinfo);
+            free(jpeg_out);
+            return 0;
+        }
+    }
+    jpeg_finish_compress(&cinfo);
+    jpeg_destroy_compress(&cinfo);
+
+    *out_ptr = jpeg_out;
+    *out_len = (size_t)jpeg_len;
+    return 1;
+}
+
 int safe_tiff_jpeg_decode_rgb(const uint8_t *jpeg_data, size_t jpeg_len,
                               uint8_t *out, size_t out_len,
                               uint32_t *out_width, uint32_t *out_height,
@@ -337,4 +434,15 @@ int safe_tiff_jpeg_decode_raw_ycbcr(const uint8_t *jpeg_data, size_t jpeg_len,
     return safe_jpeg_decode_raw_impl(jpeg_data, jpeg_len, out, out_len,
                                      subsampling_h, subsampling_v, errbuf,
                                      errbuf_len);
+}
+
+int safe_tiff_jpeg_encode(const uint8_t *input, size_t input_len,
+                          uint32_t width, uint32_t height, size_t row_stride,
+                          int components, int input_is_ycbcr, int quality,
+                          uint8_t **out_ptr, size_t *out_len, char *errbuf,
+                          size_t errbuf_len)
+{
+    return safe_jpeg_encode_impl(input, input_len, width, height, row_stride,
+                                 components, input_is_ycbcr, quality, out_ptr,
+                                 out_len, errbuf, errbuf_len);
 }
