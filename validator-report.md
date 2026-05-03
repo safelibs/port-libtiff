@@ -1,8 +1,8 @@
-# Validator Checkout And Baseline Safe Matrix
+# Package Override And Waiver Gate
 
 ## Summary
 
-- Phase: `impl_validator_baseline`
+- Phase: `impl_package_provenance_waiver_gate`
 - Verification date: 2026-05-03, America/Phoenix
 - Validator repository: `https://github.com/safelibs/validator`
 - Validator commit: `5d908be26e33f071e119ffe1a52e3149f1e5ec4e`
@@ -13,7 +13,7 @@
 - Local port lock: `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`
 - Result summary: `validator/artifacts/libtiff-safe/port/results/libtiff/summary.json`
 - Proof: `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`
-- Baseline status: clean. Locally built `.deb` packages installed in every testcase, the libtiff `port` matrix passed all 135 cases (5 source + 130 usage), and no `safe/` build or packaging fix was required.
+- Package gate status: clean. The baseline `port` matrix produced by `impl_validator_baseline` already showed `override_debs_installed: true` in every per-case result and 0 of 135 testcases failed, so no `safe/debian/`, packaging, CMake, pkg-config, header, install-surface, or maintainer-script fix was required. The on-disk `.deb` set, lock, proof, and report all still pin to safe-source commit `61f38826b440c30b5099410a52e1af227832622e`; no validator-bug waiver was adjudicated because no validator failure exists.
 
 ## Validator Checkout
 
@@ -122,18 +122,26 @@ If a later re-run uncovers regressions, the same triage shape will be used to po
 
 ## Required Safe Fixes
 
-None. The current `safe/` tree built and packaged cleanly, installed under the validator's local override mechanism, and ran the entire `port` matrix without failure. No `safe/debian/`, packaging-script, CMake, pkg-config, header, or install-surface fix was applied in this phase.
+None. The current `safe/` tree built and packaged cleanly, installed under the validator's local override mechanism, and ran the entire `port` matrix without failure. No `safe/debian/`, packaging-script, CMake, pkg-config, header, or install-surface fix was applied in this phase. Because `safe/` did not change, the `.deb` tree under `validator/artifacts/debs/local/libtiff/` and the lock at `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json` were not rebuilt; the existing `.deb` files still match the lock byte-for-byte (filenames, sizes, SHA-256), and the lock's `libraries[0].commit` (`61f38826b440c30b5099410a52e1af227832622e`) still equals `git log -1 --format=%H -- safe`, the proof's `libraries[0].port_commit`, and every per-case result's `port_commit`.
 
 ## Waivers
 
-No waivers were applied. No validator failure occurred, so the `original` mode matrix was not run in this phase and no validator-bug adjudication was needed.
+No waivers were applied. The baseline `port` matrix passed all 135 cases (`failed: 0`), so no validator failure existed to adjudicate. The `original` mode matrix was therefore not run in this phase: per the phase contract, the original-package validator behavior is needed only when proving a validator-bug waiver, and there is nothing to waive. The `Waived testcase ids:` line below is therefore intentionally empty.
+
+## Package Override And Waiver Gate Adjudication
+
+- Inputs consumed in place (no rebuild, no reclone): the baseline validator run's `validator/artifacts/libtiff-safe/port/results/libtiff/*.json`, `summary.json`, `casts/`, `logs/`, `proof/libtiff-safe-port-proof.json`, `proof/local-port-debs-lock.json`, and the `validator/artifacts/debs/local/libtiff/*.deb` tree.
+- Pre-validator-command checkout reapply (no reclone, no force-reset): `git -C validator diff --quiet`, `git -C validator diff --cached --quiet`, `git -C validator fetch --tags origin`, `git -C validator checkout 5d908be26e33f071e119ffe1a52e3149f1e5ec4e`, `git -C validator rev-parse HEAD` → `5d908be26e33f071e119ffe1a52e3149f1e5ec4e`. The pre-existing `M workflow.yaml` exception in the validator working tree (an upstream-superseded local rename of `port-04-test` → `port` that does not touch `tests/`, `repositories.yml`, `tools/`, or `test.sh`) was preserved as in phase 1.
+- Override install audit: every per-case JSON under `validator/artifacts/libtiff-safe/port/results/libtiff/` reports `override_debs_installed: true` with all four canonical packages (`libtiff6`, `libtiffxx6`, `libtiff-dev`, `libtiff-tools`) in `override_installed_packages`. 0 of 135 cases reported a local override install failure, so no `safe/debian/control`, `safe/debian/rules`, `safe/debian/changelog`, `safe/debian/*.install`, `safe/debian/libtiff6.symbols`, `safe/debian/libtiffxx6.symbols`, `safe/CMakeLists.txt`, `safe/pkgconfig/libtiff-4.pc.in`, `safe/cmake/TiffConfig.cmake.in`, `safe/include/*.h`, `safe/include/*.hxx`, `safe/scripts/build-deb.sh`, or `safe/scripts/check-packaged-install-surface.sh` change was warranted.
+- Lock provenance verification: `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json` was re-read; each `debs[]` entry's `filename`, `size`, and `sha256` was recomputed from the on-disk `.deb` files and matched exactly (`b5c7477f…` / 641772 for `libtiff6`, `4e8990c2…` / 12306 for `libtiffxx6`, `c18f9474…` / 35732 for `libtiff-dev`, `10df893f…` / 200508 for `libtiff-tools`). `libraries[0].commit` equals `git log -1 --format=%H -- safe`, equals `proof.libraries[0].port_commit`, equals every per-case `result["port_commit"]`. No regeneration of the `.deb` tree or lock was performed because `safe/` did not change in this phase, in line with the rule "Rebuild packages only when `safe/` changes, not to align the lock with a report-only commit."
+- Validator-bug waiver adjudication: not triggered. With `summary["failed"] == 0` there is no failing testcase to compare against `original` mode, no log to cite, and no validator expectation to challenge. The `Waived testcase ids:` line is empty and downstream source/usage checkers must not treat any testcase id as waived.
 
 ## Machine Readable
 
 Validator commit: 5d908be26e33f071e119ffe1a52e3149f1e5ec4e
 Safe source commit tested: 61f38826b440c30b5099410a52e1af227832622e
-Checks executed: validator dirty-check + pinned-commit reapply; make unit; make check-testcases; libtiff inventory floor (5/130/135); safe-tree clean check; safe/scripts/build-deb.sh; safe/scripts/check-packaged-install-surface.sh; local override deb tree synthesis; deterministic local-port-debs-lock.json synthesis; validator libtiff port matrix with --record-casts; verify_proof_artifacts with --require-casts; per-case status / override_debs_installed / port_commit audit
+Checks executed: validator dirty-check + pinned-commit reapply; safe-tree clean check; per-case status / override_debs_installed / override_installed_packages audit; lock filename/size/sha256 reverification against on-disk .deb files; lock.commit ↔ HEAD(safe) ↔ proof.port_commit ↔ result.port_commit cross-check
 Failures found: 0
 Override install failures: 0
 Waived testcase ids:
-Baseline status: clean local override install, clean validator port matrix, zero failures, zero waivers
+Package gate status: clean local override install, clean validator port matrix, zero failures, zero waivers, lock and proof still pinned to safe-source commit 61f38826b440c30b5099410a52e1af227832622e
