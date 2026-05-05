@@ -2402,6 +2402,12 @@ fn prepare_fax_input(tif: *mut TIFF, input: &[u8]) -> Vec<u8> {
     prepared_fax_input(tif, input).into_owned()
 }
 
+fn prepare_fax_input_with_decode_padding(tif: *mut TIFF, input: &[u8]) -> Vec<u8> {
+    let mut bytes = prepare_fax_input(tif, input);
+    bytes.extend_from_slice(&[0, 0]);
+    bytes
+}
+
 fn finalize_fax_output(tif: *mut TIFF, output: &mut Vec<u8>) {
     if fill_order(tif) == FILLORDER_LSB2MSB {
         reverse_bits_in_place(output);
@@ -2410,8 +2416,8 @@ fn finalize_fax_output(tif: *mut TIFF, output: &mut Vec<u8>) {
 
 fn decode_group3_1d(tif: *mut TIFF, input: &[u8], geometry: CodecGeometry) -> Option<Vec<u8>> {
     if (fax_mode(tif) & FAXMODE_NOEOL) != 0 {
-        let bytes = prepared_fax_input(tif, input);
-        let mut reader = CcittBitReader::new(bytes.as_ref(), 0);
+        let bytes = prepare_fax_input_with_decode_padding(tif, input);
+        let mut reader = CcittBitReader::new(&bytes, 0);
         let mut output = vec![0u8; geometry.row_size.checked_mul(geometry.rows)?];
         for row_index in 0..geometry.rows {
             let transitions = decode_fax_1d_line_exact(&mut reader, geometry.width as u16)?;
@@ -3582,5 +3588,40 @@ pub unsafe extern "C" fn TIFFGetConfiguredCODECs() -> *mut TIFFCodec {
         }
         ptr::copy_nonoverlapping(codecs.as_ptr(), ptr, codecs.len());
         ptr
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ccitt_rle_alternating_row_decodes_exactly() {
+        let bytes = [
+            0x1d, 0x0e, 0x87, 0x43, 0xa1, 0xd0, 0xe8, 0x74, 0x3a, 0x1d, 0x0e, 0x87, 0x43,
+            0xa1, 0xd0, 0xe8, 0x74, 0x3a,
+        ];
+        let mut reader = CcittBitReader::new(&bytes, 0);
+        assert_eq!(reader.peek(6), Some(0b000111));
+        assert_eq!(maps::white::decode(&mut reader), Some(1));
+        assert_eq!(reader.peek(3), Some(0b010));
+        assert_eq!(maps::black::decode(&mut reader), Some(1));
+        let mut padded = bytes.to_vec();
+        padded.extend_from_slice(&[0, 0]);
+        reader = CcittBitReader::new(&padded, 0);
+        let mut current = FaxColor::White;
+        let mut x = 0u16;
+        while x < 32 {
+            let before = reader.bit_pos;
+            let run = decode_fax_run(&mut reader, current)
+                .unwrap_or_else(|| panic!("run decode failed at x={x} color={current:?} bit={before}"));
+            x += run;
+            current = !current;
+        }
+        reader = CcittBitReader::new(&padded, 0);
+        let transitions = decode_fax_1d_line_exact(&mut reader, 32).expect("decode row");
+        let expected: Vec<u16> = (1..32).collect();
+        assert_eq!(transitions, expected);
+        assert_eq!(reader.bit_pos, bytes.len() * 8);
     }
 }

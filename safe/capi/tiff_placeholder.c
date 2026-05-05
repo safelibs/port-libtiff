@@ -1508,6 +1508,77 @@ static void safe_print_value_list(FILE *fd, uint32_t tag, TIFFDataType type,
     }
 }
 
+static const char *safe_photometric_name(uint16_t photometric)
+{
+    switch (photometric)
+    {
+        case PHOTOMETRIC_MINISWHITE:
+            return "min-is-white";
+        case PHOTOMETRIC_MINISBLACK:
+            return "min-is-black";
+        case PHOTOMETRIC_RGB:
+            return "RGB color";
+        case PHOTOMETRIC_PALETTE:
+            return "palette color (RGB from colormap)";
+        case PHOTOMETRIC_MASK:
+            return "transparency mask";
+        case PHOTOMETRIC_SEPARATED:
+            return "separated";
+        case PHOTOMETRIC_YCBCR:
+            return "YCbCr";
+        case PHOTOMETRIC_CIELAB:
+            return "CIE L*a*b*";
+        case PHOTOMETRIC_ICCLAB:
+            return "ICC L*a*b*";
+        case PHOTOMETRIC_ITULAB:
+            return "ITU L*a*b*";
+        case PHOTOMETRIC_LOGL:
+            return "CIE Log2(L)";
+        case PHOTOMETRIC_LOGLUV:
+            return "CIE Log2(L) (u',v')";
+        default:
+            return NULL;
+    }
+}
+
+static const char *safe_orientation_name(uint16_t orientation)
+{
+    switch (orientation)
+    {
+        case ORIENTATION_TOPLEFT:
+            return "row 0 top, col 0 lhs";
+        case ORIENTATION_TOPRIGHT:
+            return "row 0 top, col 0 rhs";
+        case ORIENTATION_BOTRIGHT:
+            return "row 0 bottom, col 0 rhs";
+        case ORIENTATION_BOTLEFT:
+            return "row 0 bottom, col 0 lhs";
+        case ORIENTATION_LEFTTOP:
+            return "row 0 lhs, col 0 top";
+        case ORIENTATION_RIGHTTOP:
+            return "row 0 rhs, col 0 top";
+        case ORIENTATION_RIGHTBOT:
+            return "row 0 rhs, col 0 bottom";
+        case ORIENTATION_LEFTBOT:
+            return "row 0 lhs, col 0 bottom";
+        default:
+            return NULL;
+    }
+}
+
+static const char *safe_planar_config_name(uint16_t planar)
+{
+    switch (planar)
+    {
+        case PLANARCONFIG_CONTIG:
+            return "single image plane";
+        case PLANARCONFIG_SEPARATE:
+            return "separate image planes";
+        default:
+            return NULL;
+    }
+}
+
 void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
 {
     uint32_t tag_count;
@@ -1544,18 +1615,48 @@ void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
         if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitspersample))
             fprintf(fd, "  Bits/Sample: %" PRIu16 "\n", bitspersample);
         if (TIFFGetField(tif, TIFFTAG_COMPRESSION, &compression))
-            fprintf(fd, "  Compression: %" PRIu16 "\n", compression);
+        {
+            const TIFFCodec *codec = TIFFFindCODEC(compression);
+            fprintf(fd, "  Compression Scheme: ");
+            if (codec != NULL && codec->name != NULL)
+                fprintf(fd, "%s\n", codec->name);
+            else
+                fprintf(fd, "%" PRIu16 " (0x%" PRIx16 ")\n", compression,
+                        compression);
+        }
         if (TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photometric))
-            fprintf(fd, "  Photometric Interpretation: %" PRIu16 "\n",
-                    photometric);
+        {
+            const char *name = safe_photometric_name(photometric);
+            if (name != NULL)
+                fprintf(fd, "  Photometric Interpretation: %s\n", name);
+            else
+                fprintf(fd, "  Photometric Interpretation: %" PRIu16
+                            " (0x%" PRIx16 ")\n",
+                        photometric, photometric);
+        }
         if (TIFFGetField(tif, TIFFTAG_ORIENTATION, &orientation))
-            fprintf(fd, "  Orientation: %" PRIu16 "\n", orientation);
+        {
+            const char *name = safe_orientation_name(orientation);
+            if (name != NULL)
+                fprintf(fd, "  Orientation: %s\n", name);
+            else
+                fprintf(fd, "  Orientation: %" PRIu16 " (0x%" PRIx16 ")\n",
+                        orientation, orientation);
+        }
         if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
             fprintf(fd, "  Samples/Pixel: %" PRIu16 "\n", samplesperpixel);
         if (TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP, &rowsperstrip))
             fprintf(fd, "  Rows/Strip: %" PRIu32 "\n", rowsperstrip);
         if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &planar))
-            fprintf(fd, "  Planar Configuration: %" PRIu16 "\n", planar);
+        {
+            const char *name = safe_planar_config_name(planar);
+            if (name != NULL)
+                fprintf(fd, "  Planar Configuration: %s\n", name);
+            else
+                fprintf(fd, "  Planar Configuration: %" PRIu16
+                            " (0x%" PRIx16 ")\n",
+                        planar, planar);
+        }
         if (TIFFGetField(tif, TIFFTAG_RESOLUTIONUNIT, &resolutionunit))
             fprintf(fd, "  Resolution Unit: %" PRIu16 "\n", resolutionunit);
     }
@@ -1578,6 +1679,21 @@ void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
         fprintf(fd, "  %s: ", TIFFFieldName(field));
         safe_print_value_list(fd, tag, type, count, data, flags);
         fputc('\n', fd);
+    }
+
+    if ((flags & TIFFPRINT_STRIPS) != 0)
+    {
+        uint32_t strile_count = TIFFNumberOfStrips(tif);
+        if (strile_count != 0)
+        {
+            fprintf(fd, "  %" PRIu32 " %s:\n", strile_count,
+                    TIFFIsTiled(tif) ? "Tiles" : "Strips");
+            for (i = 0; i < strile_count; ++i)
+                fprintf(fd, "    %3" PRIu32 ": [%8" PRIu64 ", %8" PRIu64
+                            "]\n",
+                        i, TIFFGetStrileOffset(tif, i),
+                        TIFFGetStrileByteCount(tif, i));
+        }
     }
 }
 
