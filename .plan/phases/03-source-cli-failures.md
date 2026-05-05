@@ -2,7 +2,7 @@
 
 ## Phase Name
 
-Fix Source-Facing And CLI Regressions
+Source And CLI Compatibility Fixes
 
 ## Implement Phase ID
 
@@ -10,78 +10,83 @@ Fix Source-Facing And CLI Regressions
 
 ## Preexisting Inputs
 
-- Updated `validator-report.md` from phases 1 and 2.
-- Validator artifacts from phases 1 and 2 under `validator/artifacts/libtiff-safe/port/`.
-- Local override packages under `validator/artifacts/debs/local/libtiff/`.
-- Local port lock at `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`.
-- Package-smoke projects under `validator/artifacts/libtiff-safe/package-smoke/`.
-- Package/provenance gate complete with no override installation failures.
-- The external validator checkout under `validator/`.
-- `safe/src/lib.rs`, especially open/header/read-directory/close functions.
-- `safe/capi/tiff_placeholder.c`, especially varargs field marshalling, `TIFFGetField`, `TIFFSetField`, and `TIFFPrintDirectory`.
-- `safe/src/core/directory.rs`, especially directory traversal, tag reads, field setting, and directory writes.
-- `safe/src/strile.rs`, especially `TIFFWriteScanline` and read/write strip/tile APIs.
-- Existing copied tools in `safe/tools/*.c`.
-- Existing test registration in `safe/test/CMakeLists.txt` and `safe/test/Makefile.am`.
-- Existing fixtures under `safe/test/images/`, `safe/test/refs/`, and `original/test/images/`.
+- `validator/.git` already selected by phase 1. Do not refetch or move it. Expected selected commit for this plan is `87b321fe728340d6fc6dd2f638583cca82c667c3`, where libtiff has 5 source cases, 170 usage cases, and 175 total cases.
+- Historical baseline for comparison: the prior validator report recorded a clean run at validator commit `5d908be26e33f071e119ffe1a52e3149f1e5ec4e` and safe commit `61f38826b440c30b5099410a52e1af227832622e`, with 135 of 135 passing, 5 source plus 130 usage, casts present, and no waivers.
+- `validator-report.md` after phases 1 and 2, including baseline failure buckets, package gate disposition, current validator commit, safe commit, and `Waived testcase ids:`.
+- Validator artifacts after phases 1 and 2:
+  - `validator/artifacts/debs/local/libtiff/*.deb`
+  - `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`
+  - `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`
+  - `validator/artifacts/libtiff-safe/port/results/libtiff/*.json`
+  - `validator/artifacts/libtiff-safe/port/logs/libtiff/*.log`
+  - `validator/artifacts/libtiff-safe/port/casts/libtiff/*.cast`
+- Existing source testcase identities from the validator suite: `c-api-read-write`, `malformed-tiff-rejection`, `tiffcp-copy`, `tiffdump-structure`, and `tiffinfo-metadata`.
+- Existing CLI usage failures identified in `validator-report.md`. CLI-oriented testcase ids include tools such as `tiffcp`, `tiffdump`, `tiffinfo`, `tiff2bw`, `tiff2pdf`, `tiffcrop`, `tiffmedian`, and `tiffsplit`.
+- New validator usage coverage on `origin/main` includes additional `tiffcp`, `tiffcrop`, `tiff2pdf`, `tiffinfo`, `tiffsplit`, BigTIFF, tile, rows-per-strip, strip byte count, metadata, rational resolution, ICC, orientation, palette colormap, SubIFD, CCITT RLE, float32, and int32 checks; source/CLI work should only address the source cases and CLI-oriented failures from that broader matrix.
+- Existing safe CTest and shell test infrastructure: `safe/test/CMakeLists.txt`, `safe/test/dirread_regressions.c`, `safe/test/dirwrite_regressions.c`, `safe/test/strile_regressions.c`, `safe/test/validator_usage_tools.sh`, `safe/test/api_*.c`, `safe/test/images/`, and `safe/test/refs/`.
+- Existing package-smoke projects under `validator/artifacts/libtiff-safe/package-smoke/test.c`, `validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt`, and `validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt`.
+- Safe source hotspots relevant to source and CLI compatibility:
+  - `safe/src/lib.rs` owns handle lifecycle, open modes, header parsing, allocation helpers, and public C ABI exports. Relevant entry points: `parse_open_mode` at line 458, `finalize_open` at line 810, `TIFFClientOpen` at line 1384, `TIFFClientOpenExt` at line 1414, `TIFFOpen` at line 1471, `TIFFOpenExt` at line 1476, `TIFFClose` at line 1548, and `TIFFReadDirectory` at line 1563.
+  - `safe/capi/tiff_placeholder.c` owns C varargs marshalling, field get/set wrappers, error/warning handlers, RGBA wrappers, and directory printing. Relevant functions: `safe_default_vset_field` at line 643, `TIFFGetField` at line 1160, `TIFFGetFieldDefaulted` at line 1184, `TIFFSetField` at line 1208, and `TIFFPrintDirectory` around line 1511.
+  - `safe/src/core/directory.rs` owns IFD parsing/writing, tag storage, defaulted fields, custom directories, deferred strile tags, and `TIFFWriteDirectory`. Relevant functions: `read_next_directory` at line 1384 and `TIFFWriteDirectory` at line 4357.
+  - `safe/src/strile.rs` owns strip/tile geometry, scanline I/O, offset/bytecount management, flushing, and codec integration. Relevant functions include codec decode/use around lines 1262 and 2485, `TIFFWriteScanline` at line 1879, `TIFFWriteTile` at line 2007, and `TIFFReadTile` at line 2200.
+  - `safe/src/core/codec.rs` owns compression dispatch. Relevant functions: `safe_tiff_codec_decode_bytes` at line 3019 and `safe_tiff_codec_encode_bytes` at line 3070.
+  - `safe/src/core/jpeg.rs` owns JPEG/OJPEG encode and decode. Relevant functions: `jpeg_decode_bytes` at line 755 and `jpeg_encode_bytes` at line 803.
+  - `safe/src/rgba.rs` owns Pillow-facing RGBA read paths, color conversion, and orientation handling.
+  - Copied CLI tool files under `safe/tools/`.
+- Safe port build facts: `safe/Cargo.toml` builds crate `safe-libtiff` as static library `tiff_safe_core`; `safe/CMakeLists.txt` enumerates `SAFE_RUST_SOURCES` and builds the shared libraries, tools, pkg-config, CMake package metadata, and optional tests; add new Rust source files to `SAFE_RUST_SOURCES`.
 
-Consume these artifacts in place. Do not refetch or regenerate `original/`, `safe/test/`, CVE data, dependent inventories, package scripts, link-compatibility harnesses, downstream smoke harnesses, or package-smoke projects. Do not recreate missing `original/build/` outputs. Do not edit validator tests or shared scripts.
-
-Do not use `make fetch-port-debs`. This phase must continue to validate locally built packages via `validator/artifacts/debs/local/libtiff/` and `--override-deb-root`.
-
-Relevant safe-port implementation hotspots to consume before editing:
-
-- `safe/Cargo.toml` builds Rust crate `safe-libtiff` as static library `tiff_safe_core`; keep source fixes inside that existing crate/library layout.
-- `safe/CMakeLists.txt` builds `libtiff.so.6.0.1`, `libtiffxx.so.6.0.1`, copied tools, package metadata, and optional tests.
-- `safe/src/lib.rs` owns lifecycle, open modes, header parsing, memory allocation helpers, C ABI exports, `TIFFOpen`, `TIFFClientOpen`, `TIFFClose`, and `TIFFReadDirectory`; inspect `parse_open_mode` around line 458, `finalize_open` around line 810, allocation exports around line 1156, open entry points around line 1383, and close/read-directory entry points around line 1510.
-- `safe/capi/tiff_placeholder.c` owns C varargs marshalling, `TIFFSetField`, `TIFFGetField`, `TIFFGetFieldDefaulted`, error handlers, RGBA wrappers, and `TIFFPrintDirectory`; inspect `safe_default_vset_field` around line 643, `TIFFGetField`/`TIFFSetField` around lines 1160-1229, and `TIFFPrintDirectory` around line 1511.
-- `safe/src/core/directory.rs` owns IFD parsing and writing, tag storage/defaults, custom directories, field validation, deferred strile tags, and `TIFFWriteDirectory`; inspect directory traversal around line 1384, deferred strile materialization around line 2010, field setting around line 2935, and directory writes around line 4326.
-- `safe/src/strile.rs` owns strip/tile geometry, scanline reads/writes, strile offsets/bytecounts, flushing, and codec integration; inspect size and geometry exports around line 1595, write checks around line 1840, `TIFFWriteScanline` around line 1879, and strip/tile writes around line 1937.
-- Existing regression buckets include `dirread_regressions.c`, `dirwrite_regressions.c`, `strile_regressions.c`, `api_*.c`, `test_rgba_readers.c`, and `test_tile_read_write.c`.
+Consume these artifacts in place. Do not refetch, recollect, rediscover, or regenerate `original/`, safe test fixtures, CVE inventories, dependent inventories, package scripts, ABI inventories, link-compatibility harnesses, downstream smoke harnesses, package-smoke projects, or validator checkout state. Do not edit validator runtime files.
 
 ## New Outputs
 
-- Minimal safe regression tests for each source/CLI validator failure root cause.
-- Source/CLI fixes in `safe/` only.
+- Minimal safe regression tests for each source or CLI failure.
+- Safe implementation fixes in relevant modules.
 - Rebuilt `safe/dist/*.deb`.
-- Regenerated local override packages, local port lock, and port proof under `validator/artifacts/`.
-- Updated `validator-report.md` marking source-case failures fixed or waived with evidence.
-- A git commit containing source/CLI fixes and report updates.
+- Refreshed `validator/artifacts/debs/local/libtiff/*.deb`, `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`, `validator/artifacts/libtiff-safe/port/results/libtiff/*.json`, `validator/artifacts/libtiff-safe/port/logs/libtiff/*.log`, `validator/artifacts/libtiff-safe/port/casts/libtiff/*.cast`, and `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`.
+- Updated `validator-report.md` with source/CLI failures found, regression tests added, files changed, and final source/CLI disposition.
+- A git commit before yielding.
 
 ## File Changes
 
-- Likely: `safe/src/lib.rs`, `safe/capi/tiff_placeholder.c`, `safe/src/core/directory.rs`, `safe/src/strile.rs`, `safe/tools/tiffinfo.c`, `safe/tools/tiffdump.c`, `safe/tools/tiffcp.c`.
-- Regression tests: add `safe/test/validator_source_*.c` or `safe/test/validator_source_*.sh`, or extend `safe/test/api_*`, `safe/test/dirwrite_regressions.c`, `safe/test/dirread_regressions.c`, or `safe/test/strile_regressions.c`.
-- Register tests in `safe/test/CMakeLists.txt`; for shell-style tests also update `safe/test/Makefile.am`.
-- Add or update `safe/test/images/*` and `safe/test/refs/*` only when a small fixture/reference is required by a regression, and document why in `validator-report.md`.
-- Possible ABI files only if a real missing exported symbol is exposed: `safe/capi/libtiff-safe.map`, `safe/capi/libtiffxx-safe.map`, `safe/abi/public-surface.json`, `safe/abi/platform-excluded-linux.txt`.
-- Update `validator-report.md`.
-- Do not edit `validator/tests/libtiff/**`, validator shared scripts, or the validator test harness.
+- Test changes: `safe/test/CMakeLists.txt`, `safe/test/dirread_regressions.c`, `safe/test/dirwrite_regressions.c`, `safe/test/strile_regressions.c`, `safe/test/validator_usage_tools.sh`, `safe/test/api_*.c`, or new focused files under `safe/test/`.
+- Source fixes: `safe/src/lib.rs`, `safe/capi/tiff_placeholder.c`, `safe/src/core/directory.rs`, `safe/src/strile.rs`, `safe/src/core/codec.rs`, `safe/src/core/jpeg.rs`, `safe/src/rgba.rs`, or copied tool files under `safe/tools/`.
+- ABI/export fixes may touch `safe/capi/libtiff-safe.map`, `safe/capi/libtiffxx-safe.map`, `safe/include/tiffio.h`, or `safe/include/tiffio.hxx`.
+- Always update `validator-report.md`.
+- Do not edit validator tests, validator shared scripts, manifests, runner code, or tools.
+
+Critical file guidance for this phase:
+
+- Prefer fixing library behavior before copied CLI tool behavior.
+- Update `safe/CMakeLists.txt` when new tests, tools, install wiring, or Rust source files are added.
+- Update public headers or ABI maps only for missing or incompatible public API declarations/exports.
+- `validator/artifacts/libtiff-safe/**/*` and `validator/artifacts/debs/local/libtiff/*` are generated external validation evidence and are not committed to the parent repo.
 
 ## Implementation Details
 
-- Use `validator-report.md` and result JSON to identify failed source cases. Expected source-case ids are `c-api-read-write`, `malformed-tiff-rejection`, `tiffcp-copy`, `tiffdump-structure`, and `tiffinfo-metadata`.
-- For `c-api-read-write`, add a C regression that writes a 1x1 RGB image through `TIFFOpen`, `TIFFSetField`, `TIFFWriteScanline`, closes it, reopens it, and verifies `TIFFGetField` returns width and height. Fix marshalling, directory writes, flush, scanline, or open-mode logic as needed.
-- For `malformed-tiff-rejection`, add a regression that feeds non-TIFF bytes to `TIFFOpen` or `tiffinfo` and asserts failure. Fix header parsing or tool error propagation; do not make invalid bytes acceptable.
-- For `tiffcp-copy`, reproduce with a small fixture such as `safe/test/images/rgb-3c-8b.tiff`, then fix strip/tile read/write, directory copying, or tool integration.
-- For `tiffdump-structure` and `tiffinfo-metadata`, reproduce expected metadata output with existing fixtures and fix tag parsing, `TIFFPrintDirectory`, `TIFFGetFieldDefaulted`, directory traversal, or tool formatting.
-- Keep C ABI and symbol maps stable unless the validator exposes a genuine missing exported symbol.
-- If a source testcase is a validator bug, prove and document the waiver before relying on it. Use the original-mode validator command from phase 2, capture nonzero original-mode exit status, generate original proof artifacts, and document the exact id on `Waived testcase ids:`.
-- Later source and usage checkers may allow failures only if the exact testcase ids are already documented on `Waived testcase ids:` with evidence. Do not require `summary["failed"] == 0` before waiver handling has occurred.
-- Before rebuilding packages for the validator run, commit all `safe/` source, test, package, and script changes that should be represented in those packages. Regenerate the local port lock from the actual `.deb` files, including package-name validation for `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools`; the lock commit must be `git log -1 --format=%H -- safe`.
-- The rebuilt packages must still be the local Debian packages `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools` at version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, produced from the committed `safe/` tree.
-- Rerun the full libtiff validator `port` matrix selecting only `--library libtiff`, using `--override-deb-root artifacts/debs/local`, `--port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json`, and `--record-casts`.
-- Update `validator-report.md` with source-case fixes, test references, result JSON/log paths, any waiver evidence, and the current machine-readable lines:
+Workflow-generation contract preserved for this implement block:
 
-```text
-Validator commit: <40-char commit>
-Safe source commit tested: <40-char commit>
-Checks executed: <short command summary>
-Failures found: <count and testcase ids>
-Waived testcase ids: <comma-separated testcase ids or empty>
-```
+- Execute phases linearly. Do not generate `parallel_groups`.
+- Preserve the source-plan generation boundary for downstream workflow generation: generate only `.plan/plan.md`; do not generate or edit `.plan/phases/*`, `.plan/workflow-structure.yaml`, or `workflow.yaml` from inside phase-level prompts because workflow-generation stages own those files.
+- Use self-contained inline-only YAML. Do not use a top-level `include`.
+- Do not use phase-level `prompt_file`, `workflow_file`, `workflow_dir`, `checks`, `source`, or any other YAML-source indirection.
+- Do not generate `bounce_targets` lists. Each verifier has exactly one fixed `bounce_target`.
+- Every verifier is an explicit top-level `check` phase, stays inside the implement block it verifies, and bounces only to `impl_source_cli_failures`.
+- Put verifier commands directly in the checker instructions; do not model tests, builds, proof generation, artifact parsing, or review commands as non-agentic phases.
+- Consume existing artifacts in place: `original/`, `safe/test/`, CVE/dependent inventories, package scripts, ABI inventories, link-compatibility harnesses, downstream smoke harnesses, package-smoke projects, prior validator artifacts, and the phase-1-selected validator checkout.
+- Do not refetch or move `validator/`; phase 1 is the only phase that may fetch or checkout the validator repository.
 
-Commit any source/CLI fixes and regression tests before rebuilding `.deb` files and regenerating the port lock. After the validator run, commit `validator-report.md`. If no source/CLI failures exist, update the report with "no source/CLI failures" and create an empty phase commit named for `impl_source_cli_failures`.
+- Map each source/CLI validator failure to the smallest safe regression:
+  - `c-api-read-write`: add a C regression for field setting, directory write, scanline/tile write, close/reopen, and field readback.
+  - `malformed-tiff-rejection`: add a fixture or byte-level generated test in `dirread_regressions.c`; ensure malformed IFD, offset, type, count, and loop cases fail cleanly.
+  - `tiffcp-copy` and CLI `tiffcp-*`: add shell or C tests for compression, rows-per-strip, tiling, BigTIFF, endian options, and strip/tile byte counts as relevant.
+  - `tiffdump-structure` and CLI `tiffinfo-*`: add shell tests that assert exact structural/tag lines without depending on validator internals.
+  - `tiff2pdf`, `tiff2bw`, `tiffcrop`, `tiffmedian`, and `tiffsplit`: add shell tests in the existing upstream-test style and prefer existing fixtures under `safe/test/images/`.
+- Fix the underlying safe implementation, not copied validator scripts.
+- Before rebuilding packages for a validator run, commit all `safe/` source, test, packaging, or script changes represented in those packages. The lock must record the safe-source commit actually tested.
+- Rebuild packages, regenerate the local lock/override using `scripts/lib/build_port_lock.py`, rerun the full libtiff port matrix with `--library libtiff --record-casts`, regenerate proof, update `validator-report.md`, and commit.
+- If there are no source or CLI failures in this bucket, update `validator-report.md` with the clean disposition and create an empty or report-only commit named for `impl_source_cli_failures`.
+- In `port` mode, parse result JSON and per-case JSON instead of trusting `bash test.sh` process exit status.
 
 ## Verification Phases
 
@@ -90,64 +95,51 @@ Commit any source/CLI fixes and regression tests before rebuilding `.deb` files 
 - Phase ID: `check_source_cli_tester`
 - Type: `check`
 - Fixed `bounce_target`: `impl_source_cli_failures`
-- Purpose: Rebuild safe, run local source/CLI regressions, rerun the full validator matrix, and require no unwaived source-case failures. Usage failures may remain for the next phase only when they are not source cases.
+- Purpose: Verify all source testcases and CLI-oriented validator failures are fixed or explicitly waived, and each fixed failure has a safe regression test.
 - Commands:
 
 ```bash
-git diff --quiet -- safe
-git diff --cached --quiet -- safe
+cargo test --manifest-path safe/Cargo.toml
 cmake -S safe -B safe/build -DCMAKE_BUILD_TYPE=Release -Dtiff-tools=ON -Dtiff-tests=ON
 cmake --build safe/build --parallel
 ctest --test-dir safe/build --output-on-failure
-safe/scripts/run-upstream-shell-tests.sh --build-dir safe/build --include-regex 'tiff(info|dump|cp)|ppm2tiff|fax2tiff'
-safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist
-safe/scripts/check-packaged-install-surface.sh \
-  --dist-dir safe/dist \
-  --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-target \
-  --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-targetless \
-  --pkgconfig-source validator/artifacts/libtiff-safe/package-smoke/test.c \
-  --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp \
-  --input-tiff original/test/images/rgb-3c-8b.tiff
-rm -rf validator/artifacts/debs/local/libtiff
-mkdir -p validator/artifacts/debs/local/libtiff validator/artifacts/libtiff-safe/proof
-find safe/dist -maxdepth 1 -type f -name '*.deb' -exec cp -f -t validator/artifacts/debs/local/libtiff {} +
-python3 - <<'PY'
-import hashlib
-import json
-import subprocess
-from pathlib import Path
-packages = ["libtiff6", "libtiffxx6", "libtiff-dev", "libtiff-tools"]
-leaf = Path("validator/artifacts/debs/local/libtiff")
-debs = []
-for package in packages:
-    path = sorted(leaf.glob(f"{package}_*.deb"))[0]
-    arch = subprocess.check_output(["dpkg-deb", "-f", str(path), "Architecture"], text=True).strip()
-    data = path.read_bytes()
-    debs.append({"package": package, "filename": path.name, "architecture": arch, "sha256": hashlib.sha256(data).hexdigest(), "size": len(data), "asset_api_url": None, "browser_download_url": None})
-commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", "safe"], text=True).strip()
-release = f"local-{commit[:12]}"
-lock = {"schema_version": 1, "mode": "port", "generated_at": "1970-01-01T00:00:00Z", "source_config": "repositories.yml", "source_inventory": "local-overrides", "libraries": [{"library": "libtiff", "repository": "safelibs/port-libtiff", "url": "https://github.com/safelibs/port-libtiff", "tag_ref": f"refs/tags/{release}", "commit": commit, "release_tag": release, "debs": debs, "unported_original_packages": []}]}
-Path("validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json").write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
-PY
-cd validator
-bash test.sh --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --mode port --override-deb-root artifacts/debs/local --port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json --library libtiff --record-casts
-python3 tools/verify_proof_artifacts.py --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --proof-output proof/libtiff-safe-port-proof.json --mode port --library libtiff --require-casts --min-source-cases 5 --min-usage-cases 130 --min-cases 135 --ports-root /home/yans/safelibs/pipeline/ports
-cd ..
+safe/scripts/run-upstream-shell-tests.sh --build-dir safe/build
+python3 safe/scripts/check-public-surface.py \
+  --check \
+  --must-export _TIFFcalloc TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFStreamOpen \
+  --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt
 python3 - <<'PY'
 import json
 import re
+import subprocess
 from pathlib import Path
+
+lock = json.loads(Path("validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json").read_text())
+proof = json.loads(Path("validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json").read_text())
+safe_commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", "safe"], text=True).strip()
+assert lock["libraries"][0]["commit"] == safe_commit, (lock["libraries"][0]["commit"], safe_commit)
+assert proof["libraries"][0]["port_commit"] == safe_commit, (proof["libraries"][0], safe_commit)
+
 report = Path("validator-report.md").read_text()
-match = re.search(r"^Waived testcase ids:\s*(.*)$", report, re.MULTILINE)
-waived = {item.strip() for item in (match.group(1) if match else "").split(",") if item.strip()}
+waived_line = re.search(r"^Waived testcase ids:\s*(.*)$", report, re.MULTILINE)
+waived = {x.strip() for x in (waived_line.group(1) if waived_line else "").split(",") if x.strip()}
 source_failures = []
+cli_failures = []
+cli_terms = ("tiffcp", "tiffdump", "tiffinfo", "tiff2bw", "tiff2pdf", "tiffcrop", "tiffmedian", "tiffsplit")
 for path in sorted(Path("validator/artifacts/libtiff-safe/port/results/libtiff").glob("*.json")):
     if path.name == "summary.json":
         continue
-    result = json.loads(path.read_text())
-    if result["kind"] == "source" and result["status"] == "failed" and result["testcase_id"] not in waived:
-        source_failures.append(result["testcase_id"])
-assert not source_failures, {"unwaived_source_failures": source_failures, "waived": sorted(waived)}
+    r = json.loads(path.read_text())
+    tid = r["testcase_id"]
+    assert r.get("port_commit") == safe_commit, (tid, r.get("port_commit"), safe_commit)
+    if r.get("status") != "failed" or tid in waived:
+        continue
+    if r.get("kind") == "source":
+        source_failures.append(tid)
+    if any(term in tid for term in cli_terms):
+        cli_failures.append(tid)
+assert not source_failures, source_failures
+assert not cli_failures, cli_failures
 PY
 ```
 
@@ -156,25 +148,25 @@ PY
 - Phase ID: `check_source_cli_senior`
 - Type: `check`
 - Fixed `bounce_target`: `impl_source_cli_failures`
-- Purpose: Review source/CLI fixes for minimality, ABI compatibility, regression quality, and absence of validator-suite edits.
+- Purpose: Review that fixes are minimal, regression tests map directly to validator failures, ABI/export changes are intentional, and no validator checks were loosened.
 - Commands:
 
 ```bash
 git show --stat --format=fuller HEAD
-git show -- safe/src safe/capi safe/tools safe/test safe/CMakeLists.txt safe/capi/libtiff-safe.map safe/abi validator-report.md
-git -C validator diff -- tests/libtiff tests/_shared repositories.yml test.sh tools || true
-rg -n "validator|source|c-api-read-write|malformed-tiff-rejection|tiffcp-copy|tiffdump-structure|tiffinfo-metadata|Waived testcase ids" validator-report.md safe/test safe/src safe/capi safe/tools
+git diff HEAD~1..HEAD -- safe validator-report.md
+git -C validator diff -- tests/libtiff tests/_shared repositories.yml test.sh tools
+test -z "$(git -C validator status --porcelain -- tests/libtiff tests/_shared repositories.yml test.sh tools)"
+rg -n "source|CLI|tiffcp|tiffdump|tiffinfo|tiff2bw|tiff2pdf|tiffcrop|tiffmedian|tiffsplit|regression|fixed|waiver" validator-report.md
 ```
 
 ## Success Criteria
 
-- Safe CMake release build passes with tools/tests enabled.
-- CTest passes.
-- Relevant upstream shell tests for `tiffinfo`, `tiffdump`, and `tiffcp` pass.
-- Safe Debian packages build and install-surface smokes pass.
-- Full libtiff validator matrix has no unwaived source failures.
-- Validator tests and shared scripts remain unchanged.
+- Cargo tests, CMake release build, CTest, upstream shell tests, and public surface checks pass.
+- Full validator rerun has no unwaived source failures and no unwaived CLI-oriented failures.
+- Each fixed source or CLI failure has focused local regression coverage.
+- The lock, proof, per-case results, and report all name the safe-source commit actually tested.
+- Validator runtime files remain unchanged.
 
 ## Git Commit Requirement
 
-The implementer must commit work to git before yielding. If there are no applicable code or report changes, the implementer must create an empty phase commit with a message naming `impl_source_cli_failures`.
+The implementer must commit work to git before yielding. If the phase only updates the report or has no code change, commit the report change or create an empty phase commit naming `impl_source_cli_failures`.

@@ -2,7 +2,7 @@
 
 ## Phase Name
 
-Final Validator Hardening And Report Closure
+Final Validator Clean Run
 
 ## Implement Phase ID
 
@@ -10,85 +10,102 @@ Final Validator Hardening And Report Closure
 
 ## Preexisting Inputs
 
-- All prior phase commits, tests, validator artifacts, and `validator-report.md`.
-- Local override packages under `validator/artifacts/debs/local/libtiff/`.
-- Local port lock and proof artifacts under `validator/artifacts/libtiff-safe/proof/`.
-- Package-smoke projects under `validator/artifacts/libtiff-safe/package-smoke/`.
-- The external validator checkout under `validator/`.
-- Existing compatibility harnesses: ABI check, CTest, upstream shell tests, link compatibility, package install surface, and downstream `test-original.sh`.
-- Existing fixtures and references under `safe/test/images/`, `safe/test/refs/`, and `original/test/images/`.
+- All outputs from phases 1-4.
+- `validator/.git` selected in phase 1 and not moved since. Expected selected commit for this plan is `87b321fe728340d6fc6dd2f638583cca82c667c3`, where libtiff has at least 5 source cases, 170 usage cases, and 175 total cases.
+- Final safe tree after fixes.
+- `validator-report.md` after phases 1-4, including historical prior clean-run context at validator commit `5d908be26e33f071e119ffe1a52e3149f1e5ec4e` and safe commit `61f38826b440c30b5099410a52e1af227832622e`, the current validator commit, current safe source commit, checks executed, failure buckets, fixes applied, and `Waived testcase ids:`.
+- Current validator artifacts:
+  - `validator/artifacts/debs/local/libtiff/*.deb`
+  - `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`
+  - `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`
+  - `validator/artifacts/libtiff-safe/port/results/libtiff/*.json`
+  - `validator/artifacts/libtiff-safe/port/logs/libtiff/*.log`
+  - `validator/artifacts/libtiff-safe/port/casts/libtiff/*.cast`
+- Existing package-smoke projects under `validator/artifacts/libtiff-safe/package-smoke/test.c`, `validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt`, and `validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt`.
+- Safe test and verification harnesses:
+  - `safe/scripts/check-public-surface.py`
+  - `safe/scripts/run-upstream-shell-tests.sh`
+  - `safe/scripts/build-link-compat-objects.sh`
+  - `safe/scripts/link-and-run-link-compat.sh`
+  - `safe/scripts/build-deb.sh`
+  - `safe/scripts/check-packaged-install-surface.sh`
+  - `safe/test/images/`
+  - `safe/test/refs/`
+  - `original/test/images/`
+  - `test-original.sh`
+- Safe port facts to preserve in the closure report and review: `safe/Cargo.toml` builds crate `safe-libtiff` as static library `tiff_safe_core`; `safe/CMakeLists.txt` builds `libtiff.so.6.0.1`, `libtiffxx.so.6.0.1`, pkg-config metadata, CMake package metadata, copied upstream tools, and optional tests; `safe/debian/control` packages `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools`; `safe/scripts/build-deb.sh` builds version `1:4.5.1+git230720-4ubuntu2.5+safelibs1` packages into `safe/dist/`.
 
-Consume prior artifacts in place. Do not broaden scope, regenerate original build outputs, refetch prepared inventories, regenerate downstream harnesses, or edit validator tests or shared scripts. Do not add the nested `validator/` checkout to the parent repository.
-
-Do not use `make fetch-port-debs`. The final run must use locally built `.deb` packages from `safe/`, `validator/artifacts/debs/local/libtiff/`, and `--override-deb-root`.
-
-Preserve the completed safe-port surface while closing final failures:
-
-- `safe/Cargo.toml` builds Rust crate `safe-libtiff` as static library `tiff_safe_core`.
-- `safe/CMakeLists.txt` builds `libtiff.so.6.0.1`, `libtiffxx.so.6.0.1`, pkg-config and CMake metadata, copied tools, and optional tests.
-- `safe/scripts/build-deb.sh` builds `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools` packages at version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`.
-- `safe/src/lib.rs` hotspots include `parse_open_mode` around line 458, `finalize_open` around line 810, allocation exports around line 1156, open entry points around line 1383, and close/read-directory entry points around line 1510.
-- `safe/capi/tiff_placeholder.c` hotspots include `safe_default_vset_field` around line 643, `TIFFGetField`/`TIFFSetField` around lines 1160-1229, and `TIFFPrintDirectory` around line 1511.
-- `safe/src/core/directory.rs` hotspots include directory traversal around line 1384, deferred strile materialization around line 2010, field setting around line 2935, and directory writes around line 4326.
-- `safe/src/strile.rs` hotspots include size and geometry exports around line 1595, write checks around line 1840, `TIFFWriteScanline` around line 1879, and strip/tile writes around line 1937.
-- `safe/src/core/codec.rs`, `safe/src/core/jpeg.rs`, `safe/src/core/color.rs`, and `safe/src/rgba.rs` own compression, JPEG/OJPEG, color conversion, and Pillow-facing RGBA behavior.
+Consume these artifacts in place. Do not refetch, recollect, rediscover, regenerate prepared artifacts, move the validator checkout, or edit validator tests/shared scripts/manifests/runner code/tools. Do not use `make fetch-port-debs`.
 
 ## New Outputs
 
-- Final catch-all fixes for any remaining unwaived validator or local compatibility issue.
-- Rebuilt `safe/dist/*.deb`.
-- Regenerated local override packages, local port lock, and final port proof under `validator/artifacts/`.
-- Final `validator-report.md` summarizing validator commit, safe commit/package hashes, checks executed, failures found, fixes applied, waivers if any, and final status.
-- Final git commit containing all final changes.
+- Final rebuilt `safe/dist/*.deb`.
+- Final `validator/artifacts/debs/local/libtiff/*.deb`.
+- Final `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`.
+- Final `validator/artifacts/libtiff-safe/port/results/libtiff/*.json`.
+- Final `validator/artifacts/libtiff-safe/port/logs/libtiff/*.log`.
+- Final `validator/artifacts/libtiff-safe/port/casts/libtiff/*.cast`.
+- Final `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`.
+- Closure-grade `validator-report.md` summarizing validator commit, safe commit, exact checks executed, counts derived from checked-out testcase files, failures found, fixes applied, waiver disposition, artifact paths, and final status.
+- Final git commit before yielding.
 
 ## File Changes
 
-- Any safe source/test/package file necessary to close remaining unwaived failures.
-- Possible critical files only when the final checks expose the need: `safe/src/lib.rs`, `safe/capi/tiff_placeholder.c`, `safe/src/core/directory.rs`, `safe/src/strile.rs`, `safe/src/core/codec.rs`, `safe/src/core/jpeg.rs`, `safe/src/core/color.rs`, `safe/src/rgba.rs`, `safe/src/core/field_registry.rs`, `safe/src/core/field_tables.rs`, `safe/tools/*.c`, `safe/debian/*`, `safe/CMakeLists.txt`, `safe/pkgconfig/libtiff-4.pc.in`, `safe/cmake/TiffConfig.cmake.in`, `safe/include/*`, `safe/capi/libtiff-safe.map`, `safe/capi/libtiffxx-safe.map`, and `safe/abi/*`.
-- Add or update `safe/test/*.c`, `safe/test/*.sh`, `safe/test/images/*`, or `safe/test/refs/*` only when required by a focused regression, and document why in `validator-report.md`.
-- Package/link scripts `safe/scripts/build-deb.sh`, `safe/scripts/check-packaged-install-surface.sh`, `safe/scripts/build-link-compat-objects.sh`, and `safe/scripts/link-and-run-link-compat.sh` may change only if local package or link-surface verification is inadequate for a validator-exposed issue.
-- Update `validator-report.md`.
-- Do not edit validator tests or shared scripts.
+- Always `validator-report.md`.
+- Conditional final fixes in `safe/` if failures remain.
+- No validator runtime file edits.
+
+Critical file guidance for this phase:
+
+- The source plan artifact is not edited by this phase.
+- `validator-report.md` is the durable cross-phase report and must contain closure-grade provenance, commands, failures, fixes, waiver state, artifact paths, and final status.
+- `safe/Cargo.toml` changes only if a new Rust module or dependency is required; avoid dependency additions unless a failure cannot be fixed with existing libraries.
+- `safe/CMakeLists.txt` must reflect any new Rust sources, build/test options, install rules, or tool/test wiring required by implementation changes.
+- Exact safe implementation hotspots remain the primary source-level anchors for final failures:
+  - `safe/src/lib.rs`: `parse_open_mode` at line 458, `finalize_open` at line 810, `TIFFClientOpen` at line 1384, `TIFFClientOpenExt` at line 1414, `TIFFOpen` at line 1471, `TIFFOpenExt` at line 1476, `TIFFClose` at line 1548, and `TIFFReadDirectory` at line 1563.
+  - `safe/capi/tiff_placeholder.c`: `safe_default_vset_field` at line 643, `TIFFGetField` at line 1160, `TIFFGetFieldDefaulted` at line 1184, `TIFFSetField` at line 1208, and `TIFFPrintDirectory` around line 1511.
+  - `safe/src/core/directory.rs`: `read_next_directory` at line 1384 and `TIFFWriteDirectory` at line 4357.
+  - `safe/src/core/field_tables.rs` and `safe/src/core/field_registry.rs`: tag definitions, custom fields, defaulted field behavior, and field lookup.
+  - `safe/src/strile.rs`: codec decode/use around lines 1262 and 2485, `TIFFWriteScanline` at line 1879, `TIFFWriteTile` at line 2007, and `TIFFReadTile` at line 2200.
+  - `safe/src/core/codec.rs`: `safe_tiff_codec_decode_bytes` at line 3019 and `safe_tiff_codec_encode_bytes` at line 3070.
+  - `safe/src/core/jpeg.rs`: `jpeg_decode_bytes` at line 755 and `jpeg_encode_bytes` at line 803.
+  - `safe/src/core/color.rs` and `safe/src/rgba.rs`: color conversion, pixel/raster behavior, Pillow-facing RGBA read paths, and orientation handling.
+- `safe/tools/*.c` may be touched for CLI compatibility regressions, but prefer library fixes first.
+- `safe/include/tiffio.h`, `safe/include/tiffio.hxx`, `safe/capi/libtiff-safe.map`, and `safe/capi/libtiffxx-safe.map` should change only for public API or ABI export corrections.
+- `safe/debian/control`, `safe/debian/*.install`, `safe/debian/rules`, `safe/cmake/TiffConfig.cmake.in`, and `safe/pkgconfig/libtiff-4.pc.in` are package/install-surface fix locations.
+- `scripts/lib/build_port_lock.py`, `scripts/run-validation-tests.sh`, `scripts/build-debs.sh`, `safe/scripts/build-deb.sh`, and `safe/scripts/check-packaged-install-surface.sh` should be consumed as existing harnesses unless a true local harness bug blocks validation.
+- `validator/artifacts/debs/local/libtiff/*` and `validator/artifacts/libtiff-safe/**/*` are generated external validation artifacts and primary evidence for check phases. They are not committed to the parent repo.
+- `validator/tests/libtiff/**/*`, `validator/tests/_shared/**/*`, `validator/repositories.yml`, `validator/test.sh`, and `validator/tools/**/*` must not be modified to pass tests.
 
 ## Implementation Details
 
-- Consume only concrete failures from previous phases and final test output. Do not broaden scope.
-- If a final failure is a duplicate root cause, add or update one minimal regression that proves the root behavior.
-- Rebuild packages and regenerate the validator local lock after final code changes.
-- Regenerate the local port lock from actual `.deb` files, including package-name validation for `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools`; the lock commit must be `git log -1 --format=%H -- safe`.
-- The rebuilt packages must still be the local Debian packages `libtiff6`, `libtiffxx6`, `libtiff-dev`, and `libtiff-tools` at version `1:4.5.1+git230720-4ubuntu2.5+safelibs1`, produced from the committed `safe/` tree.
-- Run the full safe compatibility matrix and the full libtiff validator `port` matrix selecting only `--library libtiff`, using `--override-deb-root artifacts/debs/local`, `--port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json`, and `--record-casts`.
-- Update `validator-report.md` with validator repository URL and exact commit, safe source commit tested, package filenames/versions/architectures/SHA-256 hashes, override root, commands executed, source/usage/total/passed/failed/cast counts, every failure found and final disposition, safe fixes with file/test references, any validator-bug waiver with evidence, final verification date, and final status.
-- The final verifier must require zero unexpected failures. If `Waived testcase ids:` is empty, require `summary["failed"] == 0`. If waivers exist, every remaining failed testcase must be in that exact waived set and must have detailed waiver evidence in `validator-report.md`.
-- `validator-report.md` must continue to contain these machine-readable lines:
+Workflow-generation contract preserved for this implement block:
 
-```text
-Validator commit: <40-char commit>
-Safe source commit tested: <40-char commit>
-Checks executed: <short command summary>
-Failures found: <count and testcase ids>
-Waived testcase ids: <comma-separated testcase ids or empty>
-```
+- Execute phases linearly. Do not generate `parallel_groups`.
+- Preserve the source-plan generation boundary for downstream workflow generation: generate only `.plan/plan.md`; do not generate or edit `.plan/phases/*`, `.plan/workflow-structure.yaml`, or `workflow.yaml` from inside phase-level prompts because workflow-generation stages own those files.
+- Use self-contained inline-only YAML. Do not use a top-level `include`.
+- Do not use phase-level `prompt_file`, `workflow_file`, `workflow_dir`, `checks`, `source`, or any other YAML-source indirection.
+- Do not generate `bounce_targets` lists. Each verifier has exactly one fixed `bounce_target`.
+- Every verifier is an explicit top-level `check` phase, stays inside the implement block it verifies, and bounces only to `impl_final_validator_clean_run`.
+- Put verifier commands directly in the checker instructions; do not model tests, builds, proof generation, artifact parsing, or review commands as non-agentic phases.
+- Consume all phase outputs and existing workspace artifacts in place. Do not refetch, recollect, rediscover, or regenerate prepared artifacts from scratch.
+- Do not refetch or move `validator/`; phase 1 is the only phase that may fetch or checkout the validator repository.
 
-Commit any final `safe/` fixes before rebuilding `.deb` files and regenerating the final port lock. After the final validator run, commit the completed `validator-report.md`. If no final tracked changes are needed, create an empty phase commit named for `impl_final_validator_clean_run`.
-
-## Verification Phases
-
-### `check_final_validator_tester`
-
-- Phase ID: `check_final_validator_tester`
-- Type: `check`
-- Fixed `bounce_target`: `impl_final_validator_clean_run`
-- Purpose: Run the full safe compatibility matrix and final validator matrix. Require a clean or waiver-limited result.
-- Commands:
+1. Re-run the full local safe compatibility matrix before final validator.
 
 ```bash
-git diff --quiet -- safe
-git diff --cached --quiet -- safe
+test -d validator/.git
+test -z "$(git -C validator status --porcelain -- tests/libtiff tests/_shared repositories.yml test.sh tools)"
+VALIDATOR_COMMIT="$(git -C validator rev-parse HEAD)"
+SAFE_COMMIT="$(git log -1 --format=%H -- safe)"
+
 cargo test --manifest-path safe/Cargo.toml
 cmake -S safe -B safe/build -DCMAKE_BUILD_TYPE=Release -Dtiff-tools=ON -Dtiff-tests=ON
 cmake --build safe/build --parallel
-python3 safe/scripts/check-public-surface.py --check --must-export _TIFFcalloc TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFStreamOpen --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt
+python3 safe/scripts/check-public-surface.py \
+  --check \
+  --must-export _TIFFcalloc TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFStreamOpen \
+  --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt
 ctest --test-dir safe/build --output-on-failure
 safe/scripts/run-upstream-shell-tests.sh --build-dir safe/build
 rm -rf safe/build/link-compat
@@ -98,65 +115,177 @@ safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist
 safe/scripts/check-packaged-install-surface.sh \
   --dist-dir safe/dist \
   --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-target \
-  --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-targetless \
+  --cmake-project-no-target validator/artifacts/libtiff-safe/package-smoke/cmake-targetless \
   --pkgconfig-source validator/artifacts/libtiff-safe/package-smoke/test.c \
   --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp \
   --input-tiff original/test/images/rgb-3c-8b.tiff
 LIBTIFF_SAFE_DIST_DIR=safe/dist ./test-original.sh
+```
+
+2. Run the validator-side checks from the final verification contract. Later phases must consume the validator commit selected by phase 1 and must not refetch or move the checkout.
+
+```bash
+make -C validator unit
+make -C validator check-testcases
+python3 validator/tools/testcases.py \
+  --config validator/repositories.yml \
+  --tests-root validator/tests \
+  --library libtiff \
+  --check \
+  --min-source-cases 5 \
+  --min-usage-cases 170 \
+  --min-cases 175
+```
+
+3. Refresh the local lock/override and rerun the validator matrix and proof exactly as in phase 1, using the final safe commit and current validator commit.
+
+```bash
 rm -rf validator/artifacts/debs/local/libtiff
-mkdir -p validator/artifacts/debs/local/libtiff validator/artifacts/libtiff-safe/proof
-find safe/dist -maxdepth 1 -type f -name '*.deb' -exec cp -f -t validator/artifacts/debs/local/libtiff {} +
-python3 - <<'PY'
-import hashlib
-import json
-import subprocess
-from pathlib import Path
-packages = ["libtiff6", "libtiffxx6", "libtiff-dev", "libtiff-tools"]
-leaf = Path("validator/artifacts/debs/local/libtiff")
-debs = []
-for package in packages:
-    path = sorted(leaf.glob(f"{package}_*.deb"))[0]
-    arch = subprocess.check_output(["dpkg-deb", "-f", str(path), "Architecture"], text=True).strip()
-    data = path.read_bytes()
-    debs.append({"package": package, "filename": path.name, "architecture": arch, "sha256": hashlib.sha256(data).hexdigest(), "size": len(data), "asset_api_url": None, "browser_download_url": None})
-commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", "safe"], text=True).strip()
-release = f"local-{commit[:12]}"
-lock = {"schema_version": 1, "mode": "port", "generated_at": "1970-01-01T00:00:00Z", "source_config": "repositories.yml", "source_inventory": "local-overrides", "libraries": [{"library": "libtiff", "repository": "safelibs/port-libtiff", "url": "https://github.com/safelibs/port-libtiff", "tag_ref": f"refs/tags/{release}", "commit": commit, "release_tag": release, "debs": debs, "unported_original_packages": []}]}
-Path("validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json").write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
-PY
-cd validator
-make unit
-make check-testcases
-python3 tools/testcases.py --config repositories.yml --tests-root tests --library libtiff --check --min-source-cases 5 --min-usage-cases 130 --min-cases 135
-bash test.sh --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --mode port --override-deb-root artifacts/debs/local --port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json --library libtiff --record-casts
-python3 tools/verify_proof_artifacts.py --config repositories.yml --tests-root tests --artifact-root artifacts/libtiff-safe --proof-output proof/libtiff-safe-port-proof.json --mode port --library libtiff --require-casts --min-source-cases 5 --min-usage-cases 130 --min-cases 135 --ports-root /home/yans/safelibs/pipeline/ports
-cd ..
+SAFELIBS_LIBRARY=libtiff \
+SAFELIBS_COMMIT_SHA="$SAFE_COMMIT" \
+SAFELIBS_DIST_DIR="$PWD/safe/dist" \
+SAFELIBS_VALIDATOR_DIR="$PWD/validator" \
+SAFELIBS_LOCK_PATH="$PWD/validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json" \
+SAFELIBS_OVERRIDE_ROOT="$PWD/validator/artifacts/debs/local" \
+python3 scripts/lib/build_port_lock.py
+
+(
+  cd validator
+  bash test.sh \
+    --config repositories.yml \
+    --tests-root tests \
+    --artifact-root artifacts/libtiff-safe \
+    --mode port \
+    --override-deb-root artifacts/debs/local \
+    --port-deb-lock artifacts/libtiff-safe/proof/local-port-debs-lock.json \
+    --library libtiff \
+    --record-casts
+
+  python3 tools/verify_proof_artifacts.py \
+    --config repositories.yml \
+    --tests-root tests \
+    --artifact-root artifacts/libtiff-safe \
+    --proof-output proof/libtiff-safe-port-proof.json \
+    --mode port \
+    --library libtiff \
+    --require-casts \
+    --min-source-cases 5 \
+    --min-usage-cases 170 \
+    --min-cases 175 \
+    --ports-root /home/yans/safelibs/pipeline/ports
+)
+```
+
+4. Parse final artifacts, enforcing zero unexpected failures. If `Waived testcase ids:` is empty, require `summary["failed"] == 0`. If it is non-empty, every remaining failed testcase must be in that exact waived set. Proof totals must match summary counts, and casts must equal total cases.
+
+```bash
 python3 - <<'PY'
 import json
 import re
+import subprocess
 from pathlib import Path
+
 summary = json.loads(Path("validator/artifacts/libtiff-safe/port/results/libtiff/summary.json").read_text())
-report = Path("validator-report.md").read_text()
-lock = json.loads(Path("validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json").read_text())
 proof = json.loads(Path("validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json").read_text())
-safe_commit = lock["libraries"][0]["commit"]
-commit_match = re.search(r"^Safe source commit tested:\s*([0-9a-f]{40})$", report, re.MULTILINE)
-assert commit_match and commit_match.group(1) == safe_commit, (commit_match.group(1) if commit_match else None, safe_commit)
-assert proof["libraries"][0]["port_commit"] == safe_commit, (proof["libraries"][0]["port_commit"], safe_commit)
-match = re.search(r"^Waived testcase ids:\s*(.*)$", report, re.MULTILINE)
-waived = {item.strip() for item in (match.group(1) if match else "").split(",") if item.strip()}
+lock = json.loads(Path("validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json").read_text())
+report = Path("validator-report.md").read_text()
+waived_line = re.search(r"^Waived testcase ids:\s*(.*)$", report, re.MULTILINE)
+waived = {x.strip() for x in (waived_line.group(1) if waived_line else "").split(",") if x.strip()}
+expected_source = len(list(Path("validator/tests/libtiff/tests/cases/source").glob("*.sh")))
+expected_usage = len(list(Path("validator/tests/libtiff/tests/cases/usage").glob("*.sh")))
+safe_commit = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", "safe"], text=True).strip()
+validator_commit = subprocess.check_output(["git", "-C", "validator", "rev-parse", "HEAD"], text=True).strip()
+assert lock["libraries"][0]["commit"] == safe_commit, (lock["libraries"][0]["commit"], safe_commit)
+assert proof["libraries"][0]["port_commit"] == safe_commit, (proof["libraries"][0], safe_commit)
+assert f"Validator commit: {validator_commit}" in report
+assert f"Safe source commit tested: {safe_commit}" in report
 failed = []
 for path in sorted(Path("validator/artifacts/libtiff-safe/port/results/libtiff").glob("*.json")):
     if path.name == "summary.json":
         continue
     result = json.loads(path.read_text())
-    if result["status"] == "failed":
+    assert result.get("override_debs_installed") is True, result["testcase_id"]
+    assert result.get("port_commit") == safe_commit, (result["testcase_id"], result.get("port_commit"), safe_commit)
+    if result.get("status") == "failed":
         failed.append(result["testcase_id"])
-unexpected = sorted(set(failed) - waived)
-assert not unexpected, {"unexpected": unexpected, "failed": sorted(failed), "waived": sorted(waived), "summary": summary}
+assert expected_source >= 5, expected_source
+assert expected_usage >= 170, expected_usage
+assert summary["source_cases"] == expected_source, (summary, expected_source)
+assert summary["usage_cases"] == expected_usage, (summary, expected_usage)
+assert summary["cases"] == expected_source + expected_usage, summary
+assert proof["totals"]["cases"] == summary["cases"], proof["totals"]
+assert proof["totals"]["casts"] == summary["cases"], proof["totals"]
+assert set(failed).issubset(waived), (failed, waived)
 if not waived:
+    assert not failed, failed
     assert summary["failed"] == 0, summary
-assert summary["cases"] == 135 and summary["source_cases"] == 5 and summary["usage_cases"] == 130, summary
+PY
+```
+
+5. If unexpected failures remain, fix them in `safe/` and repeat this phase. If a validator bug remains, ensure the waiver has original-mode evidence and is listed on the machine-readable waiver line.
+
+6. Rewrite `validator-report.md` as the closure report. It must state the final validator commit selected in phase 1, final safe source commit, exact checks executed, final counts derived from checked-out libtiff testcase files, failure list, fixes applied, waiver list, artifact paths, and whether the final status is clean.
+
+7. Commit before yielding.
+
+```bash
+git add validator-report.md safe
+git commit -m "impl_final_validator_clean_run: close libtiff validator run"
+```
+
+## Verification Phases
+
+### `check_final_validator_tester`
+
+- Phase ID: `check_final_validator_tester`
+- Type: `check`
+- Fixed `bounce_target`: `impl_final_validator_clean_run`
+- Purpose: Enforce a clean final validator run or exactly documented waivers, with package/proof/cast provenance matching the final safe commit.
+- Commands:
+
+```bash
+python3 - <<'PY'
+import json
+import re
+import subprocess
+from pathlib import Path
+
+summary = json.loads(Path("validator/artifacts/libtiff-safe/port/results/libtiff/summary.json").read_text())
+proof = json.loads(Path("validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json").read_text())
+lock = json.loads(Path("validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json").read_text())
+report = Path("validator-report.md").read_text()
+waived_line = re.search(r"^Waived testcase ids:\s*(.*)$", report, re.MULTILINE)
+waived = {x.strip() for x in (waived_line.group(1) if waived_line else "").split(",") if x.strip()}
+
+expected_source = len(list(Path("validator/tests/libtiff/tests/cases/source").glob("*.sh")))
+expected_usage = len(list(Path("validator/tests/libtiff/tests/cases/usage").glob("*.sh")))
+assert expected_source >= 5, expected_source
+assert expected_usage >= 170, expected_usage
+assert summary["source_cases"] == expected_source, (summary, expected_source)
+assert summary["usage_cases"] == expected_usage, (summary, expected_usage)
+assert summary["cases"] == expected_source + expected_usage, summary
+assert proof["totals"]["cases"] == summary["cases"], (proof["totals"], summary)
+assert proof["totals"]["casts"] == summary["cases"], proof["totals"]
+assert proof["libraries"][0]["port_commit"] == lock["libraries"][0]["commit"], (proof["libraries"][0], lock["libraries"][0])
+
+failed = []
+for path in sorted(Path("validator/artifacts/libtiff-safe/port/results/libtiff").glob("*.json")):
+    if path.name == "summary.json":
+        continue
+    r = json.loads(path.read_text())
+    if r.get("status") == "failed":
+        failed.append(r["testcase_id"])
+    assert r.get("override_debs_installed") is True, r["testcase_id"]
+    assert r.get("port_commit") == lock["libraries"][0]["commit"], r["testcase_id"]
+assert set(failed).issubset(waived), (failed, waived)
+if not waived:
+    assert not failed, failed
+    assert summary["failed"] == 0, summary
+
+head = subprocess.check_output(["git", "-C", "validator", "rev-parse", "HEAD"], text=True).strip()
+safe_head = subprocess.check_output(["git", "log", "-1", "--format=%H", "--", "safe"], text=True).strip()
+assert f"Validator commit: {head}" in report
+assert f"Safe source commit tested: {safe_head}" in report
 PY
 ```
 
@@ -165,37 +294,28 @@ PY
 - Phase ID: `check_final_validator_senior`
 - Type: `check`
 - Fixed `bounce_target`: `impl_final_validator_clean_run`
-- Purpose: Review all validator-related changes, report completeness, residual risk, and workspace hygiene. Distinguish new unintended tracked changes from preexisting untracked Python bytecode directories and the intentionally excluded nested `validator/` checkout.
+- Purpose: Final architectural review of scope, provenance, test coverage, compatibility risk, and report completeness.
 - Commands:
 
 ```bash
 git status --short
-git log --oneline -n 8
 git show --stat --format=fuller HEAD
-git show -- safe/src safe/capi safe/test safe/tools safe/debian safe/scripts validator-report.md
 git -C validator status --short
-git -C validator diff -- tests/libtiff tests/_shared repositories.yml test.sh tools || true
-python3 - <<'PY'
-import json
-from pathlib import Path
-summary = json.loads(Path("validator/artifacts/libtiff-safe/port/results/libtiff/summary.json").read_text())
-proof = json.loads(Path("validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json").read_text())
-print("summary:", summary)
-print("proof totals:", proof["totals"])
-print("validator report bytes:", Path("validator-report.md").stat().st_size)
-PY
-rg -n "TODO|FIXME|panic!|unimplemented!" safe/src safe/capi safe/test validator-report.md || true
-rg -n "Validator commit:|Safe source commit tested:|Checks executed:|Failures found:|Waived testcase ids:|Final status" validator-report.md
+git -C validator diff -- tests/libtiff tests/_shared repositories.yml test.sh tools
+test -z "$(git -C validator status --porcelain -- tests/libtiff tests/_shared repositories.yml test.sh tools)"
+rg -n "Final status|Validator commit:|Safe source commit tested:|Checks executed:|Failures found:|Waived testcase ids:|135|175|source|usage|casts|proof|package|fixes applied" validator-report.md
 ```
 
 ## Success Criteria
 
 - Full safe compatibility matrix passes.
-- Full libtiff validator matrix passes with zero unexpected failures.
-- Final report matches the artifacts on disk.
-- The final `validator-report.md` states the validator commit, safe source commit, commands executed, checks executed, failures found, fixes applied, waivers if any, and final clean or waiver-limited status.
-- Validator tests and shared scripts remain unchanged.
+- Validator unit, testcase manifest, and case-count checks pass against the phase-1-selected validator checkout.
+- Final validator artifacts match the final safe commit and validator commit.
+- If there are no waivers, `summary["failed"] == 0`; if waivers exist, every remaining failed testcase is exactly listed on `Waived testcase ids:`.
+- Proof totals match summary counts and casts equal total cases.
+- Closure report states validator commit, safe source commit, checks executed, final counts, failures, fixes, waivers, artifact paths, and final status.
+- Validator runtime files remain unchanged.
 
 ## Git Commit Requirement
 
-The implementer must commit work to git before yielding. If there are no applicable code or report changes, the implementer must create an empty phase commit with a message naming `impl_final_validator_clean_run`.
+The implementer must commit work to git before yielding. If the phase only updates the report or has no code change, commit the report change or create an empty phase commit naming `impl_final_validator_clean_run`.
