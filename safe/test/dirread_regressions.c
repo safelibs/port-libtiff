@@ -358,7 +358,7 @@ int main(void)
     expect(compression == COMPRESSION_NONE,
            "unexpected default Compression value");
     capture_print_directory(tif, 0, print_buffer, sizeof(print_buffer));
-    expect(strstr(print_buffer, "Compression:") != NULL,
+    expect(strstr(print_buffer, "Compression Scheme: None") != NULL,
            "missing default Compression print output");
     TIFFClose(tif);
     unlink(path_zero_ascii);
