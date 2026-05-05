@@ -1409,6 +1409,7 @@ static int safe_is_printed_in_summary(uint32_t tag)
         case TIFFTAG_ROWSPERSTRIP:
         case TIFFTAG_PLANARCONFIG:
         case TIFFTAG_RESOLUTIONUNIT:
+        case TIFFTAG_JPEGTABLES:
             return 1;
         default:
             return 0;
@@ -1679,6 +1680,15 @@ void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
         fprintf(fd, "  %s: ", TIFFFieldName(field));
         safe_print_value_list(fd, tag, type, count, data, flags);
         fputc('\n', fd);
+    }
+
+    {
+        uint32_t jpeg_table_count = 0;
+        const void *jpeg_tables = NULL;
+        if (TIFFGetField(tif, TIFFTAG_JPEGTABLES, &jpeg_table_count,
+                         &jpeg_tables))
+            fprintf(fd, "  JPEG Tables: (%" PRIu32 " bytes)\n",
+                    jpeg_table_count);
     }
 
     if ((flags & TIFFPRINT_STRIPS) != 0)

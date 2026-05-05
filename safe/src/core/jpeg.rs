@@ -1,4 +1,4 @@
-use super::directory::get_tag_value;
+use super::directory::{get_tag_value, safe_tiff_set_field_marshaled_nondirty};
 use super::CodecGeometry;
 use crate::abi::TIFFDataType;
 use crate::{emit_error_message, read_from_proc, seek_in_proc, tif_inner, TIFF, TIFF_UPSAMPLED};
@@ -579,6 +579,71 @@ fn maybe_reconstruct_abbreviated_jpeg_stream(tif: *mut TIFF, input: &[u8]) -> Op
     Some(bytes)
 }
 
+fn jpeg_marker_has_length(marker: u8) -> bool {
+    !matches!(marker, 0x01 | 0xd0..=0xd9)
+}
+
+fn extract_jpeg_tables_stream(input: &[u8]) -> Option<Vec<u8>> {
+    if input.len() < 4 || input[0] != 0xff || input[1] != 0xd8 {
+        return None;
+    }
+
+    let mut pos = 2usize;
+    let mut tables = vec![0xff, 0xd8];
+    let mut found_table = false;
+    while pos + 1 < input.len() {
+        while pos < input.len() && input[pos] == 0xff {
+            pos += 1;
+        }
+        if pos >= input.len() {
+            break;
+        }
+        let marker = input[pos];
+        pos += 1;
+        if marker == 0xda || marker == 0xd9 {
+            break;
+        }
+        if !jpeg_marker_has_length(marker) {
+            continue;
+        }
+        if pos + 2 > input.len() {
+            return None;
+        }
+        let segment_len = u16::from_be_bytes([input[pos], input[pos + 1]]) as usize;
+        if segment_len < 2 || pos + segment_len > input.len() {
+            return None;
+        }
+        if matches!(marker, 0xc4 | 0xdb) {
+            tables.extend_from_slice(&[0xff, marker]);
+            tables.extend_from_slice(&input[pos..pos + segment_len]);
+            found_table = true;
+        }
+        pos += segment_len;
+    }
+
+    if !found_table {
+        return None;
+    }
+    tables.extend_from_slice(&[0xff, 0xd9]);
+    Some(tables)
+}
+
+fn ensure_jpeg_tables_tag(tif: *mut TIFF, encoded: &[u8]) {
+    if copy_u8_array_tag(tif, TAG_JPEGTABLES).is_some() {
+        return;
+    }
+    let Some(tables) = extract_jpeg_tables_stream(encoded) else {
+        return;
+    };
+    let _ = safe_tiff_set_field_marshaled_nondirty(
+        tif,
+        TAG_JPEGTABLES,
+        TIFFDataType::TIFF_UNDEFINED,
+        tables.len() as u64,
+        tables.as_ptr().cast::<c_void>(),
+    );
+}
+
 pub(crate) fn maybe_reconstruct_jpeg_stream(
     tif: *mut TIFF,
     input: &[u8],
@@ -877,6 +942,7 @@ pub(crate) fn jpeg_encode_bytes(
         }
         let out = slice::from_raw_parts(out_ptr, out_len).to_vec();
         safe_tiff_external_codec_free(out_ptr.cast::<c_void>());
+        ensure_jpeg_tables_tag(tif, &out);
         Some(out)
     }
 }
