@@ -1,7 +1,7 @@
 # Validator Baseline Report
 
 Validator commit: 87b321fe728340d6fc6dd2f638583cca82c667c3
-Safe source commit tested: 794a27d0176788ab04e04b827a0cb7b3af41026a
+Safe source commit tested: 95972bf6fd80e21bfaba0fb1685f532674ef299b
 Checks executed: validator runtime dirty-check; stash preexisting validator workflow.yaml edit; fetch origin main; checkout detached origin/main; libtiff testcase count check; make -C validator unit; make -C validator check-testcases; safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist; safe/scripts/check-packaged-install-surface.sh with existing package-smoke CMake/pkg-config fixtures; scripts/lib/build_port_lock.py local override lock generation; full validator port matrix with --record-casts; verify_proof_artifacts with --require-casts; focused cargo/CMake/docker reproductions for safe fixes; final package rebuild, lock regeneration, matrix, proof, and JSON artifact audit; impl_package_provenance_waiver_gate lock/proof/per-case provenance audit; impl_package_provenance_waiver_gate packaged install-surface smoke check; impl_source_cli_failures cargo/CMake/CTest/upstream-shell/public-surface checks; impl_source_cli_failures package rebuild, lock regeneration, full validator matrix with --record-casts, proof generation, and JSON artifact audit
 Failures found: 0 final failures; 0 package/provenance failures in impl_package_provenance_waiver_gate; 0 unwaived source or CLI validator failures in impl_source_cli_failures; 8 failures found on the first 175-case baseline and fixed in safe, then 1 remaining JPEG-table failure fixed in safe before the clean phase-1 run
 Waived testcase ids:
@@ -13,7 +13,7 @@ Waived testcase ids:
 - Library: `libtiff`
 - Mode: `port`
 - Validator checkout: `validator/`, detached at `87b321fe728340d6fc6dd2f638583cca82c667c3`
-- Safe commit tested in final validator run: `794a27d0176788ab04e04b827a0cb7b3af41026a`
+- Safe commit tested in final validator run: `95972bf6fd80e21bfaba0fb1685f532674ef299b`
 - Final result: `175/175` passed, `0` failed, `5` source cases, `170` usage cases, `175` casts
 - Waivers: none
 
@@ -48,10 +48,10 @@ Package/provenance failures found: none. Waiver candidates: none. Original-mode 
 - Date: 2026-05-04 MST
 - Disposition: clean; all source cases and CLI-oriented usage cases pass in the refreshed validator matrix.
 - Validator commit: `87b321fe728340d6fc6dd2f638583cca82c667c3`
-- Safe source commit tested: `794a27d0176788ab04e04b827a0cb7b3af41026a`
+- Safe source commit tested: `95972bf6fd80e21bfaba0fb1685f532674ef299b`
 - Canonical package set: `libtiff6`, `libtiffxx6`, `libtiff-dev`, `libtiff-tools`
 
-The phase consumed the prepared validator checkout and artifacts in place. The incoming per-case result JSON already had no unwaived source failures and no unwaived CLI-oriented failures. Local verification did expose one safe regression-test mismatch: `safe/test/dirread_regressions.c` checked for `Compression:` even though upstream `original/libtiff/tif_print.c` and the safe implementation print `Compression Scheme:`. The regression now asserts the exact upstream-compatible `Compression Scheme: None` line for a defaulted compression tag.
+The phase consumed the prepared validator checkout and artifacts in place. The incoming per-case result JSON already had no unwaived source failures and no unwaived CLI-oriented failures. Local verification did expose one safe regression-test mismatch: `safe/test/dirread_regressions.c` checked for `Compression:` even though upstream `original/libtiff/tif_print.c` and the safe implementation print `Compression Scheme:`. The regression now asserts the exact upstream-compatible `Compression Scheme: None` line for a defaulted compression tag. A follow-up verifier run also found that `safe/abi/public-surface.inputs.json` had a stale digest for the Release `safe/build/libtiff/libtiff.so.6`; it was regenerated with `safe/scripts/check-public-surface.py generate` and now validates with `--check`.
 
 Source testcase disposition:
 
@@ -65,7 +65,7 @@ Source testcase disposition:
 
 CLI-oriented validator testcase disposition: all `tiffcp`, `tiffdump`, `tiffinfo`, `tiff2bw`, `tiff2pdf`, `tiffcrop`, `tiffmedian`, and `tiffsplit` source/usage cases passed; final unwaived source/CLI failures: none.
 
-Regression tests added or updated: `safe/test/dirread_regressions.c` now covers the default Compression print line using the upstream `TIFFPrintDirectory` text. Source files changed in this phase: `safe/test/dirread_regressions.c` only; no library runtime behavior or copied validator runtime file was changed.
+Regression tests added or updated: `safe/test/dirread_regressions.c` now covers the default Compression print line using the upstream `TIFFPrintDirectory` text. Source files changed in this phase: `safe/test/dirread_regressions.c` and `safe/abi/public-surface.inputs.json`; no library runtime behavior or copied validator runtime file was changed.
 
 Focused local verification for this phase:
 
@@ -81,7 +81,7 @@ python3 safe/scripts/check-public-surface.py \
   --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt
 ```
 
-The final artifact audit found `175/175` passed, `0` failed, `5` source cases, `170` usage cases, and `175` casts. Every per-case result JSON reports `port_commit: 794a27d0176788ab04e04b827a0cb7b3af41026a`, matching `git log -1 --format=%H -- safe`.
+The final artifact audit found `175/175` passed, `0` failed, `5` source cases, `170` usage cases, and `175` casts. Every per-case result JSON reports `port_commit: 95972bf6fd80e21bfaba0fb1685f532674ef299b`, matching `git log -1 --format=%H -- safe`.
 
 The previous report recorded a clean run at validator commit `5d908be26e33f071e119ffe1a52e3149f1e5ec4e` and safe commit `61f38826b440c30b5099410a52e1af227832622e`: `135/135` passed, `5` source plus `130` usage, with casts and no waivers. Validator `main` now contributes `40` additional libtiff usage cases, bringing the checked-out tree to `175` total cases. The added coverage includes BigTIFF write/read variants, CCITT RLE, float32 and int32 roundtrips, metadata tags, rational resolution, ICC profiles, orientation, palette colormap, SubIFD, additional `tiffcp`, `tiffcrop`, `tiff2pdf`, `tiffinfo`, `tiffsplit`, tile, rows-per-strip, and strip byte count checks.
 
@@ -126,11 +126,12 @@ make -C validator check-testcases
 
 ## Safe Fixes
 
-Two safe-port implementation commits were made before the phase-1 package rebuild, and one source/CLI regression-test commit was made before the final phase-7 package rebuild:
+Two safe-port implementation commits were made before the phase-1 package rebuild, and two source/CLI verifier commits were made before the final phase-7 package rebuild:
 
 - `9552cf46de26e98d55bde8dd286eb0012f63cf5f` — fixed CCITT RLE decode lookahead padding and upstream-compatible `TIFFPrintDirectory` names/strip summaries.
 - `0bb04537cc14dce0ddb952f5232681e12d60353c` — added JPEG table extraction during JPEG encode and printed `JPEG Tables: (N bytes)` in `TIFFPrintDirectory`.
 - `794a27d0176788ab04e04b827a0cb7b3af41026a` — aligned the default Compression print regression with upstream `Compression Scheme: None` output.
+- `95972bf6fd80e21bfaba0fb1685f532674ef299b` — refreshed the public-surface input manifest digest for the Release `libtiff.so.6` used by verifier checks.
 
 Focused verification included:
 
@@ -174,7 +175,7 @@ Lock generation:
 
 ```bash
 SAFELIBS_LIBRARY=libtiff \
-SAFELIBS_COMMIT_SHA=794a27d0176788ab04e04b827a0cb7b3af41026a \
+SAFELIBS_COMMIT_SHA=95972bf6fd80e21bfaba0fb1685f532674ef299b \
 SAFELIBS_DIST_DIR="$PWD/safe/dist" \
 SAFELIBS_VALIDATOR_DIR="$PWD/validator" \
 SAFELIBS_LOCK_PATH="$PWD/validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json" \
@@ -184,7 +185,7 @@ python3 scripts/lib/build_port_lock.py
 
 - Override `.deb` root: `validator/artifacts/debs/local/libtiff/`
 - Local lock: `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`
-- Lock release tag: `build-794a27d01767`
+- Lock release tag: `build-95972bf6fd80`
 - Result JSON: `validator/artifacts/libtiff-safe/port/results/libtiff/*.json`
 - Logs: `validator/artifacts/libtiff-safe/port/logs/libtiff/*.log`
 - Casts: `validator/artifacts/libtiff-safe/port/casts/libtiff/*.cast`
@@ -235,7 +236,7 @@ Final `summary.json`:
 }
 ```
 
-Final proof totals match the summary: `175` cases, `175` passed, `0` failed, `175` casts. `proof.libraries[0].port_commit`, `lock.libraries[0].commit`, and `git log -1 --format=%H -- safe` all equal `794a27d0176788ab04e04b827a0cb7b3af41026a`.
+Final proof totals match the summary: `175` cases, `175` passed, `0` failed, `175` casts. `proof.libraries[0].port_commit`, `lock.libraries[0].commit`, and `git log -1 --format=%H -- safe` all equal `95972bf6fd80e21bfaba0fb1685f532674ef299b`.
 
 ## Failure Buckets
 
