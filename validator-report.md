@@ -2,8 +2,8 @@
 
 Validator commit: 87b321fe728340d6fc6dd2f638583cca82c667c3
 Safe source commit tested: 0bb04537cc14dce0ddb952f5232681e12d60353c
-Checks executed: validator runtime dirty-check; stash preexisting validator workflow.yaml edit; fetch origin main; checkout detached origin/main; libtiff testcase count check; make -C validator unit; make -C validator check-testcases; safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist; safe/scripts/check-packaged-install-surface.sh with existing package-smoke CMake/pkg-config fixtures; scripts/lib/build_port_lock.py local override lock generation; full validator port matrix with --record-casts; verify_proof_artifacts with --require-casts; focused cargo/CMake/docker reproductions for safe fixes; final package rebuild, lock regeneration, matrix, proof, and JSON artifact audit
-Failures found: 0 final failures; 8 failures found on the first 175-case baseline and fixed in safe, then 1 remaining JPEG-table failure fixed in safe before the final clean run
+Checks executed: validator runtime dirty-check; stash preexisting validator workflow.yaml edit; fetch origin main; checkout detached origin/main; libtiff testcase count check; make -C validator unit; make -C validator check-testcases; safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist; safe/scripts/check-packaged-install-surface.sh with existing package-smoke CMake/pkg-config fixtures; scripts/lib/build_port_lock.py local override lock generation; full validator port matrix with --record-casts; verify_proof_artifacts with --require-casts; focused cargo/CMake/docker reproductions for safe fixes; final package rebuild, lock regeneration, matrix, proof, and JSON artifact audit; impl_package_provenance_waiver_gate lock/proof/per-case provenance audit; impl_package_provenance_waiver_gate packaged install-surface smoke check
+Failures found: 0 final failures; 0 package/provenance failures in impl_package_provenance_waiver_gate; 8 failures found on the first 175-case baseline and fixed in safe, then 1 remaining JPEG-table failure fixed in safe before the final clean run
 Waived testcase ids:
 
 ## Summary
@@ -16,6 +16,31 @@ Waived testcase ids:
 - Safe commit tested in final validator run: `0bb04537cc14dce0ddb952f5232681e12d60353c`
 - Final result: `175/175` passed, `0` failed, `5` source cases, `170` usage cases, `175` casts
 - Waivers: none
+
+## Package Provenance Gate
+
+- Phase: `impl_package_provenance_waiver_gate`
+- Date: 2026-05-04 MST
+- Disposition: clean; no safe packaging change, package rebuild, validator rerun, or waiver was required in this phase.
+- Validator commit: `87b321fe728340d6fc6dd2f638583cca82c667c3`
+- Safe source commit tested: `0bb04537cc14dce0ddb952f5232681e12d60353c`
+- Canonical package set: `libtiff6`, `libtiffxx6`, `libtiff-dev`, `libtiff-tools`
+
+The package gate consumed the prepared phase 1 artifacts in place. `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json` records all four canonical packages, `unported_original_packages: []`, and release tag `build-0bb04537cc14`. The lock sizes and SHA-256 values match the `.deb` files under `validator/artifacts/debs/local/libtiff/`, and `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json` records the same safe source commit.
+
+Every per-case result JSON under `validator/artifacts/libtiff-safe/port/results/libtiff/` reports `override_debs_installed: true`, the canonical packages in order, and `port_commit: 0bb04537cc14dce0ddb952f5232681e12d60353c`. The existing packaged install-surface smoke check also passed with:
+
+```bash
+safe/scripts/check-packaged-install-surface.sh \
+  --dist-dir safe/dist \
+  --cmake-project validator/artifacts/libtiff-safe/package-smoke/cmake-target \
+  --cmake-project-no-target validator/artifacts/libtiff-safe/package-smoke/cmake-targetless \
+  --pkgconfig-source validator/artifacts/libtiff-safe/package-smoke/test.c \
+  --cxx-smoke safe/test/install/tiffxx_staged_smoke.cpp \
+  --input-tiff original/test/images/rgb-3c-8b.tiff
+```
+
+Package/provenance failures found: none. Waiver candidates: none. Original-mode evidence was not collected in this phase because there are no validator-bug waiver candidates.
 
 The previous report recorded a clean run at validator commit `5d908be26e33f071e119ffe1a52e3149f1e5ec4e` and safe commit `61f38826b440c30b5099410a52e1af227832622e`: `135/135` passed, `5` source plus `130` usage, with casts and no waivers. Validator `main` now contributes `40` additional libtiff usage cases, bringing the checked-out tree to `175` total cases. The added coverage includes BigTIFF write/read variants, CCITT RLE, float32 and int32 roundtrips, metadata tags, rational resolution, ICC profiles, orientation, palette colormap, SubIFD, additional `tiffcp`, `tiffcrop`, `tiff2pdf`, `tiffinfo`, `tiffsplit`, tile, rows-per-strip, and strip byte count checks.
 
