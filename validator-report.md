@@ -2,7 +2,7 @@
 
 Validator commit: bde8758883d12061dfb2621b6149949909c803f8
 Safe source commit tested: 95972bf6fd80e21bfaba0fb1685f532674ef299b
-Final status: baseline recorded; 253/255 validator cases passed, 2 failed, 255 casts recorded, no waivers.
+Final status: source/regression phase recorded; 253/255 validator cases passed, 2 failed, 255 casts recorded, no waivers.
 Failures found: 2 usage/runtime failures; 0 package/provenance failures; 0 source/regression failures; 0 validator-bug candidates.
 
 Package/provenance baseline testcase ids: ,
@@ -186,6 +186,15 @@ None. Every failed testcase has `override_debs_installed: true`, all four canoni
 
 None. All 5 source cases and all 10 regression cases passed.
 
+#### `impl_source_regression_fixes`
+
+- Date: 2026-05-12 MST -0700.
+- Source/regression baseline testcase ids remained empty, and the refreshed per-case validator JSON contains no failed `source` or `regression` cases.
+- Ran focused local CTest coverage for the source/CVE surfaces: `test_write_read_tags`, `test_open_options`, `test_ifd_loop_detection`, `dirread_regressions`, `dirwrite_regressions`, and `strile_regressions`.
+- Rebuilt `safe/dist/*.deb` from clean `safe/` state, regenerated `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`, reran the full port matrix, and regenerated `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`.
+- The lock and proof still record safe source commit `95972bf6fd80e21bfaba0fb1685f532674ef299b`; proof status and matrix status are both `0`.
+- Current failure partition remains unchanged: package/provenance none, source/regression none, usage/runtime `usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output` and `usage-python3-pil-r11-tiff-rgba-extra-samples-alpha`, waivers none.
+
 ### Usage/runtime
 
 `usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output`
@@ -226,4 +235,4 @@ None. No testcase is waived in this baseline. Because `Waived testcase ids:` is 
 
 No `safe/` source, test, packaging, or script changes were required in this phase. `safe/` was clean before package build and remained clean after the validator run. Validator runtime inputs under `validator/tests/libtiff`, `validator/tests/_shared`, `validator/repositories.yml`, `validator/test.sh`, and `validator/tools` were not modified.
 
-The only unrelated parent worktree modification visible before this phase was `workflow.yaml`; it was not read as authoritative, staged, or committed by this phase.
+`workflow.yaml` was not read as authoritative, modified, staged, or committed by this phase.
