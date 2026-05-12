@@ -1,27 +1,27 @@
 # Validator Baseline Report
 
 Validator commit: bde8758883d12061dfb2621b6149949909c803f8
-Safe source commit tested: 95972bf6fd80e21bfaba0fb1685f532674ef299b
-Final status: source/regression phase recorded; 253/255 validator cases passed, 2 failed, 255 casts recorded, no waivers.
-Failures found: 2 usage/runtime failures; 0 package/provenance failures; 0 source/regression failures; 0 validator-bug candidates.
+Safe source commit tested: ad241b4c0c785a04412f0665242db41f8eca309a
+Final status: usage/runtime phase fixed the remaining failures; 255/255 validator cases passed, 0 failed, 255 casts recorded, no waivers.
+Failures found: 0 usage/runtime failures; 0 package/provenance failures; 0 source/regression failures; 0 validator-bug candidates.
 
 Package/provenance baseline testcase ids: ,
 Source/regression baseline testcase ids: ,
 Usage/runtime baseline testcase ids: usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output, usage-python3-pil-r11-tiff-rgba-extra-samples-alpha
 Current package/provenance failed testcase ids: ,
 Current source/regression failed testcase ids: ,
-Current usage/runtime failed testcase ids: usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output, usage-python3-pil-r11-tiff-rgba-extra-samples-alpha
+Current usage/runtime failed testcase ids: ,
 Waived testcase ids: ,
 
 ## Phase
 
-- Phase: `impl_validator_baseline`
+- Phase: `impl_usage_runtime_fixes`
 - Date: 2026-05-12 MST -0700
 - Library: `libtiff`
 - Validator mode: `port`
 - Validator checkout: `validator/`, detached at `bde8758883d12061dfb2621b6149949909c803f8`
-- Safe source commit tested: `95972bf6fd80e21bfaba0fb1685f532674ef299b`
-- Release tag in local lock: `build-95972bf6fd80`
+- Safe source commit tested: `ad241b4c0c785a04412f0665242db41f8eca309a`
+- Release tag in local lock: `build-ad241b4c0c78`
 - Canonical packages: `libtiff6`, `libtiffxx6`, `libtiff-dev`, `libtiff-tools`
 
 ## Counts
@@ -40,7 +40,7 @@ Final artifact counts:
 | `validator/artifacts/libtiff-safe/port/logs/libtiff/*.log` | 256 | 255 testcase logs plus `summary.log` |
 | `validator/artifacts/libtiff-safe/port/casts/libtiff/*.cast` | 255 | one cast per testcase |
 
-`summary.json` reports `passed: 253`, `failed: 2`, `source_cases: 5`, `usage_cases: 240`, `regression_cases: 10`, `cases: 255`, and `casts: 255`. `proof/libtiff-safe-port-proof.json` reports matching totals.
+`summary.json` reports `passed: 255`, `failed: 0`, `source_cases: 5`, `usage_cases: 240`, `regression_cases: 10`, `cases: 255`, and `casts: 255`. `proof/libtiff-safe-port-proof.json` reports matching totals.
 
 ## Commands Executed
 
@@ -144,11 +144,11 @@ Port matrix and proof generation:
 
 ## Package Artifacts
 
-The local lock at `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json` records all four canonical packages, `commit: 95972bf6fd80e21bfaba0fb1685f532674ef299b`, `release_tag: build-95972bf6fd80`, and `unported_original_packages: []`.
+The local lock at `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json` records all four canonical packages, `commit: ad241b4c0c785a04412f0665242db41f8eca309a`, `release_tag: build-ad241b4c0c78`, and `unported_original_packages: []`.
 
 | Package | Filename | Size | SHA-256 |
 | --- | --- | ---: | --- |
-| `libtiff6` | `libtiff6_4.5.1+git230720-4ubuntu2.5+safelibs1_amd64.deb` | 642830 | `25eaa567091a89711dd202c15c87e2196985afeb0b027306288f747d1e8e6152` |
+| `libtiff6` | `libtiff6_4.5.1+git230720-4ubuntu2.5+safelibs1_amd64.deb` | 643506 | `daeee5f546ad8f0c1da0998c999271a5b11105b0c32995ab61cc97fc252cd986` |
 | `libtiffxx6` | `libtiffxx6_4.5.1+git230720-4ubuntu2.5+safelibs1_amd64.deb` | 12306 | `4e8990c26cec0be672f64137d65dcd1543b1b6917633e41b2f91406d78236141` |
 | `libtiff-dev` | `libtiff-dev_4.5.1+git230720-4ubuntu2.5+safelibs1_amd64.deb` | 35732 | `c18f9474273dfaa47fb48cb031a3b99d7c5e7ea8dde8c18b5d4f7142547f1323` |
 | `libtiff-tools` | `libtiff-tools_4.5.1+git230720-4ubuntu2.5+safelibs1_amd64.deb` | 200508 | `10df893f1f813e5f31f57dc3426469c8131c2878b9a6db7445336ac90d858f1b` |
@@ -164,7 +164,7 @@ Package-smoke inputs were present and left untouched:
 - Matrix status: `validator/artifacts/libtiff-safe/port/matrix-status.txt` contains `0`.
 - Proof status: `validator/artifacts/libtiff-safe/proof/proof-status.txt` contains `0`.
 - Proof JSON: `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`.
-- The proof `mode` is `port`, library is `libtiff`, and `port_commit` is `95972bf6fd80e21bfaba0fb1685f532674ef299b`.
+- The proof `mode` is `port`, library is `libtiff`, and `port_commit` is `ad241b4c0c785a04412f0665242db41f8eca309a`.
 
 ## Baseline Failure Ledger
 
@@ -180,7 +180,7 @@ None. Every failed testcase has `override_debs_installed: true`, all four canoni
 - Verified the staged package install surface with `safe/scripts/check-packaged-install-surface.sh`, including C, C++, pkg-config, CMake target, and CMake targetless smoke coverage.
 - Verified public surface metadata with `safe/scripts/check-public-surface.py --check --must-export _TIFFcalloc TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFStreamOpen --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt`.
 - Refreshed `validator/artifacts/debs/local/libtiff/*.deb` and `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`; the lock still records commit `95972bf6fd80e21bfaba0fb1685f532674ef299b`, all four canonical packages, and `unported_original_packages: []`.
-- Current failure partition remains unchanged: package/provenance none, source/regression none, usage/runtime `usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output` and `usage-python3-pil-r11-tiff-rgba-extra-samples-alpha`, waivers none.
+- Current failure partition after `impl_usage_runtime_fixes`: package/provenance none, source/regression none, usage/runtime none, waivers none.
 
 ### Source/regression
 
@@ -193,7 +193,7 @@ None. All 5 source cases and all 10 regression cases passed.
 - Ran focused local CTest coverage for the source/CVE surfaces: `test_write_read_tags`, `test_open_options`, `test_ifd_loop_detection`, `dirread_regressions`, `dirwrite_regressions`, and `strile_regressions`.
 - Rebuilt `safe/dist/*.deb` from clean `safe/` state, regenerated `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`, reran the full port matrix, and regenerated `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`.
 - The lock and proof still record safe source commit `95972bf6fd80e21bfaba0fb1685f532674ef299b`; proof status and matrix status are both `0`.
-- Current failure partition remains unchanged: package/provenance none, source/regression none, usage/runtime `usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output` and `usage-python3-pil-r11-tiff-rgba-extra-samples-alpha`, waivers none.
+- Current failure partition after `impl_usage_runtime_fixes`: package/provenance none, source/regression none, usage/runtime none, waivers none.
 
 ### Usage/runtime
 
@@ -215,6 +215,16 @@ None. All 5 source cases and all 10 regression cases passed.
 - Failure: testcase command exited with status 1 while verifying Pillow RGBA TIFF `SamplesPerPixel == 4` and `ExtraSamples == (2,)`, followed by `tiffinfo` checks for `Extra Samples: 1<unassoc-alpha>` and `Samples/Pixel: 4`.
 - Initial remediation area: RGBA alpha tag write/read behavior through `safe/src/rgba.rs`, `safe/src/core/directory.rs`, `safe/src/core/field_tables.rs`, `safe/src/core/field_registry.rs`, and the varargs tag paths in `safe/capi/tiff_placeholder.c`.
 
+#### `impl_usage_runtime_fixes`
+
+- Date: 2026-05-12 MST -0700.
+- Added regression coverage in `safe/test/validator_usage_jpeg_encode.c`, `safe/test/validator_usage_tools.sh`, and `safe/test/test_rgba_readers.c` for `TIFFReadRawStrip(..., -1)`, `tiff2pdf -j`, and `Extra Samples: 1<unassoc-alpha>` directory output.
+- Fixed `safe/src/strile.rs` so `TIFFReadRawStrip` and `TIFFReadRawTile` accept `size == -1` as the libtiff-compatible request for the full raw strile byte count.
+- Fixed `safe/capi/tiff_placeholder.c` so `TIFFPrintDirectory` prints `ExtraSamples` with upstream-compatible `Extra Samples: <count><...>` names and avoids a duplicate generic `ExtraSamples` line.
+- Ran focused local CTest coverage: `test_rgba_readers`, `validator_usage_jpeg_encode`, and `validator_usage_tools`.
+- Committed safe runtime/test changes at `ad241b4c0c785a04412f0665242db41f8eca309a`, rebuilt `safe/dist/*.deb` from a clean safe tree, regenerated `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`, reran the full port matrix, and regenerated `validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json`.
+- The latest per-case validator JSON contains no failed testcase ids; current package/provenance, source/regression, usage/runtime, and waiver partitions are all empty.
+
 ### Validator-bug candidates
 
 None. No testcase is waived in this baseline. Because `Waived testcase ids:` is empty, no original-mode waiver evidence run was required.
@@ -233,6 +243,6 @@ None. No testcase is waived in this baseline. Because `Waived testcase ids:` is 
 
 ## Artifact Discipline
 
-No `safe/` source, test, packaging, or script changes were required in this phase. `safe/` was clean before package build and remained clean after the validator run. Validator runtime inputs under `validator/tests/libtiff`, `validator/tests/_shared`, `validator/repositories.yml`, `validator/test.sh`, and `validator/tools` were not modified.
+`safe/` runtime and regression-test changes were committed before package build, lock generation, and validator rerun. `safe/` was clean before package build and remained clean after the validator run. Validator runtime inputs under `validator/tests/libtiff`, `validator/tests/_shared`, `validator/repositories.yml`, `validator/test.sh`, and `validator/tools` were not modified.
 
 `workflow.yaml` was not read as authoritative, modified, staged, or committed by this phase.
