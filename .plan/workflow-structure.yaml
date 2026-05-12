@@ -7,56 +7,51 @@ phases:
     type: implement
     bounce_target: null
     required_preexisting_inputs:
-      - validator/.git
-      - validator/workflow.yaml
-      - validator-report.md
-      - validator/artifacts/
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
+      - .plan/plan.md
       - original/
       - safe/
-      - safe/dist/
-      - safe/Cargo.toml
-      - safe/CMakeLists.txt
-      - safe/debian/control
-      - safe/scripts/build-deb.sh
-      - safe/scripts/check-packaged-install-surface.sh
-      - safe/scripts/build-link-compat-objects.sh
-      - safe/scripts/link-and-run-link-compat.sh
-      - safe/scripts/check-public-surface.py
-      - safe/scripts/run-upstream-shell-tests.sh
       - safe/test/
       - safe/test/images/
       - safe/test/refs/
-      - safe/abi/public-surface.json
-      - safe/abi/public-surface.inputs.json
-      - safe/abi/platform-excluded-linux.txt
-      - safe/capi/libtiff-safe.map
-      - safe/capi/libtiffxx-safe.map
-      - scripts/check-layout.sh
+      - safe/Cargo.toml
+      - safe/Cargo.lock
+      - safe/CMakeLists.txt
+      - safe/debian/control
+      - safe/debian/rules
+      - safe/scripts/build-deb.sh
+      - safe/scripts/check-packaged-install-surface.sh
+      - safe/scripts/check-public-surface.py
+      - safe/scripts/build-link-compat-objects.sh
+      - safe/scripts/link-and-run-link-compat.sh
+      - safe/scripts/run-upstream-shell-tests.sh
+      - scripts/lib/build_port_lock.py
       - scripts/build-debs.sh
       - scripts/run-validation-tests.sh
-      - scripts/lib/build_port_lock.py
-      - test-original.sh
-      - dependents.json
+      - scripts/check-layout.sh
+      - validator-report.md
+      - validator/.git
       - all_cves.json
       - relevant_cves.json
+      - dependents.json
+      - test-original.sh
+      - validator/artifacts/
+      - validator/artifacts/libtiff-safe/package-smoke/
   - order: 2
     id: check_validator_baseline_tester
     type: check
     bounce_target: impl_validator_baseline
     required_preexisting_inputs:
       - validator/.git
+      - validator/README.md
       - validator/tests/libtiff/tests/cases/source/
       - validator/tests/libtiff/tests/cases/usage/
+      - validator/tests/libtiff/tests/cases/regression/
       - validator/artifacts/debs/local/libtiff/
       - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
+      - validator/artifacts/libtiff-safe/port/matrix-status.txt
       - validator/artifacts/libtiff-safe/port/results/libtiff/summary.json
+      - validator/artifacts/libtiff-safe/proof/proof-status.txt
       - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
       - validator-report.md
       - safe/
   - order: 3
@@ -70,113 +65,62 @@ phases:
       - validator/repositories.yml
       - validator/test.sh
       - validator/tools/
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
+      - validator/artifacts/libtiff-safe/port/results/libtiff/summary.json
+      - validator/artifacts/libtiff-safe/proof/proof-status.txt
+      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
       - validator-report.md
+      - safe/
   - order: 4
-    id: impl_package_provenance_waiver_gate
+    id: impl_package_provenance_fixes
     type: implement
     bounce_target: null
     required_preexisting_inputs:
       - validator/.git
       - validator/repositories.yml
       - validator-report.md
-      - safe/dist/
-      - validator/artifacts/debs/local/libtiff/
+      - validator/artifacts/libtiff-safe/port/results/libtiff/summary.json
       - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
-      - validator/artifacts/libtiff-safe/port/logs/libtiff/
-      - validator/artifacts/libtiff-safe/port/casts/libtiff/
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
+      - validator/artifacts/libtiff-safe/package-smoke/
       - safe/debian/control
-      - safe/debian/
+      - safe/debian/rules
+      - safe/debian/libtiff-dev.install
+      - safe/debian/libtiff-tools.install
+      - safe/debian/libtiff6.install
+      - safe/debian/libtiff6.symbols
+      - safe/debian/libtiffxx6.install
+      - safe/debian/libtiffxx6.symbols
       - safe/CMakeLists.txt
       - safe/pkgconfig/libtiff-4.pc.in
       - safe/cmake/TiffConfig.cmake.in
       - safe/capi/libtiff-safe.map
       - safe/capi/libtiffxx-safe.map
+      - safe/abi/
+      - safe/abi/platform-excluded-linux.txt
+      - safe/abi/public-surface.inputs.json
+      - safe/abi/public-surface.json
       - safe/scripts/build-deb.sh
       - safe/scripts/check-packaged-install-surface.sh
-      - scripts/lib/build_port_lock.py
-  - order: 5
-    id: check_package_gate_tester
-    type: check
-    bounce_target: impl_package_provenance_waiver_gate
-    required_preexisting_inputs:
-      - validator-report.md
-      - safe/dist/
       - validator/artifacts/debs/local/libtiff/
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
+      - validator/artifacts/libtiff-safe/port/matrix-status.txt
+      - validator/artifacts/libtiff-safe/proof/proof-status.txt
       - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
+  - order: 5
+    id: check_package_provenance_tester
+    type: check
+    bounce_target: impl_package_provenance_fixes
+    required_preexisting_inputs:
+      - safe/
+      - safe/scripts/build-deb.sh
       - safe/scripts/check-packaged-install-surface.sh
+      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/
+      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/
+      - validator/artifacts/libtiff-safe/package-smoke/test.c
       - safe/test/install/tiffxx_staged_smoke.cpp
       - original/test/images/rgb-3c-8b.tiff
   - order: 6
-    id: check_package_gate_senior
+    id: check_package_provenance_senior
     type: check
-    bounce_target: impl_package_provenance_waiver_gate
-    required_preexisting_inputs:
-      - validator/.git
-      - validator/tests/libtiff/
-      - validator/tests/_shared/
-      - validator/repositories.yml
-      - validator/test.sh
-      - validator/tools/
-      - validator-report.md
-  - order: 7
-    id: impl_source_cli_failures
-    type: implement
-    bounce_target: null
-    required_preexisting_inputs:
-      - validator/.git
-      - validator-report.md
-      - validator/artifacts/debs/local/libtiff/
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
-      - validator/artifacts/libtiff-safe/port/logs/libtiff/
-      - validator/artifacts/libtiff-safe/port/casts/libtiff/
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
-      - safe/Cargo.toml
-      - safe/CMakeLists.txt
-      - safe/src/lib.rs
-      - safe/capi/tiff_placeholder.c
-      - safe/src/core/directory.rs
-      - safe/src/strile.rs
-      - safe/src/core/codec.rs
-      - safe/src/core/jpeg.rs
-      - safe/src/rgba.rs
-      - safe/tools/
-      - safe/test/CMakeLists.txt
-      - safe/test/
-      - safe/test/images/
-      - safe/test/refs/
-  - order: 8
-    id: check_source_cli_tester
-    type: check
-    bounce_target: impl_source_cli_failures
-    required_preexisting_inputs:
-      - validator-report.md
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
-      - safe/Cargo.toml
-      - safe/CMakeLists.txt
-      - safe/scripts/run-upstream-shell-tests.sh
-      - safe/scripts/check-public-surface.py
-      - safe/test/
-  - order: 9
-    id: check_source_cli_senior
-    type: check
-    bounce_target: impl_source_cli_failures
+    bounce_target: impl_package_provenance_fixes
     required_preexisting_inputs:
       - validator/.git
       - validator/tests/libtiff/
@@ -186,60 +130,103 @@ phases:
       - validator/tools/
       - validator-report.md
       - safe/
-  - order: 10
-    id: impl_usage_runtime_failures
+      - safe/dist/
+      - safe/scripts/check-public-surface.py
+      - scripts/lib/build_port_lock.py
+  - order: 7
+    id: impl_source_regression_fixes
     type: implement
     bounce_target: null
     required_preexisting_inputs:
       - validator/.git
-      - validator-report.md
-      - validator/artifacts/debs/local/libtiff/
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
+      - validator/tests/libtiff/tests/cases/source/
+      - validator/tests/libtiff/tests/cases/regression/
+      - validator/tests/libtiff/tests/cases/source/c-api-read-write.sh
+      - validator/tests/libtiff/tests/cases/source/malformed-tiff-rejection.sh
+      - validator/tests/libtiff/tests/cases/source/tiffcp-copy.sh
+      - validator/tests/libtiff/tests/cases/source/tiffdump-structure.sh
+      - validator/tests/libtiff/tests/cases/source/tiffinfo-metadata.sh
       - validator/artifacts/libtiff-safe/port/results/libtiff/
       - validator/artifacts/libtiff-safe/port/logs/libtiff/
-      - validator/artifacts/libtiff-safe/port/casts/libtiff/
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
-      - validator/tests/libtiff/tests/cases/usage/
+      - validator/artifacts/libtiff-safe/port/matrix-status.txt
+      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
+      - validator/artifacts/libtiff-safe/proof/proof-status.txt
+      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
+      - validator/artifacts/debs/local/libtiff/
+      - validator-report.md
+      - safe/test/dirread_regressions.c
+      - safe/test/dirwrite_regressions.c
+      - safe/test/strile_regressions.c
+      - safe/test/test_ifd_loop_detection.c
+      - safe/test/test_open_options.c
+      - safe/test/test_write_read_tags.c
+      - safe/test/validator_usage_tools.sh
+      - safe/test/images/
+  - order: 8
+    id: check_source_regression_tester
+    type: check
+    bounce_target: impl_source_regression_fixes
+    required_preexisting_inputs:
+      - safe/
       - safe/Cargo.toml
       - safe/CMakeLists.txt
-      - safe/src/core/directory.rs
-      - safe/src/core/field_tables.rs
-      - safe/src/core/field_registry.rs
-      - safe/src/strile.rs
-      - safe/src/core/codec.rs
-      - safe/src/core/jpeg.rs
-      - safe/src/core/color.rs
-      - safe/src/rgba.rs
-      - safe/capi/tiff_placeholder.c
-      - safe/test/CMakeLists.txt
-      - safe/test/
-      - safe/test/images/
-      - safe/test/refs/
-      - original/test/images/
+      - safe/scripts/run-upstream-shell-tests.sh
+  - order: 9
+    id: check_source_regression_senior
+    type: check
+    bounce_target: impl_source_regression_fixes
+    required_preexisting_inputs:
+      - validator/.git
+      - validator/tests/libtiff/
+      - validator/tests/_shared/
+      - validator/repositories.yml
+      - validator/test.sh
+      - validator/tools/
+      - validator-report.md
+      - safe/
+      - safe/scripts/build-deb.sh
+      - scripts/lib/build_port_lock.py
+  - order: 10
+    id: impl_usage_runtime_fixes
+    type: implement
+    bounce_target: null
+    required_preexisting_inputs:
+      - validator/.git
+      - validator/tests/libtiff/tests/cases/usage/
+      - validator/artifacts/libtiff-safe/port/results/libtiff/
+      - validator/artifacts/libtiff-safe/port/logs/libtiff/
+      - validator/artifacts/libtiff-safe/port/matrix-status.txt
+      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
+      - validator/artifacts/libtiff-safe/proof/proof-status.txt
+      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
+      - validator/artifacts/debs/local/libtiff/
+      - validator-report.md
+      - safe/test/test_rgba_readers.c
+      - safe/test/test_tile_read_write.c
+      - safe/test/validator_usage_jpeg_encode.c
+      - safe/test/validator_usage_tools.sh
+      - safe/test/strile_regressions.c
+      - safe/test/dirwrite_regressions.c
+      - safe/scripts/run-upstream-shell-tests.sh
+      - safe/scripts/build-link-compat-objects.sh
+      - safe/scripts/link-and-run-link-compat.sh
   - order: 11
     id: check_usage_runtime_tester
     type: check
-    bounce_target: impl_usage_runtime_failures
+    bounce_target: impl_usage_runtime_fixes
     required_preexisting_inputs:
-      - validator-report.md
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
-      - safe/dist/
+      - safe/
       - safe/Cargo.toml
       - safe/CMakeLists.txt
       - safe/scripts/run-upstream-shell-tests.sh
       - safe/scripts/build-link-compat-objects.sh
       - safe/scripts/link-and-run-link-compat.sh
-      - safe/test/
+      - safe/scripts/build-deb.sh
       - test-original.sh
   - order: 12
     id: check_usage_runtime_senior
     type: check
-    bounce_target: impl_usage_runtime_failures
+    bounce_target: impl_usage_runtime_fixes
     required_preexisting_inputs:
       - validator/.git
       - validator/tests/libtiff/
@@ -249,39 +236,31 @@ phases:
       - validator/tools/
       - validator-report.md
       - safe/
+      - safe/scripts/build-deb.sh
+      - scripts/lib/build_port_lock.py
   - order: 13
     id: impl_final_validator_clean_run
     type: implement
     bounce_target: null
     required_preexisting_inputs:
       - validator/.git
+      - validator/tests/libtiff/
+      - validator/tests/_shared/
       - validator/repositories.yml
-      - validator/tests/
-      - validator/tools/
       - validator/test.sh
-      - validator-report.md
+      - validator/tools/
+      - validator/artifacts/libtiff-safe/
       - validator/artifacts/debs/local/libtiff/
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
       - validator/artifacts/libtiff-safe/port/results/libtiff/
       - validator/artifacts/libtiff-safe/port/logs/libtiff/
-      - validator/artifacts/libtiff-safe/port/casts/libtiff/
-      - validator/artifacts/libtiff-safe/package-smoke/test.c
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/CMakeLists.txt
-      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/CMakeLists.txt
+      - validator/artifacts/libtiff-safe/port/matrix-status.txt
+      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
+      - validator/artifacts/libtiff-safe/proof/proof-status.txt
+      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
+      - validator-report.md
       - safe/
-      - safe/Cargo.toml
-      - safe/CMakeLists.txt
-      - safe/scripts/check-public-surface.py
-      - safe/scripts/run-upstream-shell-tests.sh
-      - safe/scripts/build-link-compat-objects.sh
-      - safe/scripts/link-and-run-link-compat.sh
-      - safe/scripts/build-deb.sh
-      - safe/scripts/check-packaged-install-surface.sh
-      - safe/test/images/
-      - safe/test/refs/
-      - scripts/lib/build_port_lock.py
-      - original/test/images/
+      - validator/artifacts/libtiff-safe/package-smoke/
+      - original/test/images/rgb-3c-8b.tiff
       - test-original.sh
   - order: 14
     id: check_final_validator_tester
@@ -289,15 +268,26 @@ phases:
     bounce_target: impl_final_validator_clean_run
     required_preexisting_inputs:
       - validator/.git
-      - validator/tests/libtiff/tests/cases/source/
-      - validator/tests/libtiff/tests/cases/usage/
-      - validator/artifacts/debs/local/libtiff/
-      - validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/
-      - validator/artifacts/libtiff-safe/port/casts/libtiff/
-      - validator-report.md
+      - validator/tests/libtiff/
+      - validator/tests/_shared/
+      - validator/repositories.yml
+      - validator/test.sh
+      - validator/tools/
       - safe/
+      - safe/Cargo.toml
+      - safe/CMakeLists.txt
+      - safe/scripts/check-public-surface.py
+      - safe/scripts/run-upstream-shell-tests.sh
+      - safe/scripts/build-link-compat-objects.sh
+      - safe/scripts/link-and-run-link-compat.sh
+      - safe/scripts/build-deb.sh
+      - safe/scripts/check-packaged-install-surface.sh
+      - validator/artifacts/libtiff-safe/package-smoke/cmake-target/
+      - validator/artifacts/libtiff-safe/package-smoke/cmake-targetless/
+      - validator/artifacts/libtiff-safe/package-smoke/test.c
+      - safe/test/install/tiffxx_staged_smoke.cpp
+      - original/test/images/rgb-3c-8b.tiff
+      - test-original.sh
   - order: 15
     id: check_final_validator_senior
     type: check
@@ -309,7 +299,7 @@ phases:
       - validator/repositories.yml
       - validator/test.sh
       - validator/tools/
-      - validator/artifacts/libtiff-safe/proof/libtiff-safe-port-proof.json
-      - validator/artifacts/libtiff-safe/port/results/libtiff/summary.json
       - validator-report.md
       - safe/
+      - safe/dist/
+      - scripts/lib/build_port_lock.py
