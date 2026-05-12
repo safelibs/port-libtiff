@@ -98,7 +98,7 @@
     },
     {
       "path": "safe/build/libtiff/libtiff.so.6",
-      "sha256": "cd017ebc4983eb2677b8204b683341f117487b5bb405e034497053cd1c518ed9"
+      "sha256": "ea22878edca8f6b162bc9c9c7747418c0476c414cae7c9ec3abf6e04593d4a9a"
     },
     {
       "path": "safe/build/libtiff/libtiffxx.so.6",
