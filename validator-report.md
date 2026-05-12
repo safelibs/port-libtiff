@@ -172,6 +172,16 @@ Package-smoke inputs were present and left untouched:
 
 None. Every failed testcase has `override_debs_installed: true`, all four canonical packages were installed from `validator/artifacts/debs/local/libtiff`, the local lock commit matches the safe source commit, and `unported_original_packages` is empty.
 
+#### `impl_package_provenance_fixes`
+
+- Date: 2026-05-12 MST -0700.
+- Package/provenance baseline testcase ids remained empty, so this phase did not require a full validator port-matrix rerun.
+- Rebuilt `safe/dist/*.deb` from clean `safe/` state with `safe/scripts/build-deb.sh --source-dir safe --out-dir safe/dist`.
+- Verified the staged package install surface with `safe/scripts/check-packaged-install-surface.sh`, including C, C++, pkg-config, CMake target, and CMake targetless smoke coverage.
+- Verified public surface metadata with `safe/scripts/check-public-surface.py --check --must-export _TIFFcalloc TIFFReadTile TIFFWriteTile TIFFReadFromUserBuffer TIFFStreamOpen --must-record-linux-exclusion TIFFOpenW TIFFOpenWExt`.
+- Refreshed `validator/artifacts/debs/local/libtiff/*.deb` and `validator/artifacts/libtiff-safe/proof/local-port-debs-lock.json`; the lock still records commit `95972bf6fd80e21bfaba0fb1685f532674ef299b`, all four canonical packages, and `unported_original_packages: []`.
+- Current failure partition remains unchanged: package/provenance none, source/regression none, usage/runtime `usage-python3-pil-r10-tiff-tiff2pdf-jpeg-output` and `usage-python3-pil-r11-tiff-rgba-extra-samples-alpha`, waivers none.
+
 ### Source/regression
 
 None. All 5 source cases and all 10 regression cases passed.
