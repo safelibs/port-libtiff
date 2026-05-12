@@ -2183,12 +2183,22 @@ pub unsafe extern "C" fn TIFFReadRawStrip(
     size: Tmsize,
 ) -> Tmsize {
     let module = "TIFFReadRawStrip";
-    if !check_read_mode(tif, false, module) || buf.is_null() || size < 0 {
+    if !check_read_mode(tif, false, module) || buf.is_null() || size < -1 {
         return -1;
     }
-    let Ok(requested) = usize::try_from(size) else {
-        emit_error_message(tif, module, "Requested strip size is too large");
-        return -1;
+    let requested = if size == -1 {
+        let bytecount = TIFFGetStrileByteCount(tif, strip);
+        let Ok(bytecount) = usize::try_from(bytecount) else {
+            emit_error_message(tif, module, "Strip byte count is too large");
+            return -1;
+        };
+        bytecount
+    } else {
+        let Ok(requested) = usize::try_from(size) else {
+            emit_error_message(tif, module, "Requested strip size is too large");
+            return -1;
+        };
+        requested
     };
     match read_strile_bytes(tif, module, strip, requested, buf) {
         Some(read_size) => read_size as Tmsize,
@@ -2261,12 +2271,22 @@ pub unsafe extern "C" fn TIFFReadRawTile(
     size: Tmsize,
 ) -> Tmsize {
     let module = "TIFFReadRawTile";
-    if !check_read_mode(tif, true, module) || buf.is_null() || size < 0 {
+    if !check_read_mode(tif, true, module) || buf.is_null() || size < -1 {
         return -1;
     }
-    let Ok(requested) = usize::try_from(size) else {
-        emit_error_message(tif, module, "Requested tile size is too large");
-        return -1;
+    let requested = if size == -1 {
+        let bytecount = TIFFGetStrileByteCount(tif, tile);
+        let Ok(bytecount) = usize::try_from(bytecount) else {
+            emit_error_message(tif, module, "Tile byte count is too large");
+            return -1;
+        };
+        bytecount
+    } else {
+        let Ok(requested) = usize::try_from(size) else {
+            emit_error_message(tif, module, "Requested tile size is too large");
+            return -1;
+        };
+        requested
     };
     match read_strile_bytes(tif, module, tile, requested, buf) {
         Some(read_size) => read_size as Tmsize,

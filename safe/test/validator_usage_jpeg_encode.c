@@ -70,6 +70,9 @@ static int read_jpeg_tiff(const char *path)
     TIFF *tif;
     uint16_t compression = 0;
     uint32_t rows_per_strip = 0;
+    tmsize_t raw_size;
+    tmsize_t raw_read;
+    void *raw_strip = NULL;
     uint32_t *raster;
     int ok;
 
@@ -87,6 +90,25 @@ static int read_jpeg_tiff(const char *path)
     {
         TIFFClose(tif);
         return fail("JPEG output did not preserve RowsPerStrip");
+    }
+    raw_size = TIFFRawStripSize(tif, 0);
+    if (raw_size <= 0)
+    {
+        TIFFClose(tif);
+        return fail("JPEG output did not expose a raw strip size");
+    }
+    raw_strip = malloc((size_t)raw_size);
+    if (raw_strip == NULL)
+    {
+        TIFFClose(tif);
+        return fail("failed to allocate JPEG raw strip buffer");
+    }
+    raw_read = TIFFReadRawStrip(tif, 0, raw_strip, -1);
+    free(raw_strip);
+    if (raw_read != raw_size)
+    {
+        TIFFClose(tif);
+        return fail("TIFFReadRawStrip(..., -1) did not read the JPEG strip");
     }
 
     raster = (uint32_t *)calloc(IMAGE_WIDTH * IMAGE_HEIGHT, sizeof(uint32_t));

@@ -1406,6 +1406,7 @@ static int safe_is_printed_in_summary(uint32_t tag)
         case TIFFTAG_PHOTOMETRIC:
         case TIFFTAG_ORIENTATION:
         case TIFFTAG_SAMPLESPERPIXEL:
+        case TIFFTAG_EXTRASAMPLES:
         case TIFFTAG_ROWSPERSTRIP:
         case TIFFTAG_PLANARCONFIG:
         case TIFFTAG_RESOLUTIONUNIT:
@@ -1413,6 +1414,21 @@ static int safe_is_printed_in_summary(uint32_t tag)
             return 1;
         default:
             return 0;
+    }
+}
+
+static const char *safe_extrasample_name(uint16_t extrasample)
+{
+    switch (extrasample)
+    {
+        case EXTRASAMPLE_UNSPECIFIED:
+            return "unspecified";
+        case EXTRASAMPLE_ASSOCALPHA:
+            return "assoc-alpha";
+        case EXTRASAMPLE_UNASSALPHA:
+            return "unassoc-alpha";
+        default:
+            return NULL;
     }
 }
 
@@ -1597,6 +1613,8 @@ void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
         uint16_t bitspersample = 0, compression = 0, photometric = 0,
                  orientation = 0, samplesperpixel = 0, planar = 0,
                  resolutionunit = 0;
+        uint16_t extrasamples = 0;
+        const uint16_t *sampleinfo = NULL;
         uint32_t rowsperstrip = 0;
         uint32_t subfiletype = 0;
 
@@ -1646,6 +1664,25 @@ void TIFFPrintDirectory(TIFF *tif, FILE *fd, long flags)
         }
         if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
             fprintf(fd, "  Samples/Pixel: %" PRIu16 "\n", samplesperpixel);
+        if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &extrasamples, &sampleinfo) &&
+            extrasamples != 0 && sampleinfo != NULL)
+        {
+            uint16_t j;
+            const char *sep = "";
+            fprintf(fd, "  Extra Samples: %" PRIu16 "<", extrasamples);
+            for (j = 0; j < extrasamples; ++j)
+            {
+                const char *name = safe_extrasample_name(sampleinfo[j]);
+                fputs(sep, fd);
+                if (name != NULL)
+                    fputs(name, fd);
+                else
+                    fprintf(fd, "%" PRIu16 " (0x%" PRIx16 ")", sampleinfo[j],
+                            sampleinfo[j]);
+                sep = ", ";
+            }
+            fprintf(fd, ">\n");
+        }
         if (TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP, &rowsperstrip))
             fprintf(fd, "  Rows/Strip: %" PRIu32 "\n", rowsperstrip);
         if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &planar))
